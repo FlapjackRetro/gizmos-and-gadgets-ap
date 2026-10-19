@@ -30,12 +30,13 @@ This prints ready-to-paste `BP`/`BPM`/`MEMDUMPBIN` commands with the actual segm
 change if the DOS environment or memory layout changes, so regenerate per session). Press **F5** to continue.
 
 ### Notes
+- **The first hit after setting a `BPM` is a baseline hit** (BPM assumes the byte was `00`); just F5.
 - **Resident code** (segments below `0x0DE0`, e.g. the race dispatcher at `02E0`) sits at a fixed
   load+offset, so `BP` works.
 - **Overlay code** (`O0Exx_*` functions) is loaded by VROOMM into a buffer at runtime and may move or be
   evicted. Code breakpoints on overlays aren't reliable; break on **data** (`BPM`) instead, then look at
   the stack/CS when it fires.
-- If `BPM` never fires, this build may not check memory breakpoints on every instruction (in classic
+- `BPM` **works** in stock DOSBox-X 2026.10.01 (it watches a single byte). If it ever doesn't fire, the build may not check memory breakpoints on every instruction (in classic
   DOSBox that needs a "heavy debug" build). Fall back to dump diffing (below).
 
 ## Recipe: find a hook by dump diffing
@@ -52,9 +53,11 @@ If nothing relevant changes in DGROUP, the state is in far heap memory: dump a w
 ## Hunt list (RE_NOTES §4–5)
 | # | Goal | Start with |
 |---|---|---|
-| 1 | Building index → category (automotive / alt-energy / aircraft) | `BPM DS:4592`, walk into each building |
-| 2 | Confirm race-win path | `BP <race>:05B7`, win any race |
-| 3 | Door / puzzle solved | dump diff around solving one door; expect a `07`→`09` byte |
-| 4 | Part box opened / part collected | dump diff around opening one box |
-| 5 | Level generation vs restore on building entry | `BPM DS:459C` (+2b), enter/exit a building |
+| 1 | ~~Building index → category~~ **done**: 0 Automotive, 1 Aircraft, 2 Alt-Energy | — |
+| 2 | ~~Confirm race-win path~~ **done**: `459A` FFFF→0000, `5C0E` 4→5 | `BP <load+02E0>:05B7` |
+| 3 | ~~Door / puzzle solved~~ **done**: `R02E0_0A24` sets door state 7→9 | `BP <load+02E0>:0A24` |
+| 4 | ~~Part box opened~~ **done**: `R08F5_0002`; grant = `R0834_08D7(0, part)` | `BP <load+08F5>:0002` |
+| 5a | ~~Building click handler~~ **done**: `R02E0_0148`, hook `02E0:0463` | `BP <load+02E0>:0463` |
+| 5 | ~~Level generation vs restore~~ **done**: `R02E0_0820` (state 3) | `BP <load+02E0>:086A` |
+| 5x | (old) Level generation vs restore on building entry | `BPM DS:459C` (+2b), enter/exit a building |
 | 6 | Parts inventory layout (rec+0x40..0x27D) | dump diff `--base 0x4562` on record-only dumps while collecting parts |
