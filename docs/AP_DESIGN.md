@@ -57,6 +57,26 @@ rewriting game code**:
 - Patcher: apply byte patches to a copy of `ssg.exe` (a `.apgg` patch or simple byte list).
 - Save handling: one AP seed ↔ one player slot in PLAYERS.DAT; client verifies the player name matches the slot.
 
+## Future items
+### In-game Archipelago item labels
+Swap part names shown in-game for Archipelago item labels (e.g. "Bob's Progressive Wings"), so a box shows what
+it actually sends/holds. What we know:
+- Part names are type-`S` string resources (ids from `0x278`), referenced by part-table entry `+0x16`.
+- At load time `R053F_0002` loads each name into its own far block and stores the pointer at entry `+0x86`;
+  the pickup message reads it from there (`R0A04_076B`).
+- Options: (a) the client writes replacement text into those blocks at runtime (simplest; length-limited to the
+  original allocation unless we reallocate), (b) patch the `S` resources in a copy of `gizmo000.dat`
+  (needs an archive rewriter), (c) point `+0x86` at a client-managed buffer.
+- TBD: find other places text is drawn (blueprint screen labels, part inventory screen) and their length limits.
+
+### Archipelago-themed decal
+Replace one decal with an Archipelago-themed one.
+- Decals are group `0x0C` (cosmetic). Each entry has sprite resource ids at `+0x12`/`+0x14` (e.g. `0x00B6`/
+  `0x00A1`) and a blueprint icon (`LPX\x1a` image, ptr at `+0x82`).
+- TBD: decode the `LPX` image format and the vehicle-sprite resources, then add/patch one decal's graphics
+  (and its name resource). Needs an archive rewriter that can store resources uncompressed (flag byte 0) so we
+  don't need a compressor.
+
 ## Open questions for you
 1. ~~Which DOSBox?~~ **Decided:** DOSBox-X is the development target (see `docs/DOSBOX_X_DEV.md`); other
    flavors get compatibility testing later in development.
