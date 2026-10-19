@@ -23,12 +23,16 @@ PATCHES = {
     ),
     'no_finished_refusal': (
         'Buildings whose 5 races are won can still be entered (R02E0 building select: drop the three '
-        '"cmp [4596+2b],4 / jz refuse" jumps).',
+        '"cmp [4596+2b],4 / jz refuse" jumps). TEST ONLY until the level picker exists: on its own, entering a '
+        'finished building computes level 5 / vehicle b*5+5 (e.g. Automotive -> Level-6 Blimp).',
         [(0x4439, '742f', '9090'),     # Aircraft     (cmp [4598],4)
          (0x444A, '741e', '9090'),     # Alt-Energy   (cmp [459A],4)
          (0x445B, '740d', '9090')],    # Automotive   (cmp [4596],4)
     ),
 }
+
+
+TEST_ONLY = {'no_finished_refusal'}   # excluded unless named with --only
 
 
 def apply(data, names):
@@ -61,7 +65,7 @@ def main():
     sha = hashlib.sha1(src).hexdigest()
     if sha != KNOWN_SHA1:
         print(f'warning: unrecognised ssg.exe (sha1 {sha}); patches are byte-checked anyway', file=sys.stderr)
-    names = a.only.split(',') if a.only else list(PATCHES)
+    names = a.only.split(',') if a.only else [n for n in PATCHES if n not in TEST_ONLY]
     out = a.out or os.path.join(os.path.dirname(a.exe) or '.', 'SSG_AP.EXE')
     open(out, 'wb').write(apply(src, names))
     print(f'wrote {out} with patches: {", ".join(names)}')

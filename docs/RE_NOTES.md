@@ -349,6 +349,8 @@ Text `MEMDUMP` of DS:0000–FFFF. a = before box 1; b = after box 1; c = from a:
 ### 2026-10-19 — first patched build (`SSG_AP.EXE`)
 `race_no_advance` confirmed: after winning Aircraft L3 and returning to the Technology Center, re-entering Aircraft
 started L3 again from the beginning (fresh level), as predicted (race win clears `459C[b]`, level stays `4596[b]+2`).
+`no_finished_refusal` with `[4596]=4` (SM): Automotive entered as "Level-6 BLIMP" — level 5 / vehicle 5 overflow into
+Aircraft L1 (expected from `R02E0_0820`); needs the level picker.
 
 ## 6. Next step: dynamic analysis checklist (DOSBox-X debugger build)
 1. ~~Building→category mapping~~ (done, §5). Confirm race-win path with `BP <load+02E0>:05B7`.
