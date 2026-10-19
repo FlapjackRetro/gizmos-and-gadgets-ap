@@ -61,7 +61,7 @@ bytes to/from **DS:0x4562**). **The active player's record is held verbatim in m
 | 0x032 | 4594 | u16 | Used heavily by race engine O0E7D | TBD |
 | **0x034** | **4596** | s16[3] | **Last race won index per building** (−1 none … 4 = all five) | confirmed |
 | **0x03A** | **459C** | u16[3] | **Warehouse-in-progress flag per building** | confirmed |
-| 0x040–0x27D | 45A2… | u16 flags | Rows of 0/1 words (8 groups of 33?) — **parts inventory?** | hypothesis |
+| 0x040–0x27D | 45A2… | u16 flags | Rows of 0/1 words (8 groups of 33?) — likely **puzzle variants solved** (rec+0x24C set on a door solve) | hypothesis (live evidence) |
 | **0x27E** | **47E0** | 3 × 0x6BA | **Per-building warehouse blocks** (see below) | confirmed |
 | **0x16AC** | **5C0E** | u16 | **Total races won; 15 ⇒ game complete** | confirmed |
 | 0x16AE | 5C10 | … | Tail; used by race code | TBD |
@@ -119,6 +119,19 @@ Memory breakpoints (`BPM`) **work** in the stock DOSBox-X build (they watch one 
 - Levels shown match `level = 4596[b] + 2`: Automotive L3, Aircraft L3, Alt-Energy L1 (Flapjack {1,1,−1}).
 - Automotive and Aircraft showed the level-intro blueprint; Alt-Energy (`459C[2]=1` in save) did not
   → supports §4.4: in-progress flag = restore saved warehouse, else fresh level + blueprint.
+
+### 2026-10-19 — part box & door dump diffs (Alt-Energy L1, DGROUP 16CA)
+Text `MEMDUMP` of DS:0000–FFFF. a = before box 1; b = after box 1; c = from a: solve 1 door puzzle + box 2.
+- **Score** `DS:4572` (rec+0x10): +20 per part, +400 per solved puzzle.
+- **Box candidates** (same change for both boxes): `DS:0964` and `DS:66AA` 06→05 (boxes remaining?);
+  `DS:05F8..0650` = live box list for the room, 14-byte entries holding x-coords (35/75/150/235/275); entries
+  shift down on removal; `DS:A028` 00→01 (box 1) / 00→03 (box 2) — picked part type?;
+  `DS:7CA6` FFFF→0007, `DS:1AD6` FFFF→0009, `DS:7AFA`/`7BFA` 00→01.
+- **Door candidate** (puzzle run only): `DS:47AE` = **rec+0x24C** 00→01 — inside the rec+0x40..0x27D flag rows,
+  so those rows are likely *puzzle variants solved/used* (8 rows × 33), not the parts inventory.
+- Picking up a part changes nothing in the record except score → part inventory lives in non-record globals
+  during play (snapshotted on save).
+- Next: `BPM` on 0964 / A028 / 47AE to land in the writers.
 
 ## 6. Next step: dynamic analysis checklist (DOSBox-X debugger build)
 1. ~~Building→category mapping~~ (done, §5). Confirm race-win path with `BP <load+02E0>:05B7`.
