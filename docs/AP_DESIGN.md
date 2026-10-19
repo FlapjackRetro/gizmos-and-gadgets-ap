@@ -66,8 +66,9 @@ locations reachable, and a building is stuck until its race is won. So:
     Revisiting a different level of the same building means swapping that block: store the other levels'
     snapshots outside the record (client side, or an extra file), restore on select; flag 0 → fresh level.
   - Race win must no longer advance the building (`inc [bx+4596]` at file 0x45B7 → NOP).
-- TBD: the code that handles the building click (writes `DS:4592`) — catch it with `BPM 16CA:4592` + CS:IP — and
-  the game's dialog/menu routine (message boxes go through `O0E3D_0037`) to build the picker from.
+- Building click handler found: `R02E0_0148` (state 2); picker hooks in at `02E0:0463` after `[4592]` is set,
+  and the vanilla "building finished" refusal (`[4596+2b]==4`) must be removed (RE_NOTES §4.4).
+- TBD: the game's dialog/menu routine (message boxes go through `O0E3D_0037`) to build the picker from.
 
 ## Client architecture
 - Python AP client (CommonClient-based) + a DOSBox memory interface:
