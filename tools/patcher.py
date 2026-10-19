@@ -29,6 +29,11 @@ PATCHES = {
          (0x444A, '741e', '9090'),     # Alt-Energy   (cmp [459A],4)
          (0x445B, '740d', '9090')],    # Automotive   (cmp [4596],4)
     ),
+    'title_logo': (
+        'Load archive 1 from GIZMOAP1.DAT instead of gizmo001.dat (DS string table at 0x571). GIZMOAP1.DAT is '
+        'built by tools/title_logo.py and adds the Archipelago logo to the title screen.',
+        [(0x101EE, '67697a6d6f3030312e646174', '67697a6d6f6170312e646174')],   # "gizmo001.dat" -> "gizmoap1.dat"
+    ),
 }
 
 
