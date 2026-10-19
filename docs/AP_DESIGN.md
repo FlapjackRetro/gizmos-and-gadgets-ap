@@ -12,8 +12,8 @@ Companion to `RE_NOTES.md`. Draft for discussion; anything that depends on uncon
 | Group | Count | Detection |
 |---|---|---|
 | Race wins (bldg × level) | 15 | Hook at `R02E0_05B7`, or client watches `DS:4596[b]` / `DS:5C0E` |
-| Part boxes opened | ~18–31 per level (≈ 300–400 total) | TBD (live box list) |
-| Doors / puzzles solved | state array is 40→120 cells per level — too many as-is; likely per-puzzle-door subset, or "N doors opened" milestones | TBD |
+| Part boxes opened | **622** fixed per level (22–54); 532 hold a part (each part exactly once), 90 empty — `data/warehouse_counts.tsv` | placement/contents random per new level |
+| Doors / puzzles solved | **653** puzzle doors (19 / 39–40 / 59–61 per level), fixed by the room layouts — likely too many as individual checks; options: per-door, every Nth, or "N doors opened" milestones | layout fixed; puzzle variant random |
 
 Recommendation for v0.1: **race wins + part boxes only**; add doors later as an option once the live
 array is understood.
