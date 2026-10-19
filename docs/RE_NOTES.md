@@ -302,7 +302,7 @@ Need to confirm: when entering building *b* with `459C[b]==0`, the game builds l
   ground level; safe rule "every performance slot ≥ tier 2" for Auto L1–2 and Alt L1–2, "≥ tier 3" (capped at the
   slot's best tier) for the rest. Winning share falls to 0.2–4% on Auto L4–5 / Alt L3–5.
 
-### 4.9 Aircraft races (flight engine O0E7D) [static, 2026-10-19 — not yet live-validated]
+### 4.9 Aircraft races (flight engine O0E7D) [**validated live** on Aircraft L3, 2026-10-19]
 - Stats `O0E7D_0037(racer*, partlist*)`: **A = DS:3DBE[level]** (3.5/4/6/7/9, indexed by level within the building),
   B = 0; group switch over 0x0D–0x2F (`O0E7D:0381`): each group does `A −= T[tier]`, `B += T[tier]` or (blimp
   engine 0x0F) `B = T[tier]` — full map in `tools/flight_sim.py`. Paint/decal and a few groups (0x22/0x23) do nothing.
@@ -314,6 +314,10 @@ Need to confirm: when entering building *b* with `459C[b]==0`, the game builds l
   races); each frame steps int(new)−int(old) records. Step events (`O0E7D:05C7`, code+14): −12 skip (idx += x−1),
   −11/−9 phase 0, −8 phase 1, −10 phase 2 (unused), −7/−6 no-op, −2 finish, −1 end. Tracks: phase 0 → −8 → phase 1
   → −9 → phase 0 → finish. Ends when either finishes; player finished → win (ties to the player).
+- **Live validation** (`BP 0B03:05A3`, `D 16CA:BB28` Morty / `D 16CA:BB64` player, caps at +0x1C, accels at +0x28):
+  Morty caps 0x5970A ×3 / accels 0x23D8 ×3; player (2-blade prop, turbo flat engine, sharp-angle cockpit, medium-curve
+  tail, elliptical wing, fowler flaps, GPS, wheel pants) caps 0x54CCD / accels 0x23D7 — model identical; simulator
+  predicts player frame 337 vs Morty 321 → loss, matching the live loss (`[4560]=1`).
 - `tools/flight_sim.py` → `data/flight_requirements.tsv`: max-tier wins all; safe rule ≥ tier 2 (L1–2), ≥ tier 3
   (L3–5). **Non-monotonic tiers**: blimp envelope (best tier 2) and engine (best tier 1); glider altimeter tier 3 is
   the worst (all glider parts add drag).

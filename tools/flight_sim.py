@@ -2,7 +2,7 @@
 """Aircraft race model + exact simulation (overlay O0E7D), and per-level win requirements.
 
 Usage: python flight_sim.py GAMEDIR > data/flight_requirements.tsv
-Status: transcribed from disassembly (RE_NOTES §4.9); not yet validated against a live aircraft race.
+Status: validated live on Aircraft L3 (stats exact; predicted the live loss), 2026-10-19.
 
 Stats (O0E7D_0037(racer*, partlist*)), all 16.16 fixed point:
   A = DS:3DBE[level]; B = 0; for each part: group g (0x0D..0x2F) with tier t -> one of
