@@ -18,6 +18,18 @@ with data but not yet verified in a running game.
 
 Leaked source module names (assert strings): `\source\electric.c`, `\source\puzzler.c`, `\source\simple.c`.
 
+### 1.1 Resource archives (MR) [confirmed — decoded 2026-10-19]
+- **Resource id = (archive << 12) | index** (`R04FF_000D`); archives `gizmo000..003.dat` opened at startup
+  (`R04FF_0167`, which also checks resources 0x36D/0x11DE/0x214E for magic `A55A`).
+- Archive: `"MRn\x1a"` then `u32 offsets[]`. Resource *i*: seek `offsets[i] + 4`, read **type byte**, **compressed
+  flag byte**, then payload (raw, or compressed: `u32 unpacked size & 0x3FFFFFFF` + MSB-first bitstream).
+- Decompressor `R0B48_02AA(handle, far out)`: Huffman + LZ, 286-symbol literal/length alphabet (DEFLATE-like,
+  custom bit order / tables). **We don't reimplement it** — `tools/resources.py` runs the game's own routine in a
+  minimal 8086 interpreter (`tools/x86emu.py`), stubbing file read `R0000_23F7`, `farmalloc R0536_0007` and the
+  keyboard poll `R098D_00D4`. Output verified byte-exact against live memory.
+- Types seen: `S` strings (part names, 0x278…), `D` part tables (0x2F5–0x303), `G` graphics?, `LPX` images.
+- `R04FF_00FE(id)` = load resource into a new far block.
+
 ## 2. Executable layout [confirmed]
 
 - MZ header: 288 paragraphs (image at file `0x1200`), 976 relocations, entry `0000:0000`, SS:SP `1A78:0080`.
@@ -82,7 +94,13 @@ Written by the save path in O0E18 only when `[DS:0x94]` (dirty) is set:
 **Implication:** during play the live warehouse lives in other globals and is snapshotted into the block on
 save/exit. The block is a snapshot; the rec header fields (§ table) are live.
 
-### 3.3 Part tables [confirmed live, 2026-10-19]
+### 3.3 Part tables [confirmed live + decoded from resources, 2026-10-19]
+- **Loader `R053F_0002`**: loads resource `0x2F5 + [DS:4590]` where `DS:4590` = rec+0x2E = **vehicle index
+  v = building×5 + (level−1)**. The resource *is* the table; the loader only fills pointers (header +0x25/+0x29,
+  entry +0x82 icon from DS:6644 table, +0x86 name = resource `[entry+0x16]`, +0x8C = index).
+- **All 15 tables extracted statically**: `data/parts_all.tsv` (`tools/extract_parts.py`), 532 parts.
+  Counts — Automotive 20/36/40/40/40, Aircraft 20/32/40/40/44, Alt-Energy 24/36/36/40/44 (L1..L5).
+  Matches the three live dumps exactly.
 - `DS:6638` far ptr → level parts header (`+2` = part count); `DS:663C` far ptr → part table.
   Loaded **per level** (Alt-Energy L1: 24 parts at `5F96:0039`, header `5F96:0004`).
 - Entry = 0x8E bytes: `+0x08` group (= vehicle slot), `+0x0A` **quality tier** within the group (0 = basic; parts sharing a tier are interchangeable copies; single-tier groups such as brakes/fuel tank/decals are required-or-cosmetic), `+0x1E`/`+0x26` performance stats (TBD),

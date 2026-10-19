@@ -1,0 +1,533 @@
+vehicle	building	level	id	group	tier	stat1E	stat26	name
+0	Automotive	1	0	0x00	0	117	134	wooden body shaped like a box
+0	Automotive	1	1	0x00	1	117	134	wooden body with a short slope
+0	Automotive	1	2	0x00	2	117	134	wooden body with a long slope
+0	Automotive	1	3	0x00	3	117	134	fiberglass body shaped like a rocket
+0	Automotive	1	4	0x01	0	125	140	4 wheels with metal bushings
+0	Automotive	1	5	0x01	0	125	140	4 wheels with metal bushings
+0	Automotive	1	6	0x01	1	125	140	4 wheels with self-lubricating bushings
+0	Automotive	1	7	0x01	1	125	140	4 wheels with self-lubricating bushings
+0	Automotive	1	8	0x02	0	129	144	brakes
+0	Automotive	1	9	0x02	0	129	144	brakes
+0	Automotive	1	10	0x02	0	129	144	brakes
+0	Automotive	1	11	0x02	0	129	144	brakes
+0	Automotive	1	12	0x0b	0	0	0	red paint
+0	Automotive	1	13	0x0b	1	0	0	green paint
+0	Automotive	1	14	0x0b	2	0	0	yellow paint
+0	Automotive	1	15	0x0b	3	0	0	blue paint
+0	Automotive	1	16	0x0c	0	128	146	roadrunner decal
+0	Automotive	1	17	0x0c	0	128	146	pinstripe decal
+0	Automotive	1	18	0x0c	0	128	146	racing butterfly decal
+0	Automotive	1	19	0x0c	0	128	146	dragon decal
+1	Automotive	2	0	0x00	0	117	134	wooden body shaped like a box
+1	Automotive	2	1	0x00	1	117	134	wooden body with a short slope
+1	Automotive	2	2	0x00	2	117	134	wooden body with a long slope
+1	Automotive	2	3	0x00	3	117	134	fiberglass body shaped like a rocket
+1	Automotive	2	4	0x01	0	124	148	4 wheels with metal bushings
+1	Automotive	2	5	0x01	1	124	148	4 wheels with self-lubricating bushings
+1	Automotive	2	6	0x01	1	124	148	4 wheels with self-lubricating bushings
+1	Automotive	2	7	0x01	2	124	148	4 wheels with ball bearings
+1	Automotive	2	8	0x03	0	120	145	4 tires that are 2 inches wide
+1	Automotive	2	9	0x03	1	120	145	4 tires that are 3 inches wide
+1	Automotive	2	10	0x03	2	120	145	4 tires that are 4 inches wide
+1	Automotive	2	11	0x03	3	120	145	4 tires that are 5 inches wide
+1	Automotive	2	12	0x05	0	127	142	differential with a 4 to 1 gear ratio
+1	Automotive	2	13	0x05	1	127	142	differential with a 3 to 1 gear ratio
+1	Automotive	2	14	0x05	2	126	142	differential with a 3 to 1 gear ratio
+1	Automotive	2	15	0x05	3	126	142	differential with a 2 to 1 gear ratio
+1	Automotive	2	16	0x0a	0	117	135	fuel tank with gasoline
+1	Automotive	2	17	0x0a	0	117	135	fuel tank with gasoline
+1	Automotive	2	18	0x0a	0	117	135	fuel tank with gasoline
+1	Automotive	2	19	0x0a	0	117	135	fuel tank with gasoline
+1	Automotive	2	20	0x09	0	153	142	45-horsepower engine
+1	Automotive	2	21	0x09	1	153	142	50-horsepower engine
+1	Automotive	2	22	0x09	2	153	141	55-horsepower engine
+1	Automotive	2	23	0x09	3	153	141	60-horsepower engine
+1	Automotive	2	24	0x02	0	129	144	brakes
+1	Automotive	2	25	0x02	0	129	144	brakes
+1	Automotive	2	26	0x02	0	129	144	brakes
+1	Automotive	2	27	0x02	0	129	144	brakes
+1	Automotive	2	28	0x0b	0	0	0	red paint
+1	Automotive	2	29	0x0b	1	0	0	green paint
+1	Automotive	2	30	0x0b	2	0	0	yellow paint
+1	Automotive	2	31	0x0b	3	0	0	blue paint
+1	Automotive	2	32	0x0c	0	128	146	cobra decal
+1	Automotive	2	33	0x0c	0	128	146	cheetah decal
+1	Automotive	2	34	0x0c	0	128	146	rainbow decal
+1	Automotive	2	35	0x0c	0	128	146	flames decal
+2	Automotive	3	0	0x00	0	117	134	wooden body shaped like a box
+2	Automotive	3	1	0x00	1	117	134	wooden body with a short slope
+2	Automotive	3	2	0x00	2	117	134	wooden body with a long slope
+2	Automotive	3	3	0x00	3	117	134	fiberglass body shaped like a rocket
+2	Automotive	3	4	0x01	0	124	148	4 wheels with metal bushings
+2	Automotive	3	5	0x01	1	124	148	4 wheels with self-lubricating bushings
+2	Automotive	3	6	0x01	1	124	148	4 wheels with self-lubricating bushings
+2	Automotive	3	7	0x01	2	124	148	4 wheels with ball bearings
+2	Automotive	3	8	0x04	0	127	142	4 tires that are 9 inches in diameter
+2	Automotive	3	9	0x04	1	126	142	4 tires that are 10 inches in diameter
+2	Automotive	3	10	0x04	2	125	141	4 tires that are 11 inches in diameter
+2	Automotive	3	11	0x04	3	124	140	4 tires that are 12 inches in diameter
+2	Automotive	3	12	0x05	0	127	142	differential with a 4 to 1 gear ratio
+2	Automotive	3	13	0x05	1	127	142	differential with a 3 to 1 gear ratio
+2	Automotive	3	14	0x05	2	126	142	differential with a 3 to 1 gear ratio
+2	Automotive	3	15	0x05	3	126	142	differential with a 2 to 1 gear ratio
+2	Automotive	3	16	0x0a	0	117	135	fuel tank with gasoline
+2	Automotive	3	17	0x0a	0	117	135	fuel tank with gasoline
+2	Automotive	3	18	0x0a	0	117	135	fuel tank with gasoline
+2	Automotive	3	19	0x0a	0	117	135	fuel tank with gasoline
+2	Automotive	3	20	0x09	0	151	143	65-horsepower engine
+2	Automotive	3	21	0x09	1	151	141	70-horsepower engine
+2	Automotive	3	22	0x09	2	151	141	75-horsepower engine
+2	Automotive	3	23	0x09	3	151	141	80-horsepower engine
+2	Automotive	3	24	0x08	0	152	131	flat, vertical windshield
+2	Automotive	3	25	0x08	1	147	131	flat, sloping windshield
+2	Automotive	3	26	0x08	1	147	131	flat, sloping windshield
+2	Automotive	3	27	0x08	2	145	132	curved, sloping windshield
+2	Automotive	3	28	0x02	0	129	144	brakes
+2	Automotive	3	29	0x02	0	129	144	brakes
+2	Automotive	3	30	0x02	0	129	144	brakes
+2	Automotive	3	31	0x02	0	129	144	brakes
+2	Automotive	3	32	0x0b	0	0	0	red paint
+2	Automotive	3	33	0x0b	1	0	0	green paint
+2	Automotive	3	34	0x0b	2	0	0	yellow paint
+2	Automotive	3	35	0x0b	3	0	0	blue paint
+2	Automotive	3	36	0x0c	0	128	146	shark decal
+2	Automotive	3	37	0x0c	0	128	146	falcon decal
+2	Automotive	3	38	0x0c	0	128	146	thunderbird decal
+2	Automotive	3	39	0x0c	0	128	146	racing bee decal
+3	Automotive	4	0	0x00	0	117	134	wooden body shaped like a box
+3	Automotive	4	1	0x00	1	117	134	wooden body with a short slope
+3	Automotive	4	2	0x00	2	117	134	wooden body with a long slope
+3	Automotive	4	3	0x00	3	117	134	fiberglass body shaped like a rocket
+3	Automotive	4	4	0x01	0	124	148	4 wheels with metal bushings
+3	Automotive	4	5	0x01	1	124	148	4 wheels with self-lubricating bushings
+3	Automotive	4	6	0x01	1	124	148	4 wheels with self-lubricating bushings
+3	Automotive	4	7	0x01	2	124	148	4 wheels with ball bearings
+3	Automotive	4	8	0x03	0	120	145	4 tires that are 2 inches wide
+3	Automotive	4	9	0x03	1	120	145	4 tires that are 3 inches wide
+3	Automotive	4	10	0x03	2	120	145	4 tires that are 4 inches wide
+3	Automotive	4	11	0x03	3	120	145	4 tires that are 5 inches wide
+3	Automotive	4	12	0x05	0	127	142	differential with a 4 to 1 gear ratio
+3	Automotive	4	13	0x05	1	127	142	differential with a 3 to 1 gear ratio
+3	Automotive	4	14	0x05	2	126	142	differential with a 3 to 1 gear ratio
+3	Automotive	4	15	0x05	3	126	142	differential with a 2 to 1 gear ratio
+3	Automotive	4	16	0x08	0	152	131	flat, vertical windshield
+3	Automotive	4	17	0x08	1	147	131	flat, sloping windshield
+3	Automotive	4	18	0x08	1	147	131	flat, sloping windshield
+3	Automotive	4	19	0x08	2	145	132	curved, sloping windshield
+3	Automotive	4	20	0x09	0	151	143	90-horsepower engine
+3	Automotive	4	21	0x09	1	151	142	100-horsepower engine
+3	Automotive	4	22	0x09	2	151	142	110-horsepower engine
+3	Automotive	4	23	0x09	3	151	142	120-horsepower engine
+3	Automotive	4	24	0x0a	0	117	135	fuel tank with gasoline
+3	Automotive	4	25	0x0a	0	117	135	fuel tank with gasoline
+3	Automotive	4	26	0x0a	0	117	135	fuel tank with gasoline
+3	Automotive	4	27	0x0a	0	117	135	fuel tank with gasoline
+3	Automotive	4	28	0x02	0	129	144	brakes
+3	Automotive	4	29	0x02	0	129	144	brakes
+3	Automotive	4	30	0x02	0	129	144	brakes
+3	Automotive	4	31	0x02	0	129	144	brakes
+3	Automotive	4	32	0x0b	0	0	0	red paint
+3	Automotive	4	33	0x0b	1	0	0	green paint
+3	Automotive	4	34	0x0b	2	0	0	yellow paint
+3	Automotive	4	35	0x0b	3	0	0	blue paint
+3	Automotive	4	36	0x0c	0	128	146	comet decal
+3	Automotive	4	37	0x0c	0	128	146	eyes decal
+3	Automotive	4	38	0x0c	0	128	146	electric eel decal
+3	Automotive	4	39	0x0c	0	128	146	lightning bolt decal
+4	Automotive	5	0	0x00	0	117	134	wooden body shaped like a box
+4	Automotive	5	1	0x00	1	117	134	wooden body with a short slope
+4	Automotive	5	2	0x00	2	117	134	wooden body with a long slope
+4	Automotive	5	3	0x00	3	117	134	fiberglass body shaped like a rocket
+4	Automotive	5	4	0x01	0	124	148	4 wheels with metal bushings
+4	Automotive	5	5	0x01	1	124	148	4 wheels with self-lubricating bushings
+4	Automotive	5	6	0x01	1	124	148	4 wheels with self-lubricating bushings
+4	Automotive	5	7	0x01	2	124	148	4 wheels with ball bearings
+4	Automotive	5	8	0x04	0	127	142	4 tires that are 9 inches in diameter
+4	Automotive	5	9	0x04	1	126	142	4 tires that are 10 inches in diameter
+4	Automotive	5	10	0x04	2	125	141	4 tires that are 11 inches in diameter
+4	Automotive	5	11	0x04	3	124	140	4 tires that are 12 inches in diameter
+4	Automotive	5	12	0x05	0	127	142	differential with a 4 to 1 gear ratio
+4	Automotive	5	13	0x05	1	127	142	differential with a 3 to 1 gear ratio
+4	Automotive	5	14	0x05	2	126	142	differential with a 3 to 1 gear ratio
+4	Automotive	5	15	0x05	3	126	142	differential with a 2 to 1 gear ratio
+4	Automotive	5	16	0x08	0	152	131	flat, vertical windshield
+4	Automotive	5	17	0x08	1	147	131	flat, sloping windshield
+4	Automotive	5	18	0x08	1	147	131	flat, sloping windshield
+4	Automotive	5	19	0x08	2	145	132	curved, sloping windshield
+4	Automotive	5	20	0x09	0	146	144	150-horsepower engine
+4	Automotive	5	21	0x09	1	146	141	160-horsepower engine
+4	Automotive	5	22	0x09	2	146	140	170-horsepower engine
+4	Automotive	5	23	0x09	3	146	140	180-horsepower engine
+4	Automotive	5	24	0x0a	0	117	135	fuel tank with gasoline
+4	Automotive	5	25	0x0a	0	117	135	fuel tank with gasoline
+4	Automotive	5	26	0x0a	1	117	135	fuel tank with gasoline
+4	Automotive	5	27	0x0a	1	117	135	fuel tank with gasoline
+4	Automotive	5	28	0x02	0	129	144	brakes
+4	Automotive	5	29	0x02	0	129	144	brakes
+4	Automotive	5	30	0x02	0	129	144	brakes
+4	Automotive	5	31	0x02	0	129	144	brakes
+4	Automotive	5	32	0x0b	0	0	0	red paint
+4	Automotive	5	33	0x0b	1	0	0	green paint
+4	Automotive	5	34	0x0b	2	0	0	yellow paint
+4	Automotive	5	35	0x0b	3	0	0	blue paint
+4	Automotive	5	36	0x0c	0	128	146	pinstripe decal
+4	Automotive	5	37	0x0c	0	128	146	stars and stripes decal
+4	Automotive	5	38	0x0c	0	128	146	wings decal
+4	Automotive	5	39	0x0c	0	128	146	racing helmet decal
+5	Aircraft	1	0	0x0d	0	86	119	fat envelope
+5	Aircraft	1	1	0x0d	1	89	121	medium thickness envelope
+5	Aircraft	1	2	0x0d	1	89	121	medium thickness envelope
+5	Aircraft	1	3	0x0d	2	89	123	narrow envelope
+5	Aircraft	1	4	0x0e	0	153	149	rectangular gondola, hung on wires
+5	Aircraft	1	5	0x0e	1	146	150	rectangular gondola, attached to the envelope
+5	Aircraft	1	6	0x0e	2	147	150	gondola with rounded ends, attached to the envelope
+5	Aircraft	1	7	0x0e	3	159	143	gondola inside the blimp's envelope
+5	Aircraft	1	8	0x0f	0	182	148	engine in front of the gondola
+5	Aircraft	1	9	0x0f	0	182	148	engine in front of the gondola
+5	Aircraft	1	10	0x0f	1	129	149	engine behind the gondola
+5	Aircraft	1	11	0x0f	1	129	149	engine behind the gondola
+5	Aircraft	1	12	0x0b	0	0	0	red paint
+5	Aircraft	1	13	0x0b	1	0	0	green paint
+5	Aircraft	1	14	0x0b	2	0	0	yellow paint
+5	Aircraft	1	15	0x0b	3	0	0	blue paint
+5	Aircraft	1	16	0x0c	0	140	133	dragon decal
+5	Aircraft	1	17	0x0c	0	140	133	rainbow decal
+5	Aircraft	1	18	0x0c	0	140	133	racing bee decal
+5	Aircraft	1	19	0x0c	0	139	133	stars and stripes decal
+6	Aircraft	2	0	0x11	0	109	125	large fuselage with open cockpit
+6	Aircraft	2	1	0x11	1	109	125	large fuselage with enclosed cockpit
+6	Aircraft	2	2	0x11	2	109	127	medium fuselage with enclosed cockpit
+6	Aircraft	2	3	0x11	3	109	127	small fuselage with enclosed cockpit
+6	Aircraft	2	4	0x10	0	155	132	150 square foot, 40-foot wing
+6	Aircraft	2	5	0x10	1	150	130	150 square foot, 50-foot wing
+6	Aircraft	2	6	0x10	2	147	128	150 square foot, 60-foot wing
+6	Aircraft	2	7	0x10	3	145	124	150 square foot, 60-foot wing with winglets
+6	Aircraft	2	8	0x12	0	198	143	altimeter
+6	Aircraft	2	9	0x12	1	197	143	rate-of-climb indicator
+6	Aircraft	2	10	0x12	1	197	143	rate-of-climb indicator
+6	Aircraft	2	11	0x12	2	196	143	variometer
+6	Aircraft	2	12	0x13	0	162	143	airfoil with flat bottom
+6	Aircraft	2	13	0x13	1	162	143	airfoil with top curving down and bottom curving up
+6	Aircraft	2	14	0x13	2	162	143	airfoil with both top and bottom curving down
+6	Aircraft	2	15	0x13	3	163	143	laminar flow airfoil
+6	Aircraft	2	16	0x14	0	156	133	basic controls
+6	Aircraft	2	17	0x14	1	156	133	basic controls plus spoilers
+6	Aircraft	2	18	0x14	2	155	132	basic controls plus spoilers and flaps
+6	Aircraft	2	19	0x14	3	155	132	basic controls plus spoilers and flaperons
+6	Aircraft	2	20	0x15	0	119	146	2 wheels, side by side
+6	Aircraft	2	21	0x15	1	114	146	2 wheels, one behind the other
+6	Aircraft	2	22	0x15	2	116	146	single main wheel
+6	Aircraft	2	23	0x15	3	120	146	single wheel that can be retractable
+6	Aircraft	2	24	0x0b	0	0	0	red paint
+6	Aircraft	2	25	0x0b	1	0	0	green paint
+6	Aircraft	2	26	0x0b	2	0	0	yellow paint
+6	Aircraft	2	27	0x0b	3	0	0	blue paint
+6	Aircraft	2	28	0x0c	0	141	143	stars and stripes decal
+6	Aircraft	2	29	0x0c	0	141	143	falcon decal
+6	Aircraft	2	30	0x0c	0	141	141	racing helmet decal
+6	Aircraft	2	31	0x0c	0	141	143	rainbow decal
+7	Aircraft	3	0	0x18	0	133	134	open cockpit
+7	Aircraft	3	1	0x18	1	133	134	enclosed cockpit with sharp angle to tail
+7	Aircraft	3	2	0x18	2	133	134	enclosed cockpit with medium angle to tail
+7	Aircraft	3	3	0x18	3	133	134	enclosed cockpit with slight angle to tail
+7	Aircraft	3	4	0x16	0	211	130	propeller with 2 blades
+7	Aircraft	3	5	0x16	1	210	132	propeller with 3 blades
+7	Aircraft	3	6	0x16	2	210	132	propeller with 3 blades and a spinner
+7	Aircraft	3	7	0x16	3	210	131	propeller with 3 controllable blades and a spinner
+7	Aircraft	3	8	0x17	0	186	139	round engine
+7	Aircraft	3	9	0x17	1	187	139	flat engine
+7	Aircraft	3	10	0x17	2	184	139	flat engine with fuel injection
+7	Aircraft	3	11	0x17	3	178	139	flat engine with a turbocharger
+7	Aircraft	3	12	0x19	0	109	127	tail section with sharp angle
+7	Aircraft	3	13	0x19	1	100	128	tail section with sharp curve
+7	Aircraft	3	14	0x19	2	100	128	tail section with medium curve
+7	Aircraft	3	15	0x19	3	100	128	tail section with gradual curve
+7	Aircraft	3	16	0x1a	0	147	127	straight, constant wing
+7	Aircraft	3	17	0x1a	1	147	127	partially tapered wing
+7	Aircraft	3	18	0x1a	2	147	127	fully tapered wing
+7	Aircraft	3	19	0x1a	3	154	127	elliptical wing
+7	Aircraft	3	20	0x1b	0	158	130	flaps that rotate only
+7	Aircraft	3	21	0x1b	1	158	130	flaps split from the bottom of the wing
+7	Aircraft	3	22	0x1b	2	158	130	flaps that makes a slot
+7	Aircraft	3	23	0x1b	3	158	130	fowler flaps
+7	Aircraft	3	24	0x1c	0	185	137	compass
+7	Aircraft	3	25	0x1c	1	177	137	compass plus a map
+7	Aircraft	3	26	0x1c	2	181	137	automatic direction finding, ADF radio
+7	Aircraft	3	27	0x1c	3	181	137	global positioning system, GPS radio
+7	Aircraft	3	28	0x1d	0	171	129	three main wheels
+7	Aircraft	3	29	0x1d	1	116	129	two main wheels and one small wheel at tail
+7	Aircraft	3	30	0x1d	2	170	129	wheels with wheel pants
+7	Aircraft	3	31	0x1d	3	171	129	retractable landing gear
+7	Aircraft	3	32	0x0b	0	0	0	red paint
+7	Aircraft	3	33	0x0b	1	0	0	green paint
+7	Aircraft	3	34	0x0b	2	0	0	yellow paint
+7	Aircraft	3	35	0x0b	3	0	0	blue paint
+7	Aircraft	3	36	0x0c	0	143	143	electric eel decal
+7	Aircraft	3	37	0x0c	0	149	142	comet decal
+7	Aircraft	3	38	0x0c	0	145	144	lightning bolt decal
+7	Aircraft	3	39	0x0c	0	142	144	pinstripe decal
+8	Aircraft	4	0	0x28	0	175	133	cabin without a nose
+8	Aircraft	4	1	0x28	1	175	131	cabin with a stubby, blunt nose
+8	Aircraft	4	2	0x28	2	175	134	cabin with a stubby, pointed nose
+8	Aircraft	4	3	0x28	3	175	134	cabin with a sleek, pointed nose
+8	Aircraft	4	4	0x29	0	154	135	open engine bay
+8	Aircraft	4	5	0x29	0	154	135	open engine bay
+8	Aircraft	4	6	0x29	1	146	126	covered engine bay
+8	Aircraft	4	7	0x29	1	146	126	covered engine bay
+8	Aircraft	4	8	0x2a	0	100	143	tail boom with a tube truss
+8	Aircraft	4	9	0x2a	1	100	143	tail boom with steep slopes
+8	Aircraft	4	10	0x2a	2	100	143	tail boom with moderate slopes
+8	Aircraft	4	11	0x2a	3	100	141	tail boom with shallow slopes
+8	Aircraft	4	12	0x2b	0	157	151	landing gear with 4 wheels
+8	Aircraft	4	13	0x2b	1	157	151	landing gear with 3 wheels
+8	Aircraft	4	14	0x2b	2	145	154	skids for landing gear
+8	Aircraft	4	15	0x2b	3	157	152	retractable landing gear
+8	Aircraft	4	16	0x2c	0	173	128	piston engine
+8	Aircraft	4	17	0x2c	1	173	126	piston engine with a turbocharger
+8	Aircraft	4	18	0x2c	2	173	127	jet turboshaft engine
+8	Aircraft	4	19	0x2c	3	170	127	2 jet turboshaft engines
+8	Aircraft	4	20	0x2d	0	160	126	transmission box with gear drives
+8	Aircraft	4	21	0x2d	0	160	126	transmission box with gear drives
+8	Aircraft	4	22	0x2d	0	160	126	transmission box with gear drives
+8	Aircraft	4	23	0x2d	0	160	126	transmission box with gear drives
+8	Aircraft	4	24	0x2e	0	120	118	2-blade rotor
+8	Aircraft	4	25	0x2e	1	120	118	3-blade rotor
+8	Aircraft	4	26	0x2e	2	120	118	4-blade rotor
+8	Aircraft	4	27	0x2e	3	117	118	4-blade rotor with swept tips
+8	Aircraft	4	28	0x2f	0	80	132	tail rotor low on the tail
+8	Aircraft	4	29	0x2f	1	67	129	tail rotor high on the tail
+8	Aircraft	4	30	0x2f	2	72	127	tail rotor inside the tail
+8	Aircraft	4	31	0x2f	3	73	137	no-tail rotor
+8	Aircraft	4	32	0x0b	0	0	0	red paint
+8	Aircraft	4	33	0x0b	1	0	0	green paint
+8	Aircraft	4	34	0x0b	2	0	0	yellow paint
+8	Aircraft	4	35	0x0b	3	0	0	blue paint
+8	Aircraft	4	36	0x0c	0	176	151	pinstripe decal
+8	Aircraft	4	37	0x0c	0	176	151	stars and stripes decal
+8	Aircraft	4	38	0x0c	0	176	151	rainbow decal
+8	Aircraft	4	39	0x0c	0	176	151	pinstripe decal
+9	Aircraft	5	0	0x23	0	140	134	cockpit and cabin
+9	Aircraft	5	1	0x23	0	140	134	cockpit and cabin
+9	Aircraft	5	2	0x23	0	140	134	cockpit and cabin
+9	Aircraft	5	3	0x23	0	140	134	cockpit and cabin
+9	Aircraft	5	4	0x1e	0	125	145	wing with no sweep
+9	Aircraft	5	5	0x1e	1	114	145	wing with a 15-degree sweep
+9	Aircraft	5	6	0x1e	2	107	145	wing with a 25-degree sweep
+9	Aircraft	5	7	0x1e	3	103	145	wing with a 35-degree sweep
+9	Aircraft	5	8	0x1f	0	119	150	fuel tanks on middle of wing
+9	Aircraft	5	9	0x1f	1	102	154	fuel tanks on end of wing
+9	Aircraft	5	10	0x1f	2	136	149	fuel tank under fuselage
+9	Aircraft	5	11	0x1f	3	140	145	fuel tanks inside wing
+9	Aircraft	5	12	0x20	0	138	148	turboprop engines
+9	Aircraft	5	13	0x20	1	136	147	turbojet engines
+9	Aircraft	5	14	0x20	2	135	146	turbofan engines
+9	Aircraft	5	15	0x20	3	135	146	turbofan engines with electronic computer controls
+9	Aircraft	5	16	0x21	0	146	144	controls that use cables
+9	Aircraft	5	17	0x21	1	146	144	controls that use tubes
+9	Aircraft	5	18	0x21	2	146	144	controls with a motor
+9	Aircraft	5	19	0x21	3	146	142	controls with a computer and a motor
+9	Aircraft	5	20	0x24	0	102	121	straight tail mounted low
+9	Aircraft	5	21	0x24	1	97	121	straight tail mounted high
+9	Aircraft	5	22	0x24	2	100	121	swept tail mounted low
+9	Aircraft	5	23	0x24	3	94	121	swept tail mounted high
+9	Aircraft	5	24	0x25	0	106	137	tail cone with blunt end
+9	Aircraft	5	25	0x25	1	102	137	tail cone with steep angles
+9	Aircraft	5	26	0x25	2	97	137	tail cone with medium angles
+9	Aircraft	5	27	0x25	3	93	137	tail cone with shallow angles
+9	Aircraft	5	28	0x26	0	199	142	fat and rounded nose section
+9	Aircraft	5	29	0x26	1	199	142	fat and pointed nose section
+9	Aircraft	5	30	0x26	2	199	143	thin and rounded nose section
+9	Aircraft	5	31	0x26	3	199	143	thin and pointed nose section
+9	Aircraft	5	32	0x27	0	140	145	thick airfoil with rounded front edge
+9	Aircraft	5	33	0x27	1	140	145	thick airfoil with sharp front edge
+9	Aircraft	5	34	0x27	2	140	145	thin airfoil with rounded front edge
+9	Aircraft	5	35	0x27	3	140	145	thin airfoil with a sharp front edge
+9	Aircraft	5	36	0x0b	0	0	0	red paint
+9	Aircraft	5	37	0x0b	1	0	0	green paint
+9	Aircraft	5	38	0x0b	2	0	0	yellow paint
+9	Aircraft	5	39	0x0b	3	0	0	blue paint
+9	Aircraft	5	40	0x0c	0	149	144	rainbow decal
+9	Aircraft	5	41	0x0c	0	149	144	stars and stripes decal
+9	Aircraft	5	42	0x0c	0	149	143	falcon decal
+9	Aircraft	5	43	0x0c	0	149	142	comet decal
+10	Alternative Energy	1	0	0x32	0	117	125	rectangular body
+10	Alternative Energy	1	1	0x32	1	117	125	body with a short slope
+10	Alternative Energy	1	2	0x32	2	117	125	body with a long slope
+10	Alternative Energy	1	3	0x32	3	108	129	egg-shaped body
+10	Alternative Energy	1	4	0x30	0	120	145	2 20-inch wheels and tires
+10	Alternative Energy	1	5	0x30	1	119	144	2 22-inch wheels and tires
+10	Alternative Energy	1	6	0x30	2	118	143	2 24-inch wheels and tires
+10	Alternative Energy	1	7	0x30	3	117	142	2 26-inch wheels and tires
+10	Alternative Energy	1	8	0x31	0	122	137	two-wheel stopping brake
+10	Alternative Energy	1	9	0x31	0	122	137	two-wheel stopping brake
+10	Alternative Energy	1	10	0x31	0	122	137	two-wheel stopping brake
+10	Alternative Energy	1	11	0x31	0	122	137	two-wheel stopping brake
+10	Alternative Energy	1	12	0x33	0	122	143	1-speed gears
+10	Alternative Energy	1	13	0x33	1	120	143	5-speed gears
+10	Alternative Energy	1	14	0x33	2	120	142	10-speed gears
+10	Alternative Energy	1	15	0x33	3	120	141	15-speed gears
+10	Alternative Energy	1	16	0x0c	0	136	143	pinstripe decal
+10	Alternative Energy	1	17	0x0c	0	136	141	racing butterfly decal
+10	Alternative Energy	1	18	0x0c	0	136	141	flames decal
+10	Alternative Energy	1	19	0x0c	0	136	141	cheetah decal
+10	Alternative Energy	1	20	0x0b	0	0	0	red paint
+10	Alternative Energy	1	21	0x0b	1	0	0	green paint
+10	Alternative Energy	1	22	0x0b	2	0	0	yellow paint
+10	Alternative Energy	1	23	0x0b	3	0	0	blue paint
+11	Alternative Energy	2	0	0x37	0	104	126	body with 20 solar-cell panels
+11	Alternative Energy	2	1	0x37	1	104	126	body with 40 solar-cell panels
+11	Alternative Energy	2	2	0x37	2	95	127	body with 60 solar-cell panels
+11	Alternative Energy	2	3	0x37	3	95	127	body with 80 solar-cell panels
+11	Alternative Energy	2	4	0x04	0	125	136	4 tires that are 9 inches in diameter
+11	Alternative Energy	2	5	0x04	1	124	135	4 tires that are 10 inches in diameter
+11	Alternative Energy	2	6	0x04	2	123	134	4 tires that are 11 inches in diameter
+11	Alternative Energy	2	7	0x04	3	122	133	4 tires that are 12 inches in diameter
+11	Alternative Energy	2	8	0x35	0	127	138	4 wheels with metal bushings
+11	Alternative Energy	2	9	0x35	1	127	138	4 wheels with self-lubricating bushings
+11	Alternative Energy	2	10	0x35	1	127	138	4 wheels with self-lubricating bushings
+11	Alternative Energy	2	11	0x35	2	127	138	4 wheels with ball bearings
+11	Alternative Energy	2	12	0x36	0	129	139	brakes
+11	Alternative Energy	2	13	0x36	0	129	139	brakes
+11	Alternative Energy	2	14	0x36	0	129	139	brakes
+11	Alternative Energy	2	15	0x36	0	129	139	brakes
+11	Alternative Energy	2	16	0x38	0	159	143	batteries giving 30 kilowatts of power for 1 hour
+11	Alternative Energy	2	17	0x38	1	158	143	batteries giving 40 kilowatts of power for 1 hour
+11	Alternative Energy	2	18	0x38	2	157	142	batteries giving 50 kilowatts of power for 1 hour
+11	Alternative Energy	2	19	0x38	3	157	141	batteries giving 60 kilowatts of power for 1 hour
+11	Alternative Energy	2	20	0x39	0	180	142	30-kilowatt electric motor
+11	Alternative Energy	2	21	0x39	1	179	142	40-kilowatt electric motor
+11	Alternative Energy	2	22	0x39	2	178	142	50-kilowatt electric motor
+11	Alternative Energy	2	23	0x39	3	175	141	60-kilowatt electric motor
+11	Alternative Energy	2	24	0x05	0	120	142	differential with a 4 to 1 gear ratio
+11	Alternative Energy	2	25	0x05	1	120	142	differential with a 3 to 1 gear ratio
+11	Alternative Energy	2	26	0x05	2	119	142	differential with a 3 to 1 gear ratio
+11	Alternative Energy	2	27	0x05	3	119	142	differential with a 2 to 1 gear ratio
+11	Alternative Energy	2	28	0x0c	0	114	148	tornado decal
+11	Alternative Energy	2	29	0x0c	0	114	148	dragon decal
+11	Alternative Energy	2	30	0x0c	0	117	148	cobra decal
+11	Alternative Energy	2	31	0x0c	0	117	148	rainbow decal
+11	Alternative Energy	2	32	0x0b	0	0	0	red paint
+11	Alternative Energy	2	33	0x0b	1	0	0	green paint
+11	Alternative Energy	2	34	0x0b	2	0	0	yellow paint
+11	Alternative Energy	2	35	0x0b	3	0	0	blue paint
+12	Alternative Energy	3	0	0x00	0	117	134	wooden body shaped like a box
+12	Alternative Energy	3	1	0x00	1	117	134	wooden body with a short slope
+12	Alternative Energy	3	2	0x00	2	117	134	wooden body with a long slope
+12	Alternative Energy	3	3	0x00	3	117	134	fiberglass body shaped like a rocket
+12	Alternative Energy	3	4	0x01	0	124	148	4 wheels with metal bushings
+12	Alternative Energy	3	5	0x01	1	124	148	4 wheels with self-lubricating bushings
+12	Alternative Energy	3	6	0x01	1	124	148	4 wheels with self-lubricating bushings
+12	Alternative Energy	3	7	0x01	2	124	148	4 wheels with ball bearings
+12	Alternative Energy	3	8	0x04	0	127	142	4 tires that are 9 inches in diameter
+12	Alternative Energy	3	9	0x04	1	126	142	4 tires that are 10 inches in diameter
+12	Alternative Energy	3	10	0x04	2	125	141	4 tires that are 11 inches in diameter
+12	Alternative Energy	3	11	0x04	3	124	140	4 tires that are 12 inches in diameter
+12	Alternative Energy	3	12	0x05	0	127	142	differential with a 4 to 1 gear ratio
+12	Alternative Energy	3	13	0x05	1	127	142	differential with a 3 to 1 gear ratio
+12	Alternative Energy	3	14	0x05	2	127	142	differential with a 3 to 1 gear ratio
+12	Alternative Energy	3	15	0x05	3	127	142	differential with a 2 to 1 gear ratio
+12	Alternative Energy	3	16	0x06	0	156	146	30-kilowatt electric motor
+12	Alternative Energy	3	17	0x06	1	153	145	40-kilowatt electric motor
+12	Alternative Energy	3	18	0x06	2	152	145	50-kilowatt electric motor
+12	Alternative Energy	3	19	0x06	3	151	144	60-kilowatt electric motor
+12	Alternative Energy	3	20	0x07	0	119	139	batteries giving 30 kilowatts of power for 1 hour
+12	Alternative Energy	3	21	0x07	1	118	138	batteries giving 40 kilowatts of power for 1 hour
+12	Alternative Energy	3	22	0x07	2	118	137	batteries giving 50 kilowatts of power for 1 hour
+12	Alternative Energy	3	23	0x07	3	117	136	batteries giving 60 kilowatts of power for 1 hour
+12	Alternative Energy	3	24	0x02	0	129	144	brakes
+12	Alternative Energy	3	25	0x02	0	129	144	brakes
+12	Alternative Energy	3	26	0x02	0	129	144	brakes
+12	Alternative Energy	3	27	0x02	0	129	144	brakes
+12	Alternative Energy	3	28	0x0b	0	0	0	red paint
+12	Alternative Energy	3	29	0x0b	1	0	0	green paint
+12	Alternative Energy	3	30	0x0b	2	0	0	yellow paint
+12	Alternative Energy	3	31	0x0b	3	0	0	blue paint
+12	Alternative Energy	3	32	0x0c	0	128	146	shark decal
+12	Alternative Energy	3	33	0x0c	0	128	146	falcon decal
+12	Alternative Energy	3	34	0x0c	0	128	146	thunderbird decal
+12	Alternative Energy	3	35	0x0c	0	128	146	racing bee decal
+13	Alternative Energy	4	0	0x00	0	117	134	wooden body shaped like a box
+13	Alternative Energy	4	1	0x00	1	117	134	wooden body with a short slope
+13	Alternative Energy	4	2	0x00	2	117	134	wooden body with a long slope
+13	Alternative Energy	4	3	0x00	3	117	134	fiberglass body shaped like a rocket
+13	Alternative Energy	4	4	0x01	0	124	148	4 wheels with metal bushings
+13	Alternative Energy	4	5	0x01	1	124	148	4 wheels with self-lubricating bushings
+13	Alternative Energy	4	6	0x01	1	124	148	4 wheels with self-lubricating bushings
+13	Alternative Energy	4	7	0x01	2	124	148	4 wheels with ball bearings
+13	Alternative Energy	4	8	0x03	0	120	145	4 tires that are 2 inches wide
+13	Alternative Energy	4	9	0x03	1	120	145	4 tires that are 3 inches wide
+13	Alternative Energy	4	10	0x03	2	120	145	4 tires that are 4 inches wide
+13	Alternative Energy	4	11	0x03	3	120	145	4 tires that are 5 inches wide
+13	Alternative Energy	4	12	0x05	0	127	142	differential with a 4 to 1 gear ratio
+13	Alternative Energy	4	13	0x05	1	127	142	differential with a 3 to 1 gear ratio
+13	Alternative Energy	4	14	0x05	2	127	142	differential with a 3 to 1 gear ratio
+13	Alternative Energy	4	15	0x05	3	127	142	differential with a 2 to 1 gear ratio
+13	Alternative Energy	4	16	0x06	0	150	144	70-kilowatt electric motor
+13	Alternative Energy	4	17	0x06	1	148	143	80-kilowatt electric motor
+13	Alternative Energy	4	18	0x06	2	146	142	90-kilowatt electric motor
+13	Alternative Energy	4	19	0x06	3	143	142	100-kilowatt electric motor
+13	Alternative Energy	4	20	0x07	0	122	138	batteries giving 70 kilowatts of power for 1 hour
+13	Alternative Energy	4	21	0x07	1	121	138	batteries giving 80 kilowatts of power for 1 hour
+13	Alternative Energy	4	22	0x07	2	120	137	batteries giving 90 kilowatts of power for 1 hour
+13	Alternative Energy	4	23	0x07	3	119	136	batteries giving 100 kilowatts of power for 1 hour
+13	Alternative Energy	4	24	0x02	0	129	144	brakes
+13	Alternative Energy	4	25	0x02	0	129	144	brakes
+13	Alternative Energy	4	26	0x02	0	129	144	brakes
+13	Alternative Energy	4	27	0x02	0	129	144	brakes
+13	Alternative Energy	4	28	0x08	0	152	131	flat, vertical windshield
+13	Alternative Energy	4	29	0x08	1	147	131	flat, sloping windshield
+13	Alternative Energy	4	30	0x08	1	147	131	flat, sloping windshield
+13	Alternative Energy	4	31	0x08	2	145	132	curved, sloping windshield
+13	Alternative Energy	4	32	0x0b	0	0	0	red paint
+13	Alternative Energy	4	33	0x0b	1	0	0	green paint
+13	Alternative Energy	4	34	0x0b	2	0	0	yellow paint
+13	Alternative Energy	4	35	0x0b	3	0	0	blue paint
+13	Alternative Energy	4	36	0x0c	0	128	146	eyes decal
+13	Alternative Energy	4	37	0x0c	0	128	146	comet decal
+13	Alternative Energy	4	38	0x0c	0	128	146	electric eel decal
+13	Alternative Energy	4	39	0x0c	0	128	146	lightning bolt decal
+14	Alternative Energy	5	0	0x00	0	117	134	wooden body shaped like a box
+14	Alternative Energy	5	1	0x00	1	117	134	wooden body with a short slope
+14	Alternative Energy	5	2	0x00	2	117	134	wooden body with a long slope
+14	Alternative Energy	5	3	0x00	3	117	134	fiberglass body shaped like a rocket
+14	Alternative Energy	5	4	0x02	0	129	144	brakes
+14	Alternative Energy	5	5	0x02	0	129	144	brakes
+14	Alternative Energy	5	6	0x02	0	129	144	brakes
+14	Alternative Energy	5	7	0x02	0	129	144	brakes
+14	Alternative Energy	5	8	0x01	0	124	148	4 wheels with metal bushings
+14	Alternative Energy	5	9	0x01	1	124	148	4 wheels with self-lubricating bushings
+14	Alternative Energy	5	10	0x01	1	124	148	4 wheels with self-lubricating bushings
+14	Alternative Energy	5	11	0x01	2	124	148	4 wheels with ball bearings
+14	Alternative Energy	5	12	0x04	0	127	142	4 tires that are 9 inches in diameter
+14	Alternative Energy	5	13	0x04	1	126	142	4 tires that are 10 inches in diameter
+14	Alternative Energy	5	14	0x04	2	125	141	4 tires that are 11 inches in diameter
+14	Alternative Energy	5	15	0x04	3	124	140	4 tires that are 12 inches in diameter
+14	Alternative Energy	5	16	0x05	0	127	142	differential with a 4 to 1 gear ratio
+14	Alternative Energy	5	17	0x05	1	127	142	differential with a 3 to 1 gear ratio
+14	Alternative Energy	5	18	0x05	2	127	142	differential with a 3 to 1 gear ratio
+14	Alternative Energy	5	19	0x05	3	127	142	differential with a 2 to 1 gear ratio
+14	Alternative Energy	5	20	0x09	0	151	145	70-kilowatt electric motor
+14	Alternative Energy	5	21	0x09	1	150	144	80-kilowatt electric motor
+14	Alternative Energy	5	22	0x09	2	149	143	90-kilowatt electric motor
+14	Alternative Energy	5	23	0x09	3	146	142	100-kilowatt electric motor
+14	Alternative Energy	5	24	0x3a	0	121	140	fuel cells giving 70 kilowatts of power
+14	Alternative Energy	5	25	0x3a	1	120	140	fuel cells giving 80 kilowatts of power
+14	Alternative Energy	5	26	0x3a	2	119	139	fuel cells giving 90 kilowatts of power
+14	Alternative Energy	5	27	0x3a	3	118	138	fuel cells giving 100 kilowatts of power
+14	Alternative Energy	5	28	0x3b	0	124	147	fuel tank with hydrogen
+14	Alternative Energy	5	29	0x3b	0	124	147	fuel tank with hydrogen
+14	Alternative Energy	5	30	0x3b	0	124	147	fuel tank with hydrogen
+14	Alternative Energy	5	31	0x3b	0	124	147	fuel tank with hydrogen
+14	Alternative Energy	5	32	0x08	0	152	131	flat, vertical windshield
+14	Alternative Energy	5	33	0x08	1	147	131	flat, sloping windshield
+14	Alternative Energy	5	34	0x08	1	147	131	flat, sloping windshield
+14	Alternative Energy	5	35	0x08	2	145	132	curved, sloping windshield
+14	Alternative Energy	5	36	0x0b	0	0	0	red paint
+14	Alternative Energy	5	37	0x0b	1	0	0	green paint
+14	Alternative Energy	5	38	0x0b	2	0	0	yellow paint
+14	Alternative Energy	5	39	0x0b	3	0	0	blue paint
+14	Alternative Energy	5	40	0x0c	0	128	146	stripes decal
+14	Alternative Energy	5	41	0x0c	0	128	146	stars and stripes decal
+14	Alternative Energy	5	42	0x0c	0	128	146	wings decal
+14	Alternative Energy	5	43	0x0c	0	128	146	racing helmet decal

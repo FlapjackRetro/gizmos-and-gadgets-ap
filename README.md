@@ -12,6 +12,8 @@ An [Archipelago](https://github.com/ArchipelagoMW/Archipelago) randomizer for *S
 - `docs/DOSBOX_X_DEV.md`: DOSBox-X dev setup, debugger workflow and hook hunt list.
 - `tools/dbgaddr.py`: prints DOSBox-X breakpoint commands for a given load segment.
 - `tools/memdiff.py`: diffs MEMDUMPBIN dumps to find the variables an in-game action changes.
+- `tools/resources.py`: list/extract resources from `gizmo00x.dat`, decompressing with the game's own routine run in `tools/x86emu.py` (a minimal 8086 interpreter).
+- `tools/extract_parts.py`: every vehicle's part table → `data/parts_all.tsv`.
 - `tools/parts_table.py`: decodes a level's part table from a MEMDUMP.
 - `tools/part_names.py`: lists all part names from `gizmo000.dat` (output in `data/part_names.tsv`).
 - `tools/players_dat.py`: dump players/progress from a `PLAYERS.DAT`.
