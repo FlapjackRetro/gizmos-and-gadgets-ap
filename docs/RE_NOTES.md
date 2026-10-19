@@ -136,6 +136,10 @@ R02E0_0564:  ...
   0x5B7  inc word [bx+0x4596]       ; FILE OFFSET 0x45B7  (FF 87 96 45)
   0x5BB  inc word [0x5C0E]          ; FILE OFFSET 0x45BB  (FF 06 0E 5C)
 ```
+**Live-verified 2026-10-19** (Alt-Energy L1 race, won): `BP 0B03:0564` hit on entering the racetrack
+(`[4592]=2`, SI=0x0A = vehicle index); `BP 0B03:05A3` at the end of the race with `[455E]=0`, `[4560]=0`;
+`BP 0B03:05B7`: `[459A]` FFFF→0000 and `[5C0E]` 4→5; function returns 0x0C (→ state 12, results).
+
 Results screen = overlay **O0E36** (uses `1st -`/`2nd -`, adds score, checks `[bldg idx] >= 4` and `total == 15`
 for the ending; flag `[0xA0D4]`).
 
