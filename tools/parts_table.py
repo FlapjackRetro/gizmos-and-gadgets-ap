@@ -7,7 +7,7 @@ Usage:
   Then:             python parts_table.py MEMDUMP.TXT <dumpseg_hex> <tableseg_hex>:<tableoff_hex> [<count>]
   e.g.              python parts_table.py auto_L3.txt 5A5F 5C5F:0041
 
-Each entry is 0x8E bytes:  +0x08 group  +0x0A index-in-group  +0x1E/+0x26 performance stats (TBD)
+Each entry is 0x8E bytes:  +0x08 group (= vehicle slot)  +0x0A quality tier within the group (same tier = interchangeable copy)  +0x1E/+0x26 performance stats (TBD)
 +0x2E unknown (not the slot; the group at +0x08 identifies the slot)
 +0x82 far ptr -> blueprint icon (LPX image)   +0x86 far ptr -> name string   +0x8C part id
 The header (far ptr at DS:6638) holds the count at +2.
@@ -52,6 +52,7 @@ def main():
         w = lambda o: struct.unpack_from('<H', d, e + o)[0]
         n = lin(w(0x88), w(0x86))
         name = d[n:d.index(b'\0', n)].decode('latin-1') if 0 <= n < len(d) else '<outside dump>'
+        name = ' '.join(name.split())
         print(f'{w(0x8C)}\t{w(0x2E)}\t{w(0x08):#04x}\t{w(0x0A)}\t{w(0x1E)}\t{w(0x26)}\t{name}')
 
 
