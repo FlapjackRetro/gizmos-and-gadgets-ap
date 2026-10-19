@@ -257,7 +257,7 @@ auto-opened (fresh level).
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
 (fresh); with `459C[b]==1` it restores from block *b*.
 
-### 4.7 Race performance (ground races) [static, 2026-10-19 — model not yet live-validated]
+### 4.7 Race performance (ground races) [**validated live** on Alt-Energy L2, 2026-10-19]
 - **`O0E7A_044E(racer*, partlist*)`** computes a racer's stats from installed parts (list of part ids, −1 end).
   Called twice per race: player (list DS:6616 → racer DS:BAE8) and **Morty (list at `[6634]` = right after the
   part-table entries in the level's resource → racer DS:BAAE)**. Morty's build is fixed per level
@@ -270,13 +270,19 @@ Need to confirm: when entering building *b* with `459C[b]==0`, the game builds l
   D=0.6–1.2; 0x30 C+=.020–.035; pedal body 0x32 A−=1.2–0; gears 0x33 C+=.020–.035 & A−=1.0–0; 0x37 C+=.02–.08 & A−=body;
   0x06/0x39 and 0x07/0x38/0x3A record tiers used per-vehicle (electric: D = DS:3AA4[min]). **Brakes, fuel tanks,
   paint, decals: no effect.**
-- Per vehicle: v0 C=0.3; v1–4 C += D·E (power × gear ratio; v2/v4 also B=A); v11–14 C += D·E.
+- Per vehicle: v0 C=0.3; v1–4 C += D ÷ int(E) (power ÷ gear ratio; v2/v4 also B=A); v11–14 C += D ÷ int(E),
+  D = DS:3AA4[min(motor tier, battery tier)]. **`O0E80_0000` = signed 16.16 ÷ integer-part divide, rounded** (not a multiply).
+  int(E) means the 3½:1 and 3:1 differentials perform identically.
 - Racer struct: `+0x22` = **top speed = min(A,B)**, `+0x32` = accel (C), `+0x26`/`+0x36` = second-mode cap/accel.
   Per tick (`O0E7A_0034`): speed += accel up to cap; if above cap, −0.2.
-- Model in `tools/race_model.py`. Morty mostly uses tier-2 parts; max-tier builds beat his top speed on most
-  levels. Some levels (Auto L3/L4, Alt L4) come out equal → B-term/caps not fully modelled. Differential is a
-  trade-off (higher tier = lower ratio = less acceleration). **TBD**: validate vs live racer structs
-  (`D 16CA:BAE8` / `16CA:BAAE` during a race), second mode, track, and the flight engine `O0E7D` (Aircraft).
+- **Live validation** (`BP 0B03:05A3`, `D 16CA:BAAE` Morty / `D 16CA:BAE8` player): Morty top 5.2 / accel 0.140,
+  player (80-panel body, 12" tires, ball bearings, 50 kW battery, 60 kW motor, 3½:1 diff) top 5.8 / accel 0.145 —
+  model output identical. +0x26/+0x36 equal +0x22/+0x32 for both racers on this level.
+- Model in `tools/race_model.py`; per-level comparison in `data/morty_builds.tsv`. Morty mostly uses tier-2 parts;
+  max-tier builds beat his top speed on most levels; Auto L3/L4 and Alt L4 tie on top speed (B cap) — winning
+  there depends on acceleration. Differential is a trade-off (higher tier = lower ratio = less acceleration).
+  **TBD**: how the race sim turns (top, accel) into a win (track/second mode), and the flight engine `O0E7D`.
+- Part-name text: `\n` = forced line break, byte `0x1D` = the font's ½ glyph (only these two in part names).
 
 ## 5. Live session log (DOSBox-X 2026.10.01)
 
