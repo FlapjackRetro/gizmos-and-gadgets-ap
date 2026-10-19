@@ -203,7 +203,7 @@ at `02E0:04EE` with handlers at `02E0:04FA`:
 - `0x0BBA` Aircraft → `0434`: same with `[4598]` → `[4592]=1`
 - `0x0BBB` Alt-Energy → `0445`: same with `[459A]` → `[4592]=2`
 - all three then **`0463`: `[bp-6]=1`** → loop exits, returns `[bp-2]` (0) → state 0 (enter building).
-**Level-picker hook point: `02E0:0463`** (file offset `0x1200+0x2E00+0x463 = 0x4263`). The "finished building"
+**Level-picker hook point: `02E0:0463`** (file offset `0x1200+0x2E00+0x463 = 0x4463`). The "finished building"
 refusal (`cmp [4596+2b],4 / jz 046A`) must be removed for AP.
 
 ### 4.5 Level generation / entering a building — TBD
