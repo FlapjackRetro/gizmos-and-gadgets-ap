@@ -208,7 +208,24 @@ at `02E0:04EE` with handlers at `02E0:04FA`:
 **Level-picker hook point: `02E0:0463`** (file offset `0x1200+0x2E00+0x463 = 0x4463`). The "finished building"
 refusal (`cmp [4596+2b],4 / jz 046A`) must be removed for AP.
 
-### 4.5 Level generation / entering a building — TBD
+### 4.5 Dialogs & UI text [static, 2026-10-19]
+- **Hint boxes**: type-`H` resources (`FF 06 <dev comment> FF <text>`), shown by `O0E3D_0037(id,0,0,0)`
+  (e.g. 0x104A "collected a part you need", 0x1044 decoration, 0x1047 already have 2 of that type, 0x1050 all parts).
+- **Dialog resources**: type-`01` containers = `u16` offset table + tagged elements: `S 00 <text> NUL`,
+  `I 00 <u16>` (button style?), `M`, `T`, `G`, `C`, `L`, `H`. Examples: 0x1064 Save & Exit, 0x1065 Sound,
+  0x1066 Hints, 0x1067 Chimps (2 buttons), 0x106B Return to Technology Center, 0x106E building finished,
+  0x1070 rank-up congratulations. **Blueprint layouts** 0x002C–0x0030 (Automotive L1–5), 0x00FB–0x00FF
+  (Aircraft), 0x0269–0x026D (Alt-Energy) hold the vehicle title and **slot labels** (Body, Tires, …).
+- **Dialog runner `O0E83_08EE(struct by value, 0x32 bytes)`** → core `O0E83_0655(1,1)`; returns button index / −1.
+  Struct (as built for the chimps dialog at `O0E83_0C5E`): `+0x04` far ptr body text, `+0x0C` **button count**,
+  `+0x0E` far ptr → array of far label ptrs (DS:3E2C → "With Chimps"/"Without Chimps"), `+0x12` far ptr →
+  hotkey array (DS:3E16: y n c d o, PgDn/PgUp scan codes 0x151/0x149), `+0x1A..+0x20` −1 (auto layout?).
+  Default box 260×120 at (19,14) (`O0E83_0907`). Button label pool at DS:3E39.. (to Go Back, Yes, Cancel, Done,
+  See Next Page, Go Back a Page, With/Without Chimps).
+- `O0E83_0907` = paged text viewer (See Next Page / Go Back a Page / Done) — a ready-made pager pattern.
+- No existing dialog uses > 2 buttons; max button count/layout of `O0E83_0655` not yet analysed.
+
+### 4.6 Level generation / entering a building — TBD
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
 (fresh); with `459C[b]==1` it restores from block *b*.
 
