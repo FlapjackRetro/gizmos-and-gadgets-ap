@@ -59,8 +59,8 @@ locations reachable, and a building is stuck until its race is won. So:
   - `open_world` — all 15 levels selectable from the start; no level-unlock items in the pool.
   - `progressive` — `Progressive <Building> Level` items unlock levels (vanilla-like, but decoupled from race wins).
 - Mechanics already known (RE_NOTES §3–4):
-  - Selecting level *L* of building *b* = set `DS:4590` (rec+0x2E, vehicle index) to `b*5 + L-1` and
-    `DS:4596[b]` (last race won idx) to `L-2`, before the building loads; the part table then comes from
+  - Selecting level *L* of building *b*: the enter-building routine `R02E0_0820` (state 3) derives level and vehicle
+    from `DS:4596[b]` alone, so set it to `L-2` (or patch `0x83D` to read a picker variable) before state 3 runs; the part table then comes from
     resource `0x2F5 + vehicle`.
   - The save record holds **one warehouse snapshot per building** (block at rec+0x27E+b*0x6BA, flag `459C[b]`).
     Revisiting a different level of the same building means swapping that block: store the other levels'
