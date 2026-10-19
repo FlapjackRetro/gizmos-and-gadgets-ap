@@ -3,11 +3,12 @@
 
 Usage:
   In the debugger:  D <DS>:6638      -> bytes 0-3 = far ptr to header, 4-7 = far ptr to table
-                    MEMDUMP <tableseg>:0000 FFFF
-  Then:             python parts_table.py MEMDUMP.TXT <tableseg_hex> <table_off_hex> [<count>]
+                    MEMDUMP <tableseg-0200>:0000 FFFF   (names/icons may sit below or above the table)
+  Then:             python parts_table.py MEMDUMP.TXT <dumpseg_hex> <tableseg_hex>:<tableoff_hex> [<count>]
+  e.g.              python parts_table.py auto_L3.txt 5A5F 5C5F:0041
 
 Each entry is 0x8E bytes:  +0x08 group  +0x0A index-in-group  +0x1E/+0x26 performance stats (TBD)
-+0x2E slot (0 paint, 1 wheels, 2 brakes, 3 gears, 4 body, 5 decal in Alt-Energy L1)
++0x2E unknown (not the slot; the group at +0x08 identifies the slot)
 +0x82 far ptr -> blueprint icon (LPX image)   +0x86 far ptr -> name string   +0x8C part id
 The header (far ptr at DS:6638) holds the count at +2.
 """
@@ -34,16 +35,23 @@ def load(path):
 
 
 def main():
-    path, seg, off = sys.argv[1], int(sys.argv[2], 16), int(sys.argv[3], 16)
+    path, seg = sys.argv[1], int(sys.argv[2], 16)
+    if ':' in sys.argv[3]:
+        tseg, toff = (int(x, 16) for x in sys.argv[3].split(':'))
+    else:                                    # old form: table offset within the dump segment
+        tseg, toff = seg, int(sys.argv[3], 16)
     d = load(path)
-    count = int(sys.argv[4]) if len(sys.argv) > 4 else 24
     lin = lambda s, o: (s - seg) * 16 + o
-    print('id\tslot\tgroup\tidx\tstat1E\tstat26\tname')
+    off = lin(tseg, toff)
+    count = int(sys.argv[4]) if len(sys.argv) > 4 else None
+    if count is None:                        # header usually sits at tableseg:0004, count at +2
+        count = struct.unpack_from('<H', d, lin(tseg, 0x0006))[0]
+    print('id\tf2e\tgroup\tidx\tstat1E\tstat26\tname')
     for k in range(count):
         e = off + 0x8E * k
         w = lambda o: struct.unpack_from('<H', d, e + o)[0]
         n = lin(w(0x88), w(0x86))
-        name = d[n:d.index(b'\0', n)].decode('latin-1')
+        name = d[n:d.index(b'\0', n)].decode('latin-1') if 0 <= n < len(d) else '<outside dump>'
         print(f'{w(0x8C)}\t{w(0x2E)}\t{w(0x08):#04x}\t{w(0x0A)}\t{w(0x1E)}\t{w(0x26)}\t{name}')
 
 
