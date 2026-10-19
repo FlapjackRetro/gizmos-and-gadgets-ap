@@ -2,7 +2,8 @@
 """Ground-race vehicle stats model (reimplementation of O0E7A_044E) + Morty's builds per level.
 
 Usage: python race_model.py GAMEDIR            -> data/morty_builds.tsv style output
-Status: transcribed from disassembly; NOT yet validated against live values (see RE_NOTES §4.7).
+Status: validated live on Alt-Energy L2 (player + Morty top speed and accel exact, 2026-10-19); other
+vehicles transcribed from the same code but not individually checked (see RE_NOTES §4.7).
 Aircraft (vehicles 5-9) use the flight engine O0E7D, not modelled here.
 """
 import os
@@ -23,6 +24,14 @@ class Tables:
 
     def t(self, off, tier):
         return struct.unpack_from('<i', self.img, DGROUP * 16 + off + 4 * tier)[0] / 65536
+
+
+def fdiv(a, b):
+    """O0E80_0000: 16.16 value divided by the integer part of b, rounded (signed)."""
+    q = int(b)
+    if q == 0:
+        return 0.0
+    return round(a * 65536 / q) / 65536
 
 
 def vehicle_stats(T, v, parts):
@@ -63,11 +72,11 @@ def vehicle_stats(T, v, parts):
     elif v in (1, 2, 3, 4):
         if v in (2, 4):
             B = A
-        C += D * E
+        C += fdiv(D, E)
     elif v >= 11:
         D = T.t(0x3AA4, min(F, di))
         if E:
-            C += D * E
+            C += fdiv(D, E)
     return min(A, B), C
 
 

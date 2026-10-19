@@ -16,6 +16,16 @@ sys.path.insert(0, os.path.dirname(__file__))
 from resources import Archives  # noqa: E402
 
 COSMETIC = {0x0B, 0x0C}   # paint, decals: no performance value -> AP filler
+GLYPHS = {0x1D: '½'}   # game font: 0x1D = one-half
+
+
+def game_text(raw):
+    """Decode a game string: NUL-terminated, \\n = forced line break, 0x1D = 1/2 glyph."""
+    raw = raw.split(b'\0')[0]
+    s = ''.join(GLYPHS.get(b, chr(b)) for b in raw)
+    return ' '.join(s.split()).replace(' ½', '½')
+
+
 BUILDINGS = ['Automotive', 'Aircraft', 'Alternative Energy']
 
 
@@ -31,7 +41,7 @@ def tables(a):
             nt, name = a.get(w(0x16))
             rows.append(dict(id=k, group=w(0x08), tier=w(0x0A), name_res=w(0x16),
                              stat1e=w(0x1E), stat26=w(0x26),
-                             name=' '.join(name.split(b'\0')[0].decode('latin-1').split())))
+                             name=game_text(name)))
         yield v, struct.unpack_from('<4H', d, 0), rows
 
 

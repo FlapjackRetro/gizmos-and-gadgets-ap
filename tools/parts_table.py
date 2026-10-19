@@ -22,7 +22,7 @@ def load(path):
     if raw[:4].decode('latin-1', 'replace').count(':') or b':' in raw[:10]:
         out = bytearray(0x10000)
         hi = 0
-        for line in raw.decode('latin-1').splitlines():
+        for line in raw.decode('cp437').splitlines():
             m = re.match(r'([0-9A-F]{4}):([0-9A-F]{4,8})\s+(.*)', line.strip())
             if not m:
                 continue
@@ -51,7 +51,7 @@ def main():
         e = off + 0x8E * k
         w = lambda o: struct.unpack_from('<H', d, e + o)[0]
         n = lin(w(0x88), w(0x86))
-        name = d[n:d.index(b'\0', n)].decode('latin-1') if 0 <= n < len(d) else '<outside dump>'
+        name = d[n:d.index(b'\0', n)].decode('cp437') if 0 <= n < len(d) else '<outside dump>'
         name = ' '.join(name.split())
         print(f'{w(0x8C)}\t{w(0x2E)}\t{w(0x08):#04x}\t{w(0x0A)}\t{w(0x1E)}\t{w(0x26)}\t{name}')
 
