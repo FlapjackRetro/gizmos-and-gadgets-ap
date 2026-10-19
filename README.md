@@ -26,6 +26,11 @@ the patches; each one verifies the original bytes first.
 - `tools/parts_table.py`: decodes a level's part table from a MEMDUMP.
 - `tools/part_names.py`: lists all part names from `gizmo000.dat` (output in `data/part_names.tsv`).
 - `tools/players_dat.py`: dump players/progress from a `PLAYERS.DAT`.
+- `tools/lpx.py` / `tools/title_logo.py`: LPX sprite codec; builds `GIZMOAP1.DAT` with the Archipelago logo on the title screen.
+- `tools/warehouse.py`: static box/door counts per level → `data/warehouse_counts.tsv`.
 - `tools/disasm.py`: symbolized disassembly of `ssg.exe`, including VROOMM overlays (needs `ndisasm`).
 
 Bring your own copy of the game; no game files are included in this repository.
+
+## Third-party assets
+The Archipelago logo in `assets/` (and the generated `GIZMOAP1.DAT`) is © the Archipelago project: the original logo is MIT, the newer logos are derivative works under CC BY-NC 4.0 (version assumed). See [`assets/LICENSE.md`](assets/LICENSE.md).
