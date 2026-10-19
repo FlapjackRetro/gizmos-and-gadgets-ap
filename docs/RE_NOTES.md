@@ -346,6 +346,10 @@ Text `MEMDUMP` of DS:0000–FFFF. a = before box 1; b = after box 1; c = from a:
   during play (snapshotted on save).
 - Next: `BPM` on 0964 / A028 / 47AE to land in the writers.
 
+### 2026-10-19 — first patched build (`SSG_AP.EXE`)
+`race_no_advance` confirmed: after winning Aircraft L3 and returning to the Technology Center, re-entering Aircraft
+started L3 again from the beginning (fresh level), as predicted (race win clears `459C[b]`, level stays `4596[b]+2`).
+
 ## 6. Next step: dynamic analysis checklist (DOSBox-X debugger build)
 1. ~~Building→category mapping~~ (done, §5). Confirm race-win path with `BP <load+02E0>:05B7`.
 2. In a warehouse, find the live 07/09 array (search memory for the block's 40-byte pattern) → `bpm` it,
