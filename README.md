@@ -33,4 +33,4 @@ the patches; each one verifies the original bytes first.
 Bring your own copy of the game; no game files are included in this repository.
 
 ## Third-party assets
-The Archipelago logo in `assets/` (and the generated `GIZMOAP1.DAT`) is © the Archipelago project: the original logo is MIT, the newer logos are derivative works under CC BY-NC 4.0 (version assumed). See [`assets/LICENSE.md`](assets/LICENSE.md).
+The Archipelago logo in `assets/` (and the generated `GIZMOAP1.DAT`) is © the Archipelago project: the original logo is MIT, the newer logos are derivative works under CC BY-NC 4.0 (version assumed). See [`COPYING.md`](COPYING.md).

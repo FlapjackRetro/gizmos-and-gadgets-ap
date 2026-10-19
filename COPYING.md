@@ -1,6 +1,6 @@
 # Third-party assets
 
-## `archipelago_logo.png` — Archipelago logo
+## `assets/archipelago_logo.png` — Archipelago logo
 - Source: the Archipelago landing-page logo (https://archipelago.gg/static/static/branding/landing-logo.png),
   by the Archipelago project (https://github.com/ArchipelagoMW/Archipelago).
 - License: the original Archipelago logo is available under the **MIT** license. The newer logos, including this
