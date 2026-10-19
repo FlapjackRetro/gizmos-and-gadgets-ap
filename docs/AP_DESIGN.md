@@ -39,7 +39,7 @@ rewriting game code**:
 1. **Decouple race wins from advancement**: NOP `inc word [bx+0x4596]` at file `0x45B7` (4 bytes →
    `90 90 90 90`). Winning just sends a check; `DS:5C0E` still counts wins (or NOP `0x45BB` too and let
    the client own the counter for the goal).
-2. **Client-managed level selection** (per building, only while the player is in the Technology Center hub):
+2. **Level selection** (see *Level select & "open world"* below; originally planned as a client command):
    - The client keeps a snapshot of each building block for every (building, level) the player has
      visited — 15 slots, 0x6BA bytes each.
    - To switch building *B* to level *L*: save the current block *B* to its slot, write
@@ -48,6 +48,26 @@ rewriting game code**:
    - UI: client command `/level automotive 3`, or later an in-game patch (e.g. hijack a menu item).
 3. Alternative if (2) proves fragile: patch the building-entry code to show a level picker. More work,
    since that code is likely in an overlay.
+
+## Level select & "open world" (planned)
+Vanilla allows **one active level per building** (3 at a time), which would starve early spheres: few
+locations reachable, and a building is stuck until its race is won. So:
+
+- **Level-select dialog** inserted on the building select screen: after the player clicks a building, a dialog
+  asks which of its 5 levels to load (only unlocked levels selectable). This replaces the client-command idea above.
+- **YAML option `level_access`:**
+  - `open_world` — all 15 levels selectable from the start; no level-unlock items in the pool.
+  - `progressive` — `Progressive <Building> Level` items unlock levels (vanilla-like, but decoupled from race wins).
+- Mechanics already known (RE_NOTES §3–4):
+  - Selecting level *L* of building *b* = set `DS:4590` (rec+0x2E, vehicle index) to `b*5 + L-1` and
+    `DS:4596[b]` (last race won idx) to `L-2`, before the building loads; the part table then comes from
+    resource `0x2F5 + vehicle`.
+  - The save record holds **one warehouse snapshot per building** (block at rec+0x27E+b*0x6BA, flag `459C[b]`).
+    Revisiting a different level of the same building means swapping that block: store the other levels'
+    snapshots outside the record (client side, or an extra file), restore on select; flag 0 → fresh level.
+  - Race win must no longer advance the building (`inc [bx+4596]` at file 0x45B7 → NOP).
+- TBD: the code that handles the building click (writes `DS:4592`) — catch it with `BPM 16CA:4592` + CS:IP — and
+  the game's dialog/menu routine (message boxes go through `O0E3D_0037`) to build the picker from.
 
 ## Client architecture
 - Python AP client (CommonClient-based) + a DOSBox memory interface:
