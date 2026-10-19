@@ -68,7 +68,14 @@ locations reachable, and a building is stuck until its race is won. So:
   - Race win must no longer advance the building (`inc [bx+4596]` at file 0x45B7 → NOP).
 - Building click handler found: `R02E0_0148` (state 2); picker hooks in at `02E0:0463` after `[4592]` is set,
   and the vanilla "building finished" refusal (`[4596+2b]==4`) must be removed (RE_NOTES §4.4).
-- TBD: the game's dialog/menu routine (message boxes go through `O0E3D_0037`) to build the picker from.
+- **Picker UI decision: pager** (2026-10-19). One dialog per building showing "Level N of 5" + the vehicle
+  title (from the blueprint layout resource for that vehicle), with Previous / Next / Enter / Cancel.
+  Built on the game's dialog runner `O0E83_08EE` (RE_NOTES §4.5), modelled on the help-page pager
+  `O0E83_0907`. Existing dialogs show ≤ 2 buttons, so the safe first version is **[Next] [Enter]** buttons +
+  **PgUp/PgDn** hotkeys (already in the hotkey table) for previous/next and **Esc** to cancel; a 4-button row is
+  a stretch goal pending analysis of the layout core `O0E83_0655`. Locked levels (progressive mode) are skipped
+  or shown greyed with a "locked" line.
+- Dialog system mapped (RE_NOTES §4.5); next: how `O0E83_0655` lays out buttons, and injecting the picker call at `02E0:0463`.
 
 ## Client architecture
 - Python AP client (CommonClient-based) + a DOSBox memory interface:
