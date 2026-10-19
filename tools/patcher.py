@@ -9,7 +9,6 @@ File offset = 0x1200 (MZ header) + segment*16 + offset for resident code (see do
 """
 import argparse
 import os
-import sys
 
 # name: (description, [(file_offset, original_bytes_hex, new_bytes_hex), ...])
 PATCHES = {
