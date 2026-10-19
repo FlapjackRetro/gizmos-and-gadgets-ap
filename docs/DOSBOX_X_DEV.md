@@ -57,5 +57,6 @@ If nothing relevant changes in DGROUP, the state is in far heap memory: dump a w
 | 2 | Confirm race-win path | `BP <race>:05B7`, win any race |
 | 3 | ~~Door / puzzle solved~~ **done**: `R02E0_0A24` sets door state 7→9 | `BP <load+02E0>:0A24` |
 | 4 | ~~Part box opened~~ **done**: `R08F5_0002`; grant = `R0834_08D7(0, part)` | `BP <load+08F5>:0002` |
+| 5a | ~~Building click handler~~ **done**: `R02E0_0148`, hook `02E0:0463` | `BP <load+02E0>:0463` |
 | 5 | Level generation vs restore on building entry | `BPM DS:459C` (+2b), enter/exit a building |
 | 6 | Parts inventory layout (rec+0x40..0x27D) | dump diff `--base 0x4562` on record-only dumps while collecting parts |
