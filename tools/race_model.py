@@ -22,62 +22,77 @@ class Tables:
         hdr = struct.unpack_from('<H', exe, 8)[0] * 16
         self.img = exe[hdr:]
 
+    def raw(self, off, tier):
+        return struct.unpack_from('<i', self.img, DGROUP * 16 + off + 4 * tier)[0]
+
     def t(self, off, tier):
-        return struct.unpack_from('<i', self.img, DGROUP * 16 + off + 4 * tier)[0] / 65536
+        return self.raw(off, tier) / 65536
 
 
 def fdiv(a, b):
-    """O0E80_0000: 16.16 value divided by the integer part of b, rounded (signed)."""
-    q = int(b)
+    """O0E80_0000: signed 16.16 `a` divided by the integer part of 16.16 `b`, rounded."""
+    q = b >> 16
     if q == 0:
-        return 0.0
-    return round(a * 65536 / q) / 65536
+        return 0
+    neg = (a < 0) ^ (q < 0)
+    a, q = abs(a), abs(q)
+    r = a // q
+    if a % q > (q + 1) // 2 - 1:     # (q>>1 + carry) - 1 < remainder -> round up
+        r += 1
+    return -r if neg else r
 
 
-def vehicle_stats(T, v, parts):
-    """parts: iterable of (group, tier). Returns (top_speed, accel) = (+0x22, +0x32) of the racer struct."""
-    A = B = T.t(0x3B34, v)
-    C = D = E = 0.0
+def vehicle_stats_raw(T, v, parts):
+    """Exact 16.16 stats: (capA = +0x26 = A, capB = +0x22 = min(A,B), accel = +0x32 = +0x36 = C)."""
+    t = T.raw
+    A = B = t(0x3B34, v)
+    C = D = E = 0
     F = di = 0
-    for g, t in parts:
+    for g, k in parts:
         if g == 0x37:
-            C += T.t(0x3A74, t); A -= T.t(0x3A64, t)
+            C += t(0x3A74, k); A -= t(0x3A64, k)
         elif g == 0x00:
-            A -= T.t(0x3A64, t)
+            A -= t(0x3A64, k)
         elif g in (0x01, 0x35):
-            A -= T.t(0x3A84, t)
+            A -= t(0x3A84, k)
         elif g == 0x03:
-            B = T.t(0x3A54, t)
+            B = t(0x3A54, k)
         elif g in (0x04, 0x34):
-            C += T.t(0x3AC4, t)
+            C += t(0x3AC4, k)
         elif g == 0x05:
-            E = T.t(0x3AD4, t)
+            E = t(0x3AD4, k)
         elif g in (0x06, 0x39):
-            F = t
+            F = k
         elif g in (0x07, 0x38, 0x3A):
-            di = t
+            di = k
         elif g == 0x08:
-            A -= T.t(0x3AE4, t)
+            A -= t(0x3AE4, k)
         elif g == 0x09:
-            A -= T.t(0x3AB4, t); D = T.t(0x3A94, t)
+            A -= t(0x3AB4, k); D = t(0x3A94, k)
         elif g == 0x30:
-            C += T.t(0x3AF4, t)
+            C += t(0x3AF4, k)
         elif g == 0x32:
-            A -= T.t(0x3B04, t)
+            A -= t(0x3B04, k)
         elif g == 0x33:
-            C += T.t(0x3B14, t); A -= T.t(0x3B24, t)
-        # everything else (brakes 0x02/0x31, fuel tank 0x0A/0x3B, paint 0x0B, decal 0x0C): no effect
+            C += t(0x3B14, k); A -= t(0x3B24, k)
+        # everything else (brakes 0x02/0x31/0x36, fuel tank 0x0A/0x3B, paint 0x0B, decal 0x0C): no effect
     if v == 0:
-        C = 0.3
+        C = 0x4CCD
     elif v in (1, 2, 3, 4):
         if v in (2, 4):
             B = A
         C += fdiv(D, E)
     elif v >= 11:
-        D = T.t(0x3AA4, min(F, di))
+        D = t(0x3AA4, min(F, di))
         if E:
             C += fdiv(D, E)
-    return min(A, B), C
+    return A, min(A, B), C
+
+
+def vehicle_stats(T, v, parts):
+    """Float convenience: (top speed = min(A,B), accel)."""
+    A, top, C = vehicle_stats_raw(T, v, parts)
+    return top / 65536, C / 65536
 
 
 def level_table(a, v):
