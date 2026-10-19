@@ -4,6 +4,9 @@ container 0x1028 element 2 ("A Super Solvers Science Adventure", 124x26 at x=99,
 screen edge and the bottom, with the Archipelago logo drawn in the bottom-right corner. No code changes besides
 pointing ssg.exe at the new archive (patcher.py 'title_logo').
 
+Logo: assets/archipelago_logo.png, (c) the Archipelago project, CC BY-NC (derivative of the MIT original); see
+assets/LICENSE.md. The generated GIZMOAP1.DAT contains it, so it is non-commercial too.
+
 Usage: python title_logo.py GAMEDIR LOGO.png [OUTDIR] [--preview out.png]
 Colours: letters use index 15 (white, fixed), shading the grey ramp 242..250 and the outline 241 - the same
 indices as the GIZMOS & GADGETS logo, so it fades in with it (palette 0x1004 blanks 241..250, 0x1000 shows them).
