@@ -85,7 +85,7 @@ save/exit. The block is a snapshot; the rec header fields (§ table) are live.
 ### 3.3 Part tables [confirmed live, 2026-10-19]
 - `DS:6638` far ptr → level parts header (`+2` = part count); `DS:663C` far ptr → part table.
   Loaded **per level** (Alt-Energy L1: 24 parts at `5F96:0039`, header `5F96:0004`).
-- Entry = 0x8E bytes: `+0x08` group, `+0x0A` index in group, `+0x1E`/`+0x26` performance stats (TBD),
+- Entry = 0x8E bytes: `+0x08` group (= vehicle slot), `+0x0A` **quality tier** within the group (0 = basic; parts sharing a tier are interchangeable copies; single-tier groups such as brakes/fuel tank/decals are required-or-cosmetic), `+0x1E`/`+0x26` performance stats (TBD),
   `+0x2E` unknown (not the slot — group `+0x08` identifies the slot), `+0x36` flags (0x4000/0x8000 tested by pickup/race code), `+0x82` far ptr → blueprint
   icon (`LPX\x1a` image), `+0x86` far ptr → name, `+0x8C` part id (0-based, level-local).
 - Alt-Energy L1 = 6 slots × 4: paint(0) wheels(1) brakes(2, all four identical) gears(3) body(4) decal(5).
@@ -96,6 +96,7 @@ save/exit. The block is a snapshot; the rec header fields (§ table) are live.
   - 58665–59036 decals (shared); paints at 49955
   - 125909 Aircraft blimp · 132765 glider · 141595 propeller plane · 148911 jet · 156971 helicopter
   - 244963 Alt-Energy pedal racer (L1) · 258007 solar / batteries / electric / fuel cell · 274631 electric
+  Decoded: `data/parts_automotive_L3.tsv`, `data/parts_aircraft_L3.tsv` (dumped from `5A5F`, table `5C5F:0041`).
   Automotive L3 and Aircraft L3: 40 parts each (10 groups × 4); header at tableseg:0004 = {?, count, groups, needed?}.
   Aircraft groups 0x16–0x1D + paint 0x0B + decal 0x0C. Names/icons are allocated in other segments (may be
   below the table) — dump from `tableseg-0x200`.

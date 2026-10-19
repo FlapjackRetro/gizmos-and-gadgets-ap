@@ -1,0 +1,41 @@
+id	f2e	group	idx	stat1E	stat26	name
+0	15	0x18	0	133	134	open cockpit
+1	15	0x18	1	133	134	enclosed cockpit with sharp angle to tail
+2	15	0x18	2	133	134	enclosed cockpit with medium angle to tail
+3	15	0x18	3	133	134	enclosed cockpit with slight angle to tail
+4	20	0x16	0	211	130	propeller with 2 blades
+5	20	0x16	1	210	132	propeller with 3 blades
+6	20	0x16	2	210	132	propeller with 3 blades and a spinner
+7	20	0x16	3	210	131	propeller with 3 controllable blades and a spinner
+8	0	0x17	0	186	139	round engine
+9	0	0x17	1	187	139	flat engine
+10	0	0x17	2	184	139	flat engine with fuel injection
+11	0	0x17	3	178	139	flat engine with a turbocharger
+12	20	0x19	0	109	127	tail section with sharp angle
+13	20	0x19	1	100	128	tail section with sharp curve
+14	20	0x19	2	100	128	tail section with medium curve
+15	20	0x19	3	100	128	tail section with gradual curve
+16	20	0x1a	0	147	127	straight, constant wing
+17	20	0x1a	1	147	127	partially tapered wing
+18	20	0x1a	2	147	127	fully tapered wing
+19	20	0x1a	3	154	127	elliptical wing
+20	25	0x1b	0	158	130	flaps that rotate only
+21	25	0x1b	1	158	130	flaps split from the bottom of the wing
+22	25	0x1b	2	158	130	flaps that makes a slot
+23	25	0x1b	3	158	130	fowler flaps
+24	5	0x1c	0	185	137	compass
+25	5	0x1c	1	177	137	compass plus a map
+26	5	0x1c	2	181	137	automatic direction finding, ADF radio
+27	5	0x1c	3	181	137	global positioning system, GPS radio
+28	10	0x1d	0	171	129	three main wheels
+29	10	0x1d	1	116	129	two main wheels and one small wheel at tail
+30	10	0x1d	2	170	129	wheels with wheel pants
+31	10	0x1d	3	171	129	retractable landing gear
+32	0	0x0b	0	0	0	red paint
+33	0	0x0b	1	0	0	green paint
+34	0	0x0b	2	0	0	yellow paint
+35	0	0x0b	3	0	0	blue paint
+36	16	0x0c	0	143	143	electric eel decal
+37	16	0x0c	0	149	142	comet decal
+38	16	0x0c	0	145	144	lightning bolt decal
+39	16	0x0c	0	142	144	pinstripe decal

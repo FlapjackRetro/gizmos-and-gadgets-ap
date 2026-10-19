@@ -1,0 +1,41 @@
+id	f2e	group	idx	stat1E	stat26	name
+0	5	0x00	0	117	134	wooden body shaped like a box
+1	5	0x00	1	117	134	wooden body with a short slope
+2	5	0x00	2	117	134	wooden body with a long slope
+3	5	0x00	3	117	134	fiberglass body shaped like a rocket
+4	9	0x01	0	124	148	4 wheels with metal bushings
+5	9	0x01	1	124	148	4 wheels with self-lubricating bushings
+6	9	0x01	1	124	148	4 wheels with self-lubricating bushings
+7	9	0x01	2	124	148	4 wheels with ball bearings
+8	0	0x04	0	127	142	4 tires that are 9 inches in diameter
+9	0	0x04	1	126	142	4 tires that are 10 inches in diameter
+10	0	0x04	2	125	141	4 tires that are 11 inches in diameter
+11	0	0x04	3	124	140	4 tires that are 12 inches in diameter
+12	3	0x05	0	127	142	differential with a 4 to 1 gear ratio
+13	3	0x05	1	127	142	differential with a 3 to 1 gear ratio
+14	3	0x05	2	126	142	differential with a 3 to 1 gear ratio
+15	3	0x05	3	126	142	differential with a 2 to 1 gear ratio
+16	3	0x0a	0	117	135	fuel tank with gasoline
+17	3	0x0a	0	117	135	fuel tank with gasoline
+18	3	0x0a	0	117	135	fuel tank with gasoline
+19	3	0x0a	0	117	135	fuel tank with gasoline
+20	4	0x09	0	151	143	65-horsepower engine
+21	4	0x09	1	151	141	70-horsepower engine
+22	4	0x09	2	151	141	75-horsepower engine
+23	4	0x09	3	151	141	80-horsepower engine
+24	6	0x08	0	152	131	flat, vertical windshield
+25	6	0x08	1	147	131	flat, sloping windshield
+26	6	0x08	1	147	131	flat, sloping windshield
+27	6	0x08	2	145	132	curved, sloping windshield
+28	2	0x02	0	129	144	brakes
+29	2	0x02	0	129	144	brakes
+30	2	0x02	0	129	144	brakes
+31	2	0x02	0	129	144	brakes
+32	0	0x0b	0	0	0	red paint
+33	0	0x0b	1	0	0	green paint
+34	0	0x0b	2	0	0	yellow paint
+35	0	0x0b	3	0	0	blue paint
+36	6	0x0c	0	128	146	shark decal
+37	6	0x0c	0	128	146	falcon decal
+38	6	0x0c	0	128	146	thunderbird decal
+39	6	0x0c	0	128	146	racing bee decal
