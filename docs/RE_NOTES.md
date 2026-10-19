@@ -376,3 +376,11 @@ in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writ
 - Archive names: DS string table, "gizmo001.dat" at file 0x101EE. Patch `title_logo` points it at GIZMOAP1.DAT,
   built by `tools/title_logo.py` (element 2 widened to 221x62 with the Archipelago logo bottom-right). Verified live
   in DOSBox-X 2026-10-19.
+
+## 4.11 Warehouse layout (static) — boxes and doors
+See `tools/warehouse.py` (docstring has the formats) and `data/warehouse_counts.tsv`. Level setup `R0622_0085`
+loads the room layout `DS:09E8[v]` and per-room box counts `0x350+v`; both are fixed per level (levels 2/3 and 4/5
+of a building share a room layout, with different box counts). Box contents: `R053F_01B6` shuffles 0..total-1 and
+maps values >= part count to 1000 (empty), so every part is in exactly one box. Doors: 32-byte room objects,
+state 7 locked / 9 open, listed once per side. Totals: **622 boxes (532 parts + 90 empty), 653 puzzle doors**,
+plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door, all 16x20).
