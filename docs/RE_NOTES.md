@@ -374,4 +374,5 @@ in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writ
 - Resource loader `R04FF_000D`: reads offsets[i], offsets[i+1] (relative to file+4), type, flag; flag 0 = read
   (next - this) bytes raw into the 64 KB scratch buffer, else `R0B48_02AA`. So resources can be replaced uncompressed.
 - Archive names: DS string table, "gizmo001.dat" at file 0x101EE. Patch `title_logo` points it at GIZMOAP1.DAT,
-  built by `tools/title_logo.py` (element 2 widened to 221x62 with the Archipelago logo bottom-right).
+  built by `tools/title_logo.py` (element 2 widened to 221x62 with the Archipelago logo bottom-right). Verified live
+  in DOSBox-X 2026-10-19.
