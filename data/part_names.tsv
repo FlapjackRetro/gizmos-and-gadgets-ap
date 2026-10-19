@@ -1,0 +1,246 @@
+offset	name
+49955	red paint
+49967	blue paint
+49980	green paint
+49994	yellow paint
+50009	4 tires that are 9 inches in diameter
+50049	4 tires that are 10 inches in diameter
+50090	4 tires that are 11 inches in diameter
+50131	4 tires that are 12 inches in diameter
+50172	4 tires that are 2 inches wide
+50205	4 tires that are 3 inches wide
+50238	4 tires that are 4 inches wide
+50271	4 tires that are 5 inches wide
+50304	brakes
+50313	4 wheels with metal bushings
+50344	4 wheels with self-lubricating bushings
+50386	4 wheels with ball bearings
+50416	wooden body shaped like a box
+50448	wooden body with a short slope
+50482	wooden body with a long slope
+50514	fiberglass body shaped like a rocket
+50553	differential with a 4 to 1 gear ratio
+50635	differential with a 3 to 1 gear ratio
+50675	differential with a 2 to 1 gear ratio
+50715	fuel tank with gasoline
+50741	fuel tank with gasoline
+50767	45-horsepower engine
+50790	50-horsepower engine
+50813	55-horsepower engine
+50836	60-horsepower engine
+50859	65-horsepower engine
+50882	70-horsepower engine
+50905	75-horsepower engine
+50928	80-horsepower engine
+50951	90-horsepower engine
+50974	100-horsepower engine
+50998	110-horsepower engine
+51022	120-horsepower engine
+51046	150-horsepower engine
+51070	160-horsepower engine
+51094	170-horsepower engine
+51118	180-horsepower engine
+51142	flat, vertical windshield
+51170	flat, sloping windshield
+51197	curved, sloping windshield
+58665	dragon decal
+58680	tornado decal
+58696	roadrunner decal
+58715	pinstripe decal
+58733	racing butterfly decal
+58758	flames decal
+58773	cheetah decal
+58789	cobra decal
+58803	rainbow decal
+58819	shark decal
+58833	falcon decal
+58848	thunderbird decal
+58868	racing bee decal
+58887	lightning bolt decal
+58910	comet decal
+58924	eyes decal
+58937	electric eel decal
+58958	stripes decal
+58974	stars and stripes decal
+59000	wings decal
+59014	racing helmet decal
+59036	pinstripe decal
+125909	fat envelope
+125924	medium thickness envelope
+125952	narrow envelope
+125970	rectangular gondola, hung on wires
+126007	rectangular gondola, attached to the envelope
+126055	gondola with rounded ends, attached to the envelope
+126109	gondola inside the blimp's envelope
+126147	engine in front of the gondola
+126180	engine behind the gondola
+132765	150 square foot, 40-foot wing
+132797	150 square foot, 50-foot wing
+132829	150 square foot, 60-foot wing
+132861	150 square foot, 60-foot wing with winglets
+132907	large fuselage with open cockpit
+132942	large fuselage with enclosed cockpit
+132981	medium fuselage with enclosed cockpit
+133021	small fuselage with enclosed cockpit
+133060	stars and stripes decal
+133086	falcon decal
+133101	stripes decal
+133117	racing helmet decal
+133139	altimeter
+133151	rate-of-climb indicator
+133177	variometer
+133190	airfoil with flat bottom
+133217	airfoil with top curving down and bottom curving up
+133271	airfoil with both top and bottom curving down
+133319	laminar flow airfoil
+133342	basic controls
+133359	basic controls plus spoilers
+133390	basic controls plus spoilers and flaps
+133431	basic controls plus spoilers and flaperons
+133476	2 wheels, side by side
+133501	2 wheels, one behind the other
+133534	single main wheel
+133554	single wheel that can be retractable
+141595	propeller with 2 blades
+141621	propeller with 3 blades
+141647	propeller with 3 blades and a spinner
+141687	propeller with 3 controllable blades and a spinner
+141740	round engine
+141755	flat engine
+141769	flat engine with fuel injection
+141803	flat engine with a turbocharger
+141837	open cockpit
+141852	enclosed cockpit with sharp angle to tail
+141896	enclosed cockpit with medium angle to tail
+141941	enclosed cockpit with slight angle to tail
+141986	tail section with sharp angle
+142018	tail section with sharp curve
+142050	tail section with medium curve
+142083	tail section with gradual curve
+142117	straight, constant wing
+142143	partially tapered wing
+142168	fully tapered wing
+142189	elliptical wing
+142207	flaps that rotate only
+142232	flaps split from the bottom of the wing
+142274	flaps that makes a slot
+142300	fowler flaps
+142315	compass
+142325	compass plus a map
+142346	automatic direction finding, ADF radio
+142387	global positioning system, GPS radio
+142426	three main wheels
+142446	two main wheels and one small wheel at tail
+142492	wheels with wheel pants
+142518	retractable landing gear
+148911	wing with no sweep
+148932	wing with a 15-degree sweep
+148962	wing with a 25-degree sweep
+148992	wing with a 35-degree sweep
+149022	fuel tanks on middle of wing
+149053	fuel tanks on end of wing
+149081	fuel tank under fuselage
+149108	fuel tanks inside wing
+149133	turboprop engines
+149153	turbojet engines
+149172	turbofan engines
+149191	turbofan engines with electronic computer controls
+149244	controls that use cables
+149271	controls that use tubes
+149297	controls with a motor
+149321	controls with a computer and a motor
+149360	cockpit and cabin
+149380	straight tail mounted low
+149408	straight tail mounted high
+149437	swept tail mounted low
+149462	swept tail mounted high
+149488	tail cone with blunt end
+149515	tail cone with steep angles
+149545	tail cone with medium angles
+149576	tail cone with shallow angles
+149608	fat and rounded nose section
+149639	fat and pointed nose section
+149670	thin and rounded nose section
+149702	thin and pointed nose section
+149734	thick airfoil with rounded front edge
+149774	thick airfoil with sharp front edge
+149812	thin airfoil with rounded front edge
+149851	thin airfoil with a sharp front edge
+156971	cabin without a nose
+156994	cabin with a stubby, blunt nose
+157028	cabin with a stubby, pointed nose
+157064	cabin with a sleek, pointed nose
+157099	open engine bay
+157117	covered engine bay
+157138	tail boom with a tube truss
+157168	tail boom with steep slopes
+157198	tail boom with moderate slopes
+157231	tail boom with shallow slopes
+157263	landing gear with 4 wheels
+157292	landing gear with 3 wheels
+157321	skids for landing gear
+157346	retractable landing gear
+157373	piston engine
+157389	piston engine with a turbocharger
+157425	jet turboshaft engine
+157449	2 jet turboshaft engines
+157476	transmission box with gear drives
+157512	2-blade rotor
+157528	3-blade rotor
+157544	4-blade rotor
+157560	4-blade rotor with swept tips
+157592	tail rotor low on the tail
+157621	tail rotor high on the tail
+157651	tail rotor inside the tail
+157680	no-tail rotor
+244963	2 20-inch wheels and tires
+244992	2 22-inch wheels and tires
+245021	2 24-inch wheels and tires
+245050	2 26-inch wheels and tires
+245079	two-wheel stopping brake
+245106	rectangular body
+245125	body with a short slope
+245151	body with a long slope
+245176	egg-shaped body
+245194	1-speed gears
+245210	5-speed gears
+245226	10-speed gears
+245243	15-speed gears
+258007	brakes
+258016	body with 20 solar-cell panels
+258049	body with 40 solar-cell panels
+258082	body with 60 solar-cell panels
+258115	body with 80 solar-cell panels
+258148	batteries giving 30 kilowatts of power for 1 hour
+258200	batteries giving 40 kilowatts of power for 1 hour
+258252	batteries giving 50 kilowatts of power for 1 hour
+258304	batteries giving 60 kilowatts of power for 1 hour
+258356	30-kilowatt electric motor
+258385	40-kilowatt electric motor
+258414	50-kilowatt electric motor
+258443	60-kilowatt electric motor
+259705	70-kilowatt electric motor
+259734	80-kilowatt electric motor
+259763	90-kilowatt electric motor
+259792	100-kilowatt electric motor
+259822	fuel cells giving 70 kilowatts of power
+259864	fuel cells giving 80 kilowatts of power
+259906	fuel cells giving 90 kilowatts of power
+259948	fuel cells giving 100 kilowatts of power
+259991	fuel tank with hydrogen
+274631	batteries giving 30 kilowatts of power for 1 hour
+274683	batteries giving 40 kilowatts of power for 1 hour
+274735	batteries giving 50 kilowatts of power for 1 hour
+274787	batteries giving 60 kilowatts of power for 1 hour
+274839	batteries giving 70 kilowatts of power for 1 hour
+274891	batteries giving 80 kilowatts of power for 1 hour
+274943	batteries giving 90 kilowatts of power for 1 hour
+274995	batteries giving 100 kilowatts of power for 1 hour
+275048	30-kilowatt electric motor
+275077	40-kilowatt electric motor
+275106	50-kilowatt electric motor
+275135	60-kilowatt electric motor
+275164	70-kilowatt electric motor
+275193	80-kilowatt electric motor
+275222	90-kilowatt electric motor
+275251	100-kilowatt electric motor
