@@ -362,3 +362,16 @@ in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writ
 3. Open a box → find writer to the live box list / inventory → part-pickup function and part IDs.
 4. Exit building → confirm snapshot into block; re-enter → confirm restore path & level generation entry.
 5. Map rec+0x40..0x27D by collecting known parts and diffing saves (`tools/players_dat.py`).
+
+## 4.10 Title screen and LPX images
+- Title routine `O0E28_043F`: background 0x1002 (raw LPX 320x200), palettes 0x1000 (shows) / 0x1004 (blanks indices
+  241..250 for the logo fade-in), sprite container 0x1001, then container **0x1028** with 4 RLE sprites drawn by
+  `R0399_02EE(mode, far ptr, x, y)`: 0 TLC banner 205x33 @(59,9), 1 GIZMOS & GADGETS logo 228x78 @(52,51),
+  2 "A Super Solvers Science Adventure" 124x26 @(99,138), 3 copyright 128x19 @(0,181). Positions are push immediates
+  in O0E28 ~0x4CF..0x55A.
+- LPX: `LPX\x1a`, u16 format (0 raw, 1 RLE), width, height, 1, 2 (data at +14). RLE (`R0399_0465`), per row: n>0 = n
+  literal pixels, 0,k = skip k (transparent). Codec: `tools/lpx.py` (round-trips the originals byte-exactly).
+- Resource loader `R04FF_000D`: reads offsets[i], offsets[i+1] (relative to file+4), type, flag; flag 0 = read
+  (next - this) bytes raw into the 64 KB scratch buffer, else `R0B48_02AA`. So resources can be replaced uncompressed.
+- Archive names: DS string table, "gizmo001.dat" at file 0x101EE. Patch `title_logo` points it at GIZMOAP1.DAT,
+  built by `tools/title_logo.py` (element 2 widened to 221x62 with the Archipelago logo bottom-right).
