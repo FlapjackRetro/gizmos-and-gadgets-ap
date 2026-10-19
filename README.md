@@ -6,14 +6,20 @@ An [Archipelago](https://github.com/ArchipelagoMW/Archipelago) randomizer for *S
 
 **Development target:** DOSBox-X. Other DOSBox flavors will be tested later.
 
+## Patching
+`python tools/patcher.py path/to/ssg.exe` writes `SSG_AP.EXE` next to it (original untouched). `--list` shows
+the patches; each one verifies the original bytes first.
+
 ## Contents
 - `docs/RE_NOTES.md`: executable layout, `PLAYERS.DAT` save format, in-memory player record, hook points (race win confirmed).
 - `docs/AP_DESIGN.md`: draft locations, items, progression, multi-level access plan and client architecture.
+- `docs/KNOWN_ISSUES.md`: observed issues and their status.
 - `docs/DOSBOX_X_DEV.md`: DOSBox-X dev setup, debugger workflow and hook hunt list.
 - `tools/dbgaddr.py`: prints DOSBox-X breakpoint commands for a given load segment.
 - `tools/memdiff.py`: diffs MEMDUMPBIN dumps to find the variables an in-game action changes.
 - `tools/resources.py`: list/extract resources from `gizmo00x.dat`, decompressing with the game's own routine run in `tools/x86emu.py` (a minimal 8086 interpreter).
 - `tools/extract_parts.py`: every vehicle's part table → `data/parts_all.tsv`.
+- `tools/patcher.py`: byte patches for ssg.exe → `SSG_AP.EXE`.
 - `tools/race_model.py`: ground-race stats model and Morty's builds → `data/morty_builds.tsv` (not yet live-validated).
 - `tools/race_sim.py` / `tools/race_logic.py`: exact ground-race simulation and per-level win requirements → `data/race_requirements.tsv`.
 - `tools/flight_sim.py`: aircraft race model + simulation → `data/flight_requirements.tsv` (validated live on Aircraft L3).

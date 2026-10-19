@@ -1,0 +1,16 @@
+vehicle	building	level	rooms	boxes	parts	empty_boxes	puzzle_doors	open_doors	boxes_per_room
+0	Automotive	1	8	22	20	2	19	1	2,0,0,6,4,6,4
+1	Automotive	2	12	40	36	4	39	1	2,3,0,5,4,4,3,6,4,5,4
+2	Automotive	3	12	46	40	6	39	1	3,3,0,6,5,5,4,6,4,6,4
+3	Automotive	4	16	48	40	8	60	1	1,2,3,4,3,4,2,3,3,3,2,5,3,6,4
+4	Automotive	5	16	50	40	10	60	1	2,2,3,4,4,4,3,3,4,3,3,4,3,4,4
+5	Aircraft	1	8	22	20	2	19	1	2,0,0,6,5,5,4
+6	Aircraft	2	12	36	32	4	39	1	2,5,0,5,4,3,2,4,3,5,3
+7	Aircraft	3	12	46	40	6	39	1	3,4,0,6,5,4,4,6,5,5,4
+8	Aircraft	4	16	48	40	8	59	1	1,2,4,4,2,3,2,3,2,3,2,5,5,5,5
+9	Aircraft	5	16	54	44	10	59	1	4,4,5,4,4,2,3,4,3,3,2,5,4,4,3
+10	Alternative Energy	1	8	26	24	2	19	1	3,0,0,7,5,6,5
+11	Alternative Energy	2	12	40	36	4	40	1	2,3,0,5,4,4,2,6,4,6,4
+12	Alternative Energy	3	12	42	36	6	40	1	3,3,0,5,4,5,3,6,4,5,4
+13	Alternative Energy	4	16	48	40	8	61	1	1,2,3,4,3,4,2,3,3,3,2,5,3,6,4
+14	Alternative Energy	5	16	54	44	10	61	1	5,5,5,4,3,3,3,3,3,3,2,4,3,4,4

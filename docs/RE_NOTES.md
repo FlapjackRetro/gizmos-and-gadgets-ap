@@ -346,6 +346,15 @@ Text `MEMDUMP` of DS:0000–FFFF. a = before box 1; b = after box 1; c = from a:
   during play (snapshotted on save).
 - Next: `BPM` on 0964 / A028 / 47AE to land in the writers.
 
+### 2026-10-19 — first patched build (`SSG_AP.EXE`)
+`race_no_advance` confirmed: after winning Aircraft L3 and returning to the Technology Center, re-entering Aircraft
+started L3 again from the beginning (fresh level), as predicted (race win clears `459C[b]`, level stays `4596[b]+2`).
+`no_finished_refusal` with `[4596]=4` (SM): Automotive entered as "Level-6 BLIMP" — level 5 / vehicle 5 overflow into
+Aircraft L1 (expected from `R02E0_0820`); needs the level picker.
+**Technology Center parked vehicles = races won per building**, drawn from `[4596+2b]` (Automotive showed 5 cars
+after `SM 16CA:4596 04 00`). So the AP design should keep `4596[b]` = races actually won and hold the *chosen level*
+in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writing the picker's level into `4596[b]`.
+
 ## 6. Next step: dynamic analysis checklist (DOSBox-X debugger build)
 1. ~~Building→category mapping~~ (done, §5). Confirm race-win path with `BP <load+02E0>:05B7`.
 2. In a warehouse, find the live 07/09 array (search memory for the block's 40-byte pattern) → `bpm` it,
@@ -353,3 +362,25 @@ Text `MEMDUMP` of DS:0000–FFFF. a = before box 1; b = after box 1; c = from a:
 3. Open a box → find writer to the live box list / inventory → part-pickup function and part IDs.
 4. Exit building → confirm snapshot into block; re-enter → confirm restore path & level generation entry.
 5. Map rec+0x40..0x27D by collecting known parts and diffing saves (`tools/players_dat.py`).
+
+## 4.10 Title screen and LPX images
+- Title routine `O0E28_043F`: background 0x1002 (raw LPX 320x200), palettes 0x1000 (shows) / 0x1004 (blanks indices
+  241..250 for the logo fade-in), sprite container 0x1001, then container **0x1028** with 4 RLE sprites drawn by
+  `R0399_02EE(mode, far ptr, x, y)`: 0 TLC banner 205x33 @(59,9), 1 GIZMOS & GADGETS logo 228x78 @(52,51),
+  2 "A Super Solvers Science Adventure" 124x26 @(99,138), 3 copyright 128x19 @(0,181). Positions are push immediates
+  in O0E28 ~0x4CF..0x55A.
+- LPX: `LPX\x1a`, u16 format (0 raw, 1 RLE), width, height, 1, 2 (data at +14). RLE (`R0399_0465`), per row: n>0 = n
+  literal pixels, 0,k = skip k (transparent). Codec: `tools/lpx.py` (round-trips the originals byte-exactly).
+- Resource loader `R04FF_000D`: reads offsets[i], offsets[i+1] (relative to file+4), type, flag; flag 0 = read
+  (next - this) bytes raw into the 64 KB scratch buffer, else `R0B48_02AA`. So resources can be replaced uncompressed.
+- Archive names: DS string table, "gizmo001.dat" at file 0x101EE. Patch `title_logo` points it at GIZMOAP1.DAT,
+  built by `tools/title_logo.py` (element 2 widened to 221x62 with the Archipelago logo bottom-right). Verified live
+  in DOSBox-X 2026-10-19.
+
+## 4.11 Warehouse layout (static) — boxes and doors
+See `tools/warehouse.py` (docstring has the formats) and `data/warehouse_counts.tsv`. Level setup `R0622_0085`
+loads the room layout `DS:09E8[v]` and per-room box counts `0x350+v`; both are fixed per level (levels 2/3 and 4/5
+of a building share a room layout, with different box counts). Box contents: `R053F_01B6` shuffles 0..total-1 and
+maps values >= part count to 1000 (empty), so every part is in exactly one box. Doors: 32-byte room objects,
+state 7 locked / 9 open, listed once per side. Totals: **622 boxes (532 parts + 90 empty), 653 puzzle doors**,
+plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door, all 16x20).

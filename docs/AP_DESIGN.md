@@ -12,8 +12,8 @@ Companion to `RE_NOTES.md`. Draft for discussion; anything that depends on uncon
 | Group | Count | Detection |
 |---|---|---|
 | Race wins (bldg × level) | 15 | Hook at `R02E0_05B7`, or client watches `DS:4596[b]` / `DS:5C0E` |
-| Part boxes opened | ~18–31 per level (≈ 300–400 total) | TBD (live box list) |
-| Doors / puzzles solved | state array is 40→120 cells per level — too many as-is; likely per-puzzle-door subset, or "N doors opened" milestones | TBD |
+| Part boxes opened | **622** fixed per level (22–54); 532 hold a part (each part exactly once), 90 empty — `data/warehouse_counts.tsv` | placement/contents random per new level |
+| Doors / puzzles solved | **653** puzzle doors (19 / 39–40 / 59–61 per level), fixed by the room layouts — likely too many as individual checks; options: per-door, every Nth, or "N doors opened" milestones | layout fixed; puzzle variant random |
 
 Recommendation for v0.1: **race wins + part boxes only**; add doors later as an option once the live
 array is understood.
@@ -69,7 +69,8 @@ locations reachable, and a building is stuck until its race is won. So:
   - `progressive` — `Progressive <Building> Level` items unlock levels (vanilla-like, but decoupled from race wins).
 - Mechanics already known (RE_NOTES §3–4):
   - Selecting level *L* of building *b*: the enter-building routine `R02E0_0820` (state 3) derives level and vehicle
-    from `DS:4596[b]` alone, so set it to `L-2` (or patch `0x83D` to read a picker variable) before state 3 runs; the part table then comes from
+    from `DS:4596[b]` alone. **Preferred: patch `0x83D` to read a separate picker variable**, because `4596[b]` also
+    drives the parked-vehicle display in the Technology Center (= races won) and the finished-building logic; the part table then comes from
     resource `0x2F5 + vehicle`.
   - The save record holds **one warehouse snapshot per building** (block at rec+0x27E+b*0x6BA, flag `459C[b]`).
     Revisiting a different level of the same building means swapping that block: store the other levels'
