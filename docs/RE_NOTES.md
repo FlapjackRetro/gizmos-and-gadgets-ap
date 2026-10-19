@@ -257,6 +257,27 @@ auto-opened (fresh level).
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
 (fresh); with `459C[b]==1` it restores from block *b*.
 
+### 4.7 Race performance (ground races) [static, 2026-10-19 — model not yet live-validated]
+- **`O0E7A_044E(racer*, partlist*)`** computes a racer's stats from installed parts (list of part ids, −1 end).
+  Called twice per race: player (list DS:6616 → racer DS:BAE8) and **Morty (list at `[6634]` = right after the
+  part-table entries in the level's resource → racer DS:BAAE)**. Morty's build is fixed per level
+  (`data/morty_builds.tsv`).
+- Uses only each part's **group (+0x08) and tier (+0x0A)** → 16.16 fixed-point tables in DGROUP
+  (DS:3A54…3B30, 4 tiers each) and per-vehicle base `DS:3B34[v]` (Auto 6–10, Alt-E 5–9). Group switch: 19-entry
+  table at `O0E7A:0716` (+0x26 handlers); vehicle switch at `O0E7A:06F8`. `O0E80_0000` = fixed-point multiply.
+- Effects (tier 0→3): body 0x00 A−=1.8/1.2/0.6/0; bearings 0x01/0x35 A−=0.6/0.4/0.2/0; 0x03 B=4/5/6/7;
+  tires 0x04/0x34 C+=.010–.025; differential 0x05 E=4/3/2/1; windshield 0x08 A−=.05–.02; engine 0x09 A−=1.2–0 &
+  D=0.6–1.2; 0x30 C+=.020–.035; pedal body 0x32 A−=1.2–0; gears 0x33 C+=.020–.035 & A−=1.0–0; 0x37 C+=.02–.08 & A−=body;
+  0x06/0x39 and 0x07/0x38/0x3A record tiers used per-vehicle (electric: D = DS:3AA4[min]). **Brakes, fuel tanks,
+  paint, decals: no effect.**
+- Per vehicle: v0 C=0.3; v1–4 C += D·E (power × gear ratio; v2/v4 also B=A); v11–14 C += D·E.
+- Racer struct: `+0x22` = **top speed = min(A,B)**, `+0x32` = accel (C), `+0x26`/`+0x36` = second-mode cap/accel.
+  Per tick (`O0E7A_0034`): speed += accel up to cap; if above cap, −0.2.
+- Model in `tools/race_model.py`. Morty mostly uses tier-2 parts; max-tier builds beat his top speed on most
+  levels. Some levels (Auto L3/L4, Alt L4) come out equal → B-term/caps not fully modelled. Differential is a
+  trade-off (higher tier = lower ratio = less acceleration). **TBD**: validate vs live racer structs
+  (`D 16CA:BAE8` / `16CA:BAAE` during a race), second mode, track, and the flight engine `O0E7D` (Aircraft).
+
 ## 5. Live session log (DOSBox-X 2026.10.01)
 
 ### 2026-10-19 — building index
