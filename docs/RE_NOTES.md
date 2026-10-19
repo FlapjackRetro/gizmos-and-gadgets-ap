@@ -110,7 +110,7 @@ for the ending; flag `[0xA0D4]`).
 - Then **`R02E0_0A24(result)`** (resident) opens the door:
   ```
   R02E0_0A24: if !result return
-     door = R0622_11F7(room [7AA4], door [7AC0])
+     door = R0622_11F7(room [7AA4], door [7AC0])   ; [7AA4] = current room index
      if door.state(+0x10) == 7 (locked):
   0xA71  door.state = 9 (open); door.sprite(+0x0E) = 0x30E/0x33C
          other = door.(+0x12) & 0x0F  -> destination room; matching door there opened too (R0622_087F)
@@ -118,10 +118,14 @@ for the ending; flag `[0xA0D4]`).
   Door objects live in the far room data (segment seen as 6257); the 07/09 arrays in the building blocks
   (+0x26C) are their serialized states (7 locked, 9 open).
 
+**Live-verified 2026-10-19** with code BPs (load 0823): `BP 0B03:0A24` hit after a correct puzzle;
+`BP 0B03:0A71` hit next with door object at `6257:0906`, state 7→9, link `+0x12 = 0x0487` (dest room 7);
+`[B144]=1` → player moved into dest room (`[7AA4] = 7`).
+
 ### 4.3 Part box opened / part collected — **[confirmed]** (traced 2026-10-19)
 **`R08F5_0002`** (resident) = player opens a box:
 ```
-obj = R0622_1265(room [7ACA], slot [7AA4]);  if obj.taken(+8) return
+obj = R0622_1265(room [7AA4], object [7ACA]);   ; cdecl: last push = first arg  if obj.taken(+8) return
 contents = obj.(+0x0C+0x12)        ; 1000 = empty, else part id (0x8E-byte entries in far table [663C])
 empty : R02E0_0AEA(5); R0622_0D8F(remove); dec [7A00]
 part  : needed = R053F_0189(part); isnew = R0834_08D7(actor 0, part)   ; ADD TO INVENTORY
@@ -129,8 +133,9 @@ part  : needed = R053F_0189(part); isnew = R0834_08D7(actor 0, part)   ; ADD TO 
         if isnew==0 && needed: dec [4582]  ; rec+0x20 = PARTS NEEDED (HUD)
         if [4582]==0: msg 0x1050 ; part flag 0x4000 clear -> R02E0_0ACE(20) score
 ```
+- **Live-verified 2026-10-19**: `BP 1118:0002` hit on box pickup (room `[7AA4]=6`, object `[7ACA]=3`).
 - `R0622_0D8F(room, obj)` removes an object: obj.taken=1, room.count(+0x9E)--, and `[0964]`-- if it is the
-  current room (`[08C2]`). Rooms: far ptr table at DS:7A04 (+room*4). Current room copied to DS:08C6.
+  current room (`[08C2]`). Rooms: far ptr table at DS:7A04 (+room*4), room data in far memory (seg 6257 this session). Current room copied to DS:08C6; `[08C2]` = current room for redraw purposes, `[7AA4]` = player's room.
 - `R0622_0B0D..` adds an object to a room; box contents −1 = random part (`R053F_0203`), 1000 = empty.
 - **Item grant primitive:** `R0834_08D7(actor, part)` — actors at DS:7A8A + actor*0xA0 (0 = player);
   actor+0x70 = item count, actor+0x72 = far list. Chimps use the same (O0E0D_0000 steals from boxes).
