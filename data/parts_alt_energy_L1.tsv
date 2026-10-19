@@ -1,0 +1,25 @@
+id	slot	group	idx	stat1E	stat26	name
+0	4	0x32	0	117	125	rectangular body
+1	4	0x32	1	117	125	body with a short slope
+2	4	0x32	2	117	125	body with a long slope
+3	4	0x32	3	108	129	egg-shaped body
+4	1	0x30	0	120	145	2 20-inch wheels and tires
+5	1	0x30	1	119	144	2 22-inch wheels and tires
+6	1	0x30	2	118	143	2 24-inch wheels and tires
+7	1	0x30	3	117	142	2 26-inch wheels and tires
+8	2	0x31	0	122	137	two-wheel stopping brake
+9	2	0x31	0	122	137	two-wheel stopping brake
+10	2	0x31	0	122	137	two-wheel stopping brake
+11	2	0x31	0	122	137	two-wheel stopping brake
+12	3	0x33	0	122	143	1-speed gears
+13	3	0x33	1	120	143	5-speed gears
+14	3	0x33	2	120	142	10-speed gears
+15	3	0x33	3	120	141	15-speed gears
+16	5	0x0c	0	136	143	pinstripe decal
+17	5	0x0c	0	136	141	racing butterfly decal
+18	5	0x0c	0	136	141	flames decal
+19	5	0x0c	0	136	141	cheetah decal
+20	0	0x0b	0	0	0	red paint
+21	0	0x0b	1	0	0	green paint
+22	0	0x0b	2	0	0	yellow paint
+23	0	0x0b	3	0	0	blue paint
