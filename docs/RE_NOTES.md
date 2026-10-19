@@ -302,6 +302,22 @@ Need to confirm: when entering building *b* with `459C[b]==0`, the game builds l
   ground level; safe rule "every performance slot ≥ tier 2" for Auto L1–2 and Alt L1–2, "≥ tier 3" (capped at the
   slot's best tier) for the rest. Winning share falls to 0.2–4% on Auto L4–5 / Alt L3–5.
 
+### 4.9 Aircraft races (flight engine O0E7D) [static, 2026-10-19 — not yet live-validated]
+- Stats `O0E7D_0037(racer*, partlist*)`: **A = DS:3DBE[level]** (3.5/4/6/7/9, indexed by level within the building),
+  B = 0; group switch over 0x0D–0x2F (`O0E7D:0381`): each group does `A −= T[tier]`, `B += T[tier]` or (blimp
+  engine 0x0F) `B = T[tier]` — full map in `tools/flight_sim.py`. Paint/decal and a few groups (0x22/0x23) do nothing.
+- Three phases: caps at racer +0x1C, accels at +0x28 (3 dwords each). Normal: caps A, accels B. **Glider (level 2)**:
+  caps 1.5 / 5.0 / 1.5, accels −B / 0.3 / −B (towed at 1.5, flies up to 5.0, then sinks by its drag B).
+- Tick `O0E7D_0428`: speed += accel[phase]; clamp to cap from above (accel ≥ 0) or below (accel < 0).
+- Race `O0E7D_05E4`: player DS:BB64 (parts DS:6616, track `DS:3B96[level]`), Morty DS:BB28 (parts [6634], track
+  `DS:3BA0[level]`). Position is 16.16 and accumulates speed (**fractional speed counts here**, unlike ground
+  races); each frame steps int(new)−int(old) records. Step events (`O0E7D:05C7`, code+14): −12 skip (idx += x−1),
+  −11/−9 phase 0, −8 phase 1, −10 phase 2 (unused), −7/−6 no-op, −2 finish, −1 end. Tracks: phase 0 → −8 → phase 1
+  → −9 → phase 0 → finish. Ends when either finishes; player finished → win (ties to the player).
+- `tools/flight_sim.py` → `data/flight_requirements.tsv`: max-tier wins all; safe rule ≥ tier 2 (L1–2), ≥ tier 3
+  (L3–5). **Non-monotonic tiers**: blimp envelope (best tier 2) and engine (best tier 1); glider altimeter tier 3 is
+  the worst (all glider parts add drag).
+
 ## 5. Live session log (DOSBox-X 2026.10.01)
 
 ### 2026-10-19 — building index

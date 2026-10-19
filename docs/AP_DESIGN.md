@@ -32,7 +32,9 @@ array is understood.
   finish no later than Morty's (tie → higher speed).
 - Only performance slots matter (not brakes, fuel tanks, paint, decals). Later levels need nearly every
   performance slot at the best tier → **progressive quality items per slot** fit well, with logic
-  "all performance slots ≥ tier 2" (Auto L1–2, Alt L1–2) or "≥ tier 3" (others). Aircraft: TBD (flight engine).
+  "all performance slots ≥ tier 2" (L1–2 of every building) or "≥ tier 3" (L3–5). Aircraft:
+  `data/flight_requirements.tsv` (same pattern; some aircraft slots are non-monotonic, so "progressive" must
+  follow the *performance* order, not the tier number).
 
 - Race *L* in building *B* requires: access to level L of B **and** the parts needed to build a vehicle that
   can win that race (logic per race: e.g. "a body, an engine, wheels of at least tier X"). Tier data must
