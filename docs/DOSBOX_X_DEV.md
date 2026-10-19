@@ -54,7 +54,7 @@ If nothing relevant changes in DGROUP, the state is in far heap memory: dump a w
 | # | Goal | Start with |
 |---|---|---|
 | 1 | ~~Building index → category~~ **done**: 0 Automotive, 1 Aircraft, 2 Alt-Energy | — |
-| 2 | Confirm race-win path | `BP <race>:05B7`, win any race |
+| 2 | ~~Confirm race-win path~~ **done**: `459A` FFFF→0000, `5C0E` 4→5 | `BP <load+02E0>:05B7` |
 | 3 | ~~Door / puzzle solved~~ **done**: `R02E0_0A24` sets door state 7→9 | `BP <load+02E0>:0A24` |
 | 4 | ~~Part box opened~~ **done**: `R08F5_0002`; grant = `R0834_08D7(0, part)` | `BP <load+08F5>:0002` |
 | 5a | ~~Building click handler~~ **done**: `R02E0_0148`, hook `02E0:0463` | `BP <load+02E0>:0463` |
