@@ -22,7 +22,9 @@ array is understood.
 - **Vehicle parts** (each distinct part type/quality is an item). The box you open sends a check; the part
   you receive comes from the multiworld. Needs: part-ID table + a way to grant parts (write inventory flag).
 - **Level access** — `Progressive <Building> Level` ×4 per building (12 total) — the core progression item.
-- Filler: score / bananas (if banana count is a field), traps: "Cyberchimp" (steal a part), etc.
+- **Cosmetic parts are filler:** paint (group `0x0B`) and decals (group `0x0C`) have no performance value, so
+  they never gate a race and don't count toward performance logic. (3 buildings × 5 levels × 8 = 120 filler items.)
+- Other filler: score / bananas (if banana count is a field), traps: "Cyberchimp" (steal a part), etc.
 
 ## Progression / logic
 - Race *L* in building *B* requires: access to level L of B **and** the parts needed to build a vehicle that

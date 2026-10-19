@@ -103,10 +103,12 @@ save/exit. The block is a snapshot; the rec header fields (§ table) are live.
   Matches the three live dumps exactly.
 - `DS:6638` far ptr → level parts header (`+2` = part count); `DS:663C` far ptr → part table.
   Loaded **per level** (Alt-Energy L1: 24 parts at `5F96:0039`, header `5F96:0004`).
-- Entry = 0x8E bytes: `+0x08` group (= vehicle slot), `+0x0A` **quality tier** within the group (0 = basic; parts sharing a tier are interchangeable copies; single-tier groups such as brakes/fuel tank/decals are required-or-cosmetic), `+0x1E`/`+0x26` performance stats (TBD),
+- Entry = 0x8E bytes: `+0x08` group (= vehicle slot), `+0x0A` **quality tier** within the group (0 = basic; parts sharing a tier are interchangeable copies; single-tier groups such as brakes/fuel tank/decals are required-or-cosmetic), `+0x1E`/`+0x26` most likely the **x/y draw position** of the part on the vehicle picture (paint = 0/0; cosmetic decals have values) — *not* performance stats; real performance fields TBD,
   `+0x2E` unknown (not the slot — group `+0x08` identifies the slot), `+0x36` flags (0x4000/0x8000 tested by pickup/race code), `+0x82` far ptr → blueprint
   icon (`LPX\x1a` image), `+0x86` far ptr → name, `+0x8C` part id (0-based, level-local).
 - Alt-Energy L1 = 6 slots × 4: paint(0) wheels(1) brakes(2, all four identical) gears(3) body(4) decal(5).
+  **Cosmetic groups: `0x0B` paint and `0x0C` decals have no performance value** → AP filler, excluded from
+  any vehicle-performance calculation (user-confirmed game knowledge).
   Decoded table: `data/parts_alt_energy_L1.tsv` (`tools/parts_table.py`).
 - **All part names** are uncompressed `S <id> <text> NUL` records in `gizmo000.dat` (245 total,
   `data/part_names.tsv` via `tools/part_names.py`). File-order clusters:

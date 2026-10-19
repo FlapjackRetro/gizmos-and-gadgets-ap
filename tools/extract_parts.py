@@ -6,7 +6,7 @@ Usage: python extract_parts.py GAMEDIR > data/parts_all.tsv
 Part table for vehicle v (0-14) is resource 0x2F5+v; v = building*5 + (level-1),
 building 0 Automotive, 1 Aircraft, 2 Alternative Energy (rec+0x2E holds the current v).
 Table = header (0x2D bytes; +2 part count, +6 group count) + groups*2 + count * 0x8E-byte entries.
-Entry: +0x08 group (slot), +0x0A tier, +0x16 name resource id, +0x1E/+0x26 stats, +0x8C part id.
+Entry: +0x08 group (slot), +0x0A tier, +0x16 name resource id, +0x1E/+0x26 likely x/y draw position (not stats), +0x8C part id.
 """
 import os
 import struct
@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from resources import Archives  # noqa: E402
 
+COSMETIC = {0x0B, 0x0C}   # paint, decals: no performance value -> AP filler
 BUILDINGS = ['Automotive', 'Aircraft', 'Alternative Energy']
 
 
@@ -36,11 +37,11 @@ def tables(a):
 
 def main():
     a = Archives(sys.argv[1])
-    print('vehicle\tbuilding\tlevel\tid\tgroup\ttier\tstat1E\tstat26\tname')
+    print('vehicle\tbuilding\tlevel\tid\tgroup\ttier\tdrawX\tdrawY\tcosmetic\tname')
     for v, hdr, rows in tables(a):
         for r in rows:
             print(f"{v}\t{BUILDINGS[v // 5]}\t{v % 5 + 1}\t{r['id']}\t{r['group']:#04x}\t{r['tier']}\t"
-                  f"{r['stat1e']}\t{r['stat26']}\t{r['name']}")
+                  f"{r['stat1e']}\t{r['stat26']}\t{int(r['group'] in COSMETIC)}\t{r['name']}")
 
 
 if __name__ == '__main__':
