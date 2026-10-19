@@ -72,7 +72,7 @@ bytes to/from **DS:0x4562**). **The active player's record is held verbatim in m
 | 0x01A | 457C | 20 bytes | Live warehouse header (room, position…) — copied into building block +0x00 on save | confirmed copy; fields TBD |
 | 0x02E | 4590 | u16 | Used by race engines + R0622/R053F | TBD |
 | **0x030** | **4592** | u16 | **Current building: 0 = Automotive, 1 = Aircraft, 2 = Alternative Energy** (written when clicking a building on the select screen) | confirmed (live) |
-| 0x032 | 4594 | u16 | Used heavily by race engine O0E7D | TBD |
+| 0x032 | 4594 | u16 | **Current level (0-based)** in the current building | confirmed (code) |
 | **0x034** | **4596** | s16[3] | **Last race won index per building** (−1 none … 4 = all five) | confirmed |
 | **0x03A** | **459C** | u16[3] | **Warehouse-in-progress flag per building** | confirmed |
 | **0x27E** | **47E0** | 3 × 0x6BA | **Per-building warehouse blocks** (see below) | confirmed |
@@ -229,7 +229,31 @@ refusal (`cmp [4596+2b],4 / jz 046A`) must be removed for AP.
 - `O0E83_0907` = paged text viewer (See Next Page / Go Back a Page / Done) — a ready-made pager pattern.
 - No existing dialog uses > 2 buttons; max button count/layout of `O0E83_0655` not yet analysed.
 
-### 4.6 Level generation / entering a building — TBD
+### 4.6 Entering a building / level setup — **[confirmed]** (traced 2026-10-19)
+**`R02E0_0820` = state 3 (enter building)**, reached after building select. Live: `BPM 16CA:4590` fired 0A→0B at
+`0B03:0855` when entering Alt-Energy after winning race 1; `[45A0]` was already 0 (cleared by the win), blueprint
+auto-opened (fresh level).
+```
+0x83D  level   = [4596 + 2b] + 1 -> [4594]   (rec+0x32 = current level, 0-based)
+0x84B  vehicle = b*5 + level     -> [4590]   (rec+0x2E)
+0x858  R053F_0002()  load part table;  R0622_0085();  R0A04_02C2(7)
+0x86A  if [459C + 2b] != 0:   RESTORE from block b (rec+0x27E + b*0x6BA):
+          R08F5_05A3(); O0E0D_0635(); memcpy(rec+0x1A <- block+0, 20)
+          R053F_03C9(block+0x14)   part states
+          R0622_10E7(block+0x26C doors, block+0x302 boxes)   rooms
+          R0834_0B95(block+0x492)  inventory;   [94] = 1
+       else FRESH (0x8EB):
+          R08F5_094D()  generate warehouse;  [4582] = R053F_0316()  (PARTS NEEDED)
+          if level==0: [458A]=0, [457E]=10
+          [458E] = rand(100) < 50;  O0E0D_0635();  [457C]=0, [4586]=0, [4588]=-1
+          [4580] = DS:00B2[level];  [4584]=0;  O0E0D_0784()
+0x965  return 5
+```
+- **The level loaded is derived only from `[4596+2b]`** → the picker can set it (or patch 0x83D–0x847 to read
+  a picker variable instead of `race idx + 1`).
+- Saved state per building = block b + flag `459C[b]`; switching to another level of the same building = swap
+  block b and its flag before state 3 runs (flag 0 → fresh generation).
+- The race win clears `459C[b]` (O0E36 results code), so the next entry generates the next level fresh.
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
 (fresh); with `459C[b]==1` it restores from block *b*.
 
