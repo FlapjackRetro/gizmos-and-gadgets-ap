@@ -55,13 +55,14 @@ bytes to/from **DS:0x4562**). **The active player's record is held verbatim in m
 | 0x000 | 4562 | char[16] | Player name | confirmed |
 | 0x010 | 4572 | u32 | Score (race-results screen adds to it) | confirmed |
 | 0x014 | 4576 | u16 | Save slot | confirmed |
+| 0x020 | 4582 | u16 | **PARTS NEEDED** (HUD counter for current level) | confirmed (code) |
+| 0x06E | 45D0 | u16[8][33] | **Puzzle variant solved table** (type*0x42 + variant*2) | confirmed (code) |
 | 0x01A | 457C | 20 bytes | Live warehouse header (room, position…) — copied into building block +0x00 on save | confirmed copy; fields TBD |
 | 0x02E | 4590 | u16 | Used by race engines + R0622/R053F | TBD |
 | **0x030** | **4592** | u16 | **Current building: 0 = Automotive, 1 = Aircraft, 2 = Alternative Energy** (written when clicking a building on the select screen) | confirmed (live) |
 | 0x032 | 4594 | u16 | Used heavily by race engine O0E7D | TBD |
 | **0x034** | **4596** | s16[3] | **Last race won index per building** (−1 none … 4 = all five) | confirmed |
 | **0x03A** | **459C** | u16[3] | **Warehouse-in-progress flag per building** | confirmed |
-| 0x040–0x27D | 45A2… | u16 flags | Rows of 0/1 words (8 groups of 33?) — likely **puzzle variants solved** (rec+0x24C set on a door solve) | hypothesis (live evidence) |
 | **0x27E** | **47E0** | 3 × 0x6BA | **Per-building warehouse blocks** (see below) | confirmed |
 | **0x16AC** | **5C0E** | u16 | **Total races won; 15 ⇒ game complete** | confirmed |
 | 0x16AE | 5C10 | … | Tail; used by race code | TBD |
@@ -98,12 +99,42 @@ R02E0_0564:  ...
 Results screen = overlay **O0E36** (uses `1st -`/`2nd -`, adds score, checks `[bldg idx] >= 4` and `total == 15`
 for the ending; flag `[0xA0D4]`).
 
-### 4.2 Door/puzzle solve — TBD
-Puzzle modules: electric (circuits), puzzler, simple (simple machines) + balance, energy, force, gears, magnets.
-Expect a write of `09` into the warehouse state array (live copy). Find with a DOSBox-X memory breakpoint.
+### 4.2 Door/puzzle solve — **[confirmed]** (traced 2026-10-19)
+**Puzzle dispatcher = overlay O0E60** (entry `O0E60_0000`):
+- `[B13A]` puzzle type 0–7 → jump table: 0 `O0E41_08A1` (electric.c), 1 `O0E6A_0000`, 2 `O0E6D_0000`,
+  3 `O0E70_1ED0`, 4 `O0E46_0AA0`, 5 `O0E5D_1138`, 6 `O0E4E_0000`, 7 `O0E51_1C03`.
+- `[B138]` variant index, chosen randomly preferring unsolved ones; `[3334+type*2]` = variants per type.
+- `[B13C]` result. If `rec+0x6E + type*0x42 + variant*2` is 0 it is set to the result
+  → **rec+0x6E..0x27D = 8×33 "puzzle variant solved" table** (DS:45D0).
+- Each puzzle overlay awards +400 itself via `O0E60_03BF` (4 × `R0A04_0D36(100)`).
+- Then **`R02E0_0A24(result)`** (resident) opens the door:
+  ```
+  R02E0_0A24: if !result return
+     door = R0622_11F7(room [7AA4], door [7AC0])
+     if door.state(+0x10) == 7 (locked):
+  0xA71  door.state = 9 (open); door.sprite(+0x0E) = 0x30E/0x33C
+         other = door.(+0x12) & 0x0F  -> destination room; matching door there opened too (R0622_087F)
+  ```
+  Door objects live in the far room data (segment seen as 6257); the 07/09 arrays in the building blocks
+  (+0x26C) are their serialized states (7 locked, 9 open).
 
-### 4.3 Part box opened / part collected — TBD
-Box list (+0x302) live copy; inventory flags rec+0x40.. (hypothesis). Same method.
+### 4.3 Part box opened / part collected — **[confirmed]** (traced 2026-10-19)
+**`R08F5_0002`** (resident) = player opens a box:
+```
+obj = R0622_1265(room [7ACA], slot [7AA4]);  if obj.taken(+8) return
+contents = obj.(+0x0C+0x12)        ; 1000 = empty, else part id (0x8E-byte entries in far table [663C])
+empty : R02E0_0AEA(5); R0622_0D8F(remove); dec [7A00]
+part  : needed = R053F_0189(part); isnew = R0834_08D7(actor 0, part)   ; ADD TO INVENTORY
+        R0A04_076B(part) (show name); msg 0x104A/0x1044; R0622_0D8F(remove)
+        if isnew==0 && needed: dec [4582]  ; rec+0x20 = PARTS NEEDED (HUD)
+        if [4582]==0: msg 0x1050 ; part flag 0x4000 clear -> R02E0_0ACE(20) score
+```
+- `R0622_0D8F(room, obj)` removes an object: obj.taken=1, room.count(+0x9E)--, and `[0964]`-- if it is the
+  current room (`[08C2]`). Rooms: far ptr table at DS:7A04 (+room*4). Current room copied to DS:08C6.
+- `R0622_0B0D..` adds an object to a room; box contents −1 = random part (`R053F_0203`), 1000 = empty.
+- **Item grant primitive:** `R0834_08D7(actor, part)` — actors at DS:7A8A + actor*0xA0 (0 = player);
+  actor+0x70 = item count, actor+0x72 = far list. Chimps use the same (O0E0D_0000 steals from boxes).
+- `R02E0_0ACE(points, flag)` adds score.
 
 ### 4.4 Level generation / entering a building — TBD
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
