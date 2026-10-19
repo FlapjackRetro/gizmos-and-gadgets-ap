@@ -181,7 +181,32 @@ part  : needed = R053F_0189(part); isnew = R0834_08D7(actor 0, part)   ; ADD TO 
   actor+0x70 = item count, actor+0x72 = far list. Chimps use the same (O0E0D_0000 steals from boxes).
 - `R02E0_0ACE(points, flag)` adds score.
 
-### 4.4 Level generation / entering a building — TBD
+### 4.4 Main state machine & building select [static, 2026-10-19]
+Far-handler table at **DS:00C6** (4 bytes each); each handler returns the next state index.
+| state | handler | meaning |
+|---|---|---|
+| 0 | `O0E28` (stub off 0x43) | enter building (load / assembly station) |
+| 1 | `O0E2D` | title / sign-in? |
+| 2 | **`R02E0_0148`** | **Technology Center building select** |
+| 3,4,6,7,9 | `R02E0_0820/096A/0619/09AA/0506` | TBD |
+| 5 | `O0E30` | warehouse |
+| 8 | `O0E60` | door puzzle (returns 5, or 16) |
+| 10 | `R02E0_0564` | race (returns 12, or 14 if aborted) |
+| 11–14 | `O0E36` | race results |
+| 15,16 | `R02E0_012F/0141` | exit/quit? |
+
+**Building select `R02E0_0148`**: event loop; `R098D_0106` returns a UI event code, looked up in a 6-word table
+at `02E0:04EE` with handlers at `02E0:04FA`:
+- `0x001B` (Esc) / `0x0BBC` → `0421`: menu (`O0E97_00B2`)
+- `0x0BB8` → `0428`: leave with result 2
+- `0x0BB9` Automotive → `0456`: `if [4596]==4 → msg 0x106E (building finished, entry refused)` else `[4592]=0`
+- `0x0BBA` Aircraft → `0434`: same with `[4598]` → `[4592]=1`
+- `0x0BBB` Alt-Energy → `0445`: same with `[459A]` → `[4592]=2`
+- all three then **`0463`: `[bp-6]=1`** → loop exits, returns `[bp-2]` (0) → state 0 (enter building).
+**Level-picker hook point: `02E0:0463`** (file offset `0x1200+0x2E00+0x463 = 0x4263`). The "finished building"
+refusal (`cmp [4596+2b],4 / jz 046A`) must be removed for AP.
+
+### 4.5 Level generation / entering a building — TBD
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
 (fresh); with `459C[b]==1` it restores from block *b*.
 
