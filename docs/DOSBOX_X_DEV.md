@@ -35,7 +35,7 @@ change if the DOS environment or memory layout changes, so regenerate per sessio
 - **Overlay code** (`O0Exx_*` functions) is loaded by VROOMM into a buffer at runtime and may move or be
   evicted. Code breakpoints on overlays aren't reliable; break on **data** (`BPM`) instead, then look at
   the stack/CS when it fires.
-- If `BPM` never fires, this build may not check memory breakpoints on every instruction (in classic
+- `BPM` **works** in stock DOSBox-X 2026.10.01 (it watches a single byte). If it ever doesn't fire, the build may not check memory breakpoints on every instruction (in classic
   DOSBox that needs a "heavy debug" build). Fall back to dump diffing (below).
 
 ## Recipe: find a hook by dump diffing
@@ -52,7 +52,7 @@ If nothing relevant changes in DGROUP, the state is in far heap memory: dump a w
 ## Hunt list (RE_NOTES §4–5)
 | # | Goal | Start with |
 |---|---|---|
-| 1 | Building index → category (automotive / alt-energy / aircraft) | `BPM DS:4592`, walk into each building |
+| 1 | ~~Building index → category~~ **done**: 0 Automotive, 1 Aircraft, 2 Alt-Energy | — |
 | 2 | Confirm race-win path | `BP <race>:05B7`, win any race |
 | 3 | Door / puzzle solved | dump diff around solving one door; expect a `07`→`09` byte |
 | 4 | Part box opened / part collected | dump diff around opening one box |
