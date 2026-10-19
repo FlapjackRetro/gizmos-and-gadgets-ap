@@ -284,6 +284,24 @@ Need to confirm: when entering building *b* with `459C[b]==0`, the game builds l
   **TBD**: how the race sim turns (top, accel) into a win (track/second mode), and the flight engine `O0E7D`.
 - Part-name text: `\n` = forced line break, byte `0x1D` = the font's ½ glyph (only these two in part names).
 
+### 4.8 Ground race simulation [static + live-checked, 2026-10-19]
+`O0E7A_01CA` runs the race; returns 0 = player won (→ `[4560]`), 1 = lost. **Fully deterministic.**
+- Racers: player `DS:BAE8` (id 1), Morty `DS:BAAE` (id 2). Struct: +0x00 id bit, +0x12 speed (16.16), +0x16 track
+  index, +0x18 far ptr track, +0x1C mode, +0x1E finished, +0x20 laps left, +0x22 capB=min(A,B), +0x26 capA=A,
+  +0x32/+0x36 accel.
+- Tracks are resources of 6-byte records `(x, y, code)`: player `DS:39F4[v]`, Morty `DS:3A12[v]`; laps `DS:3A30[v]`.
+  Auto L1 0x00E7/0x00E8 (no laps); Auto L2–3 + Alt L1–3 0x00E9/0x00EA (578 positions); Auto L4–5 + Alt L4–5
+  0x00EB/0x00EC (995 positions).
+- Event codes (jump table `O0E7A:01B0`, index = code+14): −5 lap (laps>0 → −1; index → 0), −4 mode 0, −3 mode 1,
+  −2 finish (only when laps==0), −14/−13 sound; ≥0, −1, −12…−6 = positions.
+- Frame: tick both (`O0E7A_0034`: mode 0 → speed=min(speed+accel, capA); mode 1 → if speed>capB: −0.2 else
+  min(speed+accel, capB)); player moves **int(speed)** positions, then Morty; until someone finishes. Both in the same
+  frame → player wins if speed ≥ Morty's. The fractional part of speed never moves a racer.
+- `tools/race_sim.py` (exact + fast path, cross-checked), predicts the live Alt-Energy L2 win (frame 249).
+- **`tools/race_logic.py` → `data/race_requirements.tsv`**: exhaustive per-level analysis. Max-tier builds win every
+  ground level; safe rule "every performance slot ≥ tier 2" for Auto L1–2 and Alt L1–2, "≥ tier 3" (capped at the
+  slot's best tier) for the rest. Winning share falls to 0.2–4% on Auto L4–5 / Alt L3–5.
+
 ## 5. Live session log (DOSBox-X 2026.10.01)
 
 ### 2026-10-19 — building index

@@ -27,6 +27,13 @@ array is understood.
 - Other filler: score / bananas (if banana count is a field), traps: "Cyberchimp" (steal a part), etc.
 
 ## Progression / logic
+**Race logic is now data-driven** (`data/race_requirements.tsv`, from an exact simulation of the race code):
+- Ground races are deterministic: player vs Morty's fixed build. A race is winnable iff the installed parts give a
+  finish no later than Morty's (tie → higher speed).
+- Only performance slots matter (not brakes, fuel tanks, paint, decals). Later levels need nearly every
+  performance slot at the best tier → **progressive quality items per slot** fit well, with logic
+  "all performance slots ≥ tier 2" (Auto L1–2, Alt L1–2) or "≥ tier 3" (others). Aircraft: TBD (flight engine).
+
 - Race *L* in building *B* requires: access to level L of B **and** the parts needed to build a vehicle that
   can win that race (logic per race: e.g. "a body, an engine, wheels of at least tier X"). Tier data must
   come from the game's part tables (resource files) — RE TBD.
