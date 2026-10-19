@@ -1,0 +1,9 @@
+# Game files are copyrighted — never commit them
+*.exe
+*.EXE
+*.dat
+*.DAT
+*.ico
+# Generated disassembly
+dis/
+__pycache__/
