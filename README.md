@@ -4,9 +4,14 @@ An [Archipelago](https://github.com/ArchipelagoMW/Archipelago) randomizer for *S
 
 **Status:** reverse-engineering / design. Nothing playable yet.
 
+**Development target:** DOSBox-X. Other DOSBox flavors will be tested later.
+
 ## Contents
 - `docs/RE_NOTES.md`: executable layout, `PLAYERS.DAT` save format, in-memory player record, hook points (race win confirmed).
 - `docs/AP_DESIGN.md`: draft locations, items, progression, multi-level access plan and client architecture.
+- `docs/DOSBOX_X_DEV.md`: DOSBox-X dev setup, debugger workflow and hook hunt list.
+- `tools/dbgaddr.py`: prints DOSBox-X breakpoint commands for a given load segment.
+- `tools/memdiff.py`: diffs MEMDUMPBIN dumps to find the variables an in-game action changes.
 - `tools/players_dat.py`: dump players/progress from a `PLAYERS.DAT`.
 - `tools/disasm.py`: symbolized disassembly of `ssg.exe`, including VROOMM overlays (needs `ndisasm`).
 

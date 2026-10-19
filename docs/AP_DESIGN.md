@@ -49,13 +49,14 @@ rewriting game code**:
 
 ## Client architecture
 - Python AP client (CommonClient-based) + a DOSBox memory interface:
-  - Windows: attach to `dosbox.exe`/`dosbox-x.exe` with pymem, find emulated RAM, scan for the Borland
+  - Windows: attach to `dosbox-x.exe` (dev target; other flavors later) with pymem, find emulated RAM, scan for the Borland
     signature → DS base. Read/write words at DS+offset.
   - Poll at ~5–10 Hz: building, level indices, races-won, box/door state, inventory.
 - Patcher: apply byte patches to a copy of `ssg.exe` (a `.apgg` patch or simple byte list).
 - Save handling: one AP seed ↔ one player slot in PLAYERS.DAT; client verifies the player name matches the slot.
 
 ## Open questions for you
-1. Which DOSBox do you play with (vanilla DOSBox, DOSBox-X, DOSBox Staging)? It affects memory scanning.
+1. ~~Which DOSBox?~~ **Decided:** DOSBox-X is the development target (see `docs/DOSBOX_X_DEV.md`); other
+   flavors get compatibility testing later in development.
 2. Doors as locations: per door, per puzzle type, or skip for v0.1?
 3. Should parts stay per-level (vanilla) or become a global pool usable in any building/level?

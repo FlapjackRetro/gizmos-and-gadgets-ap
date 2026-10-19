@@ -7,3 +7,7 @@
 # Generated disassembly
 dis/
 __pycache__/
+# Debugger dumps
+*.bin
+MEMDUMP.TXT
+memdump.txt
