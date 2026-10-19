@@ -69,7 +69,8 @@ locations reachable, and a building is stuck until its race is won. So:
   - `progressive` — `Progressive <Building> Level` items unlock levels (vanilla-like, but decoupled from race wins).
 - Mechanics already known (RE_NOTES §3–4):
   - Selecting level *L* of building *b*: the enter-building routine `R02E0_0820` (state 3) derives level and vehicle
-    from `DS:4596[b]` alone, so set it to `L-2` (or patch `0x83D` to read a picker variable) before state 3 runs; the part table then comes from
+    from `DS:4596[b]` alone. **Preferred: patch `0x83D` to read a separate picker variable**, because `4596[b]` also
+    drives the parked-vehicle display in the Technology Center (= races won) and the finished-building logic; the part table then comes from
     resource `0x2F5 + vehicle`.
   - The save record holds **one warehouse snapshot per building** (block at rec+0x27E+b*0x6BA, flag `459C[b]`).
     Revisiting a different level of the same building means swapping that block: store the other levels'

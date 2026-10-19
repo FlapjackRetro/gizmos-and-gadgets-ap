@@ -351,6 +351,9 @@ Text `MEMDUMP` of DS:0000–FFFF. a = before box 1; b = after box 1; c = from a:
 started L3 again from the beginning (fresh level), as predicted (race win clears `459C[b]`, level stays `4596[b]+2`).
 `no_finished_refusal` with `[4596]=4` (SM): Automotive entered as "Level-6 BLIMP" — level 5 / vehicle 5 overflow into
 Aircraft L1 (expected from `R02E0_0820`); needs the level picker.
+**Technology Center parked vehicles = races won per building**, drawn from `[4596+2b]` (Automotive showed 5 cars
+after `SM 16CA:4596 04 00`). So the AP design should keep `4596[b]` = races actually won and hold the *chosen level*
+in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writing the picker's level into `4596[b]`.
 
 ## 6. Next step: dynamic analysis checklist (DOSBox-X debugger build)
 1. ~~Building→category mapping~~ (done, §5). Confirm race-win path with `BP <load+02E0>:05B7`.
