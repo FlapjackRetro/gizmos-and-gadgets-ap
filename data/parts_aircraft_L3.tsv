@@ -1,4 +1,4 @@
-id	f2e	group	idx	stat1E	stat26	name
+id	f2e	group	idx	drawX	drawY	name
 0	15	0x18	0	133	134	open cockpit
 1	15	0x18	1	133	134	enclosed cockpit with sharp angle to tail
 2	15	0x18	2	133	134	enclosed cockpit with medium angle to tail
