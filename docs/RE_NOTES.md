@@ -57,7 +57,7 @@ bytes to/from **DS:0x4562**). **The active player's record is held verbatim in m
 | 0x014 | 4576 | u16 | Save slot | confirmed |
 | 0x01A | 457C | 20 bytes | Live warehouse header (room, position…) — copied into building block +0x00 on save | confirmed copy; fields TBD |
 | 0x02E | 4590 | u16 | Used by race engines + R0622/R053F | TBD |
-| **0x030** | **4592** | u16 | **Current building (0–2)** | confirmed |
+| **0x030** | **4592** | u16 | **Current building: 0 = Automotive, 1 = Aircraft, 2 = Alternative Energy** (written when clicking a building on the select screen) | confirmed (live) |
 | 0x032 | 4594 | u16 | Used heavily by race engine O0E7D | TBD |
 | **0x034** | **4596** | s16[3] | **Last race won index per building** (−1 none … 4 = all five) | confirmed |
 | **0x03A** | **459C** | u16[3] | **Warehouse-in-progress flag per building** | confirmed |
@@ -87,8 +87,8 @@ save/exit. The block is a snapshot; the rec header fields (§ table) are live.
 ```
 R02E0_0564:  ...
   0x57F  mov ax,[0x4592]            ; building
-         building 1     -> call O0E7D_0A23   (race engine B)
-         building 0, 2  -> call O0E7A_0762   (race engine A)
+         building 1 (Aircraft)              -> call O0E7D_0A23   (flight race)
+         building 0, 2 (Automotive, Alt-E)  -> call O0E7A_0762   (ground race)
   0x5A0  mov [0x4560],ax            ; 0 = player won
   0x5A3  cmp word [0x455E],0 ; jnz   ; race aborted
   0x5AA  cmp word [0x4560],0 ; jnz   ; lost
@@ -109,9 +109,19 @@ Box list (+0x302) live copy; inventory flags rec+0x40.. (hypothesis). Same metho
 Need to confirm: when entering building *b* with `459C[b]==0`, the game builds level `4596[b]+2`'s layout
 (fresh); with `459C[b]==1` it restores from block *b*.
 
-## 5. Next step: dynamic analysis checklist (DOSBox-X debugger build)
-1. Start game, `bpm DS:5C0E` → confirm race-win path & building→category mapping (which building is
-   automotive / alt-energy / aircraft).
+## 5. Live session log (DOSBox-X 2026.10.01)
+
+### 2026-10-19 — building index
+`DEBUGBOX SSG.EXE` → CS=`0823` (load segment), entry `mov dx,16CA` → DGROUP `16CA` (= 0823+0EA7 ✓).
+Memory breakpoints (`BPM`) **work** in the stock DOSBox-X build (they watch one byte).
+- `5C0E` 00→04 when Flapjack's save loads (record read into DS:4562).
+- `4592` 00→02 on load, then set on each building click: Aircraft→01, Alt-Energy→02, Automotive→00.
+- Levels shown match `level = 4596[b] + 2`: Automotive L3, Aircraft L3, Alt-Energy L1 (Flapjack {1,1,−1}).
+- Automotive and Aircraft showed the level-intro blueprint; Alt-Energy (`459C[2]=1` in save) did not
+  → supports §4.4: in-progress flag = restore saved warehouse, else fresh level + blueprint.
+
+## 6. Next step: dynamic analysis checklist (DOSBox-X debugger build)
+1. ~~Building→category mapping~~ (done, §5). Confirm race-win path with `BP <load+02E0>:05B7`.
 2. In a warehouse, find the live 07/09 array (search memory for the block's 40-byte pattern) → `bpm` it,
    solve a puzzle → door-open function.
 3. Open a box → find writer to the live box list / inventory → part-pickup function and part IDs.

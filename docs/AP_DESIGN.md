@@ -3,7 +3,7 @@
 Companion to `RE_NOTES.md`. Draft for discussion; anything that depends on unconfirmed RE is marked.
 
 ## Game structure (vanilla)
-- 3 engineering buildings (Automotive, Alternative Energy, Aircraft — exact index mapping TBD), each with
+- 3 engineering buildings (index 0 Automotive, 1 Aircraft, 2 Alternative Energy — confirmed live), each with
   **5 levels**. A building only ever has **one active level**: level = last-race-won-index + 2 (capped at 5; index 4 = building finished).
 - Each level: a warehouse with puzzle-locked doors and part boxes. Collect parts → build vehicle → race Morty.
 - Winning race *n* advances that building to level *n+1*. 15 races total; 15/15 = ending.
