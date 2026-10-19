@@ -13,6 +13,7 @@ the patches; each one verifies the original bytes first.
 ## Contents
 - `docs/RE_NOTES.md`: executable layout, `PLAYERS.DAT` save format, in-memory player record, hook points (race win confirmed).
 - `docs/AP_DESIGN.md`: draft locations, items, progression, multi-level access plan and client architecture.
+- `docs/KNOWN_ISSUES.md`: observed issues and their status.
 - `docs/DOSBOX_X_DEV.md`: DOSBox-X dev setup, debugger workflow and hook hunt list.
 - `tools/dbgaddr.py`: prints DOSBox-X breakpoint commands for a given load segment.
 - `tools/memdiff.py`: diffs MEMDUMPBIN dumps to find the variables an in-game action changes.
