@@ -69,6 +69,21 @@ it actually sends/holds. What we know:
   (needs an archive rewriter), (c) point `+0x86` at a client-managed buffer.
 - TBD: find other places text is drawn (blueprint screen labels, part inventory screen) and their length limits.
 
+### Box pickups as Archipelago checks
+Opening a box that holds an Archipelago check must **show the item's text** (the AP item name, from the label
+work above) but **must not add anything to the inventory** unless the item belongs to this player's own game.
+Own-game items arrive through the normal AP receive path and are granted then.
+Where this hooks in (`R08F5_0002`, see RE_NOTES §4.3):
+- Keep: box removal (`R0622_0D8F`), score (+20, `R02E0_0ACE`) if wanted, name display (`R0A04_076B(part)`).
+- Skip for AP checks: `R0834_08D7(0, part)` (inventory add) and the PARTS NEEDED decrement (`[DS:4582]`), which
+  depends on its return value. The "you found a part you need / don't need" message (`0x104A`/`0x1044`) should be
+  replaced by an AP message (e.g. "Found X for Player").
+- Granting a received item (own game) = the same `R0834_08D7(0, part)` call, plus the PARTS NEEDED bookkeeping.
+  This runs inside the game, so it needs a small injected routine the client can trigger (mailbox in memory),
+  not just memory pokes.
+- **Chimps:** `O0E0D_0000` lets Cyberchimps take parts from boxes and drop them later; that path must not hand
+  AP-check placeholders to the player as real parts either.
+
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.
 - Decals are group `0x0C` (cosmetic). Each entry has sprite resource ids at `+0x12`/`+0x14` (e.g. `0x00B6`/
