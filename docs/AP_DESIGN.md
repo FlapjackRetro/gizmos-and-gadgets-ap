@@ -122,6 +122,34 @@ Where this hooks in (`R08F5_0002`, see RE_NOTES §4.3):
 - **Chimps:** `O0E0D_0000` lets Cyberchimps take parts from boxes and drop them later; that path must not hand
   AP-check placeholders to the player as real parts either.
 
+**Decided — other players' items:** a box holding another game's item simply disappears from G&G when it is
+opened (the check is sent, the item text is shown, nothing enters the inventory).
+
+### To-do: Cyberchimps carry checks around
+Chimps pick up parts all the time (`O0E0D_0000` takes parts from boxes; `R0622_0F4E` drops a part into a box in
+a random room), so in a chimp-enabled game a check is not fixed to one box: it can move between rooms or be
+held by a chimp. Consequences and plan:
+- A hint can only point to a **building and level**; the player may have to search that whole level, chimps
+  included.
+- Needs a way to show that a chimp is holding a check. Likely a mod in the **assembly area**: an interaction that
+  lists how many checks the chimps of that level are holding, and of what type (own-game part vs. other player's
+  item).
+- Still to decide: whether chimps may pick up AP checks at all (an option could exclude them), and how a chimp
+  carrying a check is drawn or reported in the warehouse.
+
+### To-do: limited player inventory vs. received items
+The vanilla inventory holds only **two items per part type**, so items received from the multiworld can arrive
+when that slot is full. The player must never lose access to a received check. Options:
+1. **Accept-or-recycle prompt (EXE-side):**
+   1. The client sends the part to the EXE (mailbox, see "Box pickups as Archipelago checks").
+   2. The EXE checks for free space in the inventory for that part type; if there is room, it accepts the part.
+   3. If that type is full, the EXE raises an interrupt that pauses the game and asks the player to either accept
+      the new part and recycle one they are holding, or recycle the part just received.
+2. **Inventory managed outside the vanilla system:** a dialog that holds received parts and can send them to the
+   conveyor (assembly) or recycle them to the warehouse.
+- Open: what "recycle to the warehouse" means for a received AP item (back into a box so it can be picked up
+  again, vs. kept by the client), so a recycled item is never lost for good.
+
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.
 - Decals are group `0x0C` (cosmetic). Each entry has sprite resource ids at `+0x12`/`+0x14` (e.g. `0x00B6`/
