@@ -43,6 +43,18 @@ Leaked source module names (assert strings): `\source\electric.c`, `\source\puzz
 - 26 resident code segments, 33 overlays. `tools/disasm.py` produces a symbolized listing
   (`R<seg>_<off>` for resident, `O<stub>_<off>` for overlay functions) in `dis/`.
 
+### Ghidra (flattened EXE) [2026-10-22]
+Ghidra's MZ loader only maps the resident image (511 functions) — every overlay call ends at an `INT 3Fh` stub.
+`tools/unvroomm.py ssg.exe ssg_flat.exe` appends all 36 overlay code blocks as ordinary segments, turns their
+fixups into MZ relocations (3,220 total) and rewrites each stub entry `CD 3F lo hi 00` into `JMP FAR newseg:lo`.
+Ghidra then finds 963 functions and follows overlay calls through the stubs (`thunk_FUN_…`). `ssg_flat.map` lists
+stub → new segment. **Analysis only — it does not run.**
+- Ghidra load segment 0x1000: resident `R<seg>_<off>` = linear `0x10000 + seg*16 + off`; overlay `O<stub>_<off>` =
+  linear `0x10000 + newseg*16 + off` (newseg from the map, e.g. O0E30 → 1DFE, O0E18 → 1B6A, O0E7A → 2DE6).
+- Ghidra picks the wrong DS for this file: **`DAT_22fc_X` is `DS:(X + 0x4550)`** (e.g. `22fc_20e8` = DS:6638,
+  `22fc_353a` = DS:7A8A). Names written `DAT_1ea7_X` are already DS-relative. Linear addresses are correct either
+  way (DS:N = linear 0x1EA70 + N), so xrefs on a linear address work.
+
 ### Runtime locating (for a memory-reading client)
 Scan DOSBox's emulated RAM for `"Borland C++ - Copyright 1991 Borland Intl."`; DS linear base = hit − 4.
 Sanity check: `"players.dat"` at DS+`0x1F6E`.
@@ -69,7 +81,7 @@ bytes to/from **DS:0x4562**). **The active player's record is held verbatim in m
 | 0x014 | 4576 | u16 | Save slot | confirmed |
 | 0x020 | 4582 | u16 | **PARTS NEEDED** (HUD counter for current level) | confirmed (code) |
 | 0x06E | 45D0 | u16[8][33] | **Puzzle variant solved table** (type*0x42 + variant*2) | confirmed (code) |
-| 0x01A | 457C | 20 bytes | Live warehouse header (room, position…) — copied into building block +0x00 on save | confirmed copy; fields TBD |
+| 0x01A | 457C | 20 bytes | Live warehouse header — copied into building block +0x00 on save; fields in §3.2 | confirmed copy |
 | 0x02E | 4590 | u16 | Used by race engines + R0622/R053F | TBD |
 | **0x030** | **4592** | u16 | **Current building: 0 = Automotive, 1 = Aircraft, 2 = Alternative Energy** (written when clicking a building on the select screen) | confirmed (live) |
 | 0x032 | 4594 | u16 | **Current level (0-based)** in the current building | confirmed (code) |
@@ -77,22 +89,52 @@ bytes to/from **DS:0x4562**). **The active player's record is held verbatim in m
 | **0x03A** | **459C** | u16[3] | **Warehouse-in-progress flag per building** | confirmed |
 | **0x27E** | **47E0** | 3 × 0x6BA | **Per-building warehouse blocks** (see below) | confirmed |
 | **0x16AC** | **5C0E** | u16 | **Total races won; 15 ⇒ game complete** | confirmed |
-| 0x16AE | 5C10 | … | Tail; used by race code | TBD |
+| 0x16AE | 5C10 | u8[15] | **One byte per vehicle** (index = `[4590]`), written from `[4588]` by the assembly code — see §3.2 | confirmed (static); meaning hypothesis |
 
 Your saves check out: Flapjack `{1,1,−1}` → 2+2+0 = 4 races; Runs `{−1,4,−1}` → 5 races.
 
-### Building block (0x6BA bytes, at rec+0x27E + b*0x6BA)
-Written by the save path in O0E18 only when `[DS:0x94]` (dirty) is set:
-- `+0x000` 20 bytes ← copy of rec+0x1A (warehouse header)
-- `+0x014` → serialized by `R053F_0385`
-- `+0x26C` → byte array of `07`/`09` values, serialized by `R0622_0FB3` (with +0x302). Length grows with level:
-  **40 (level 1), 80 (level 3), 120 (level 5)** ⇒ 40 + 20·(level−1). [hypothesis: 07 = locked/unsolved, 09 = opened]
-- `+0x302` → list of u16 triples containing x-coordinates 35,75,115,155,195,235,275 and 0–2 → **part boxes**
-  (column x, shelf row, room); `1000` sentinel appears = opened/unused. Exact field order TBD.
-- `+0x492` → serialized by `R0834_0B5E`
+### 3.1 Building block (0x6BA bytes, at rec+0x27E + b*0x6BA) — **[confirmed, decompiled in Ghidra 2026-10-22]**
+Written by the save path in O0E18 only when `[DS:0x94]` (dirty) is set; restored by `R02E0_0820` when `459C[b]≠0`
+(§4.6). Decoded by `tools/players_dat.py`.
 
-**Implication:** during play the live warehouse lives in other globals and is snapshotted into the block on
-save/exit. The block is a snapshot; the rec header fields (§ table) are live.
+| Off | Size | Writer / reader | Content |
+|---|---|---|---|
+| `+0x000` | 20 | memcpy | copy of rec+0x1A..0x2D (warehouse header, §3.2) |
+| `+0x014` | 4 × parts | `R053F_0385` / `R053F_03C9` | per part of the level, in part-table order: `s16 owner` = part entry `+0x0C`, `u16 flags` = part entry `+0x36`. **owner = actor holding the part: 0 = player, 1–11 = other actors (chimps), −1 = nobody (still in a box).** |
+| `+0x26C` | 1 per door | `R0622_0FB3` / `R0622_10E7` | for rooms 0–15 (far ptr table DS:7A04, null rooms skipped), every room object whose state (`+0x10`) is 7 or 9, in object order: the state byte. **7 = locked, 9 = open.** Restore also sets obj `+0x16`=4 and sprite `+0x0E` = 0x30E (large room) / 0x33C (small room) for open doors. |
+| `+0x302` | stream | same pair | for the same rooms: `u16 count`, then `count × {u16 row, u16 column, u16 contents}`. **contents = part id or 1000 (empty).** row = box obj `+0x0E`; column computed from box x: small rooms (room word0 bit0 = 1) `R0622_000A` → 0–5 (x thresholds 28/54/80/106/132), large rooms `R0622_004D` → 0–2 (47/99). Restore calls `R0622_0DF0(room, row, column, contents, 1)` and counts empties into `[7A00]`. |
+| `+0x492` | 12 × 0x2E | `R0834_0B5E` / `R0834_0B95` | actor structs (DS:7A8A + a·0xA0) bytes `+0x14..+0x41`: room/position/animation. **Not the inventory.** Restore re-places each actor (`R0834_015B`) and re-fetches its animation frame. 12·0x2E ends exactly at the block end. |
+
+**The inventory is saved through the part table:** restoring `+0x014` calls the grant primitive
+`R0834_08D7(owner, part)` for every part with owner ≠ −1 (and `R0A04_076B(part)` when owner = 0). So "which parts
+does the player have" = parts whose owner is 0. The live warehouse is in globals/far memory during play and is
+snapshotted into the block on save/exit; the rec header fields (§ table) are live.
+
+`R0834_08D7(actor, part)` in full: looks up the part's group, counts the actor's parts of that group (`R053F_0216`);
+**refuses if the actor already holds 2**. Otherwise sets part `+0x0C`=actor, `+0x1C`=index of the other held part of
+the same group (or −1), keeps only flag 0x4000 in `+0x36`, `+0x8A`=0, `+0x1A`=0x2238; links the partner back
+(`partner+0x1C = id|0x8000`); actor `+0x70`++ and appends to the actor's list. Returns 1 if a partner existed
+(i.e. this is the second of its group) — that is why the pickup code only decrements PARTS NEEDED when it returns 0.
+
+Box sprite: `0x332` (large) / `0x343` (small), +1 when the part's flag 0x4000 is set.
+
+### 3.2 Warehouse header rec+0x1A..0x2D [static, Ghidra xrefs 2026-10-22]
+Initial values from the fresh-level path of `R02E0_0820` (§4.6). `DS` addresses are `0x4562 + off`.
+
+| Rec off | DS | Init (fresh) | Use |
+|---|---|---|---|
+| 0x1A | 457C | 0 | **Level intro done.** Warehouse loop (`O0E30_0C89`) injects UI event `0x3EB` (blueprint) instead of reading input while it is 0. |
+| 0x1C | 457E | 10, **only when level==0** (so it carries over between levels) | **HUD 3-digit counter** (drawn by `R0A04_02E9` at 0x11E,0xB1). `R08F5_0895` spends one: launches actor 1 from the player's position and decrements; when it reaches 0 and no empty boxes are left (`[7A00]==0`), it adds `[7A02]` empty boxes to the level. In-game name TBD — candidate AP filler item ("+N"). |
+| 0x1E | 4580 | `DS:00B2[level]` = **1, 2, 2, 3, 3** | read only by the warehouse generator `R08F5_04CF` (Ghidra cannot decompile it cleanly). Hypothesis: number of Cyberchimps per level. |
+| 0x20 | 4582 | `R053F_0316()` | PARTS NEEDED (HUD, `R0A04_02E9` at 0x129,0xA6) |
+| 0x22 | 4584 | 0 | decremented in `O0E30_060F` when an assembled object has `+0x0E≠0`; compared with level-header word `+6` by `O0E30_00A6` to toggle a HUD icon (0x1D, frames 0x25/0x26) |
+| 0x24 | 4586 | 0 | when ≠0 the warehouse loop shows hint 0x1053 |
+| 0x26 | 4588 | −1 | a selection applied by `O0E30_01A0` in the assembly code and stored into `rec+0x16AE[vehicle]`. Hypothesis: chosen paint/colour. |
+| 0x28 | 458A | 0, only when level==0 | passed by address to the hint routine `R1180_002A(0x1046, 0x490, &458A)` → shown-hints flags |
+| 0x2A | 458C | — | no code references found |
+| 0x2C | 458E | `rand(100) < 50` | only the write found; probably read through a pointer |
+
+HUD row: `R0A04_02E9` draws PARTS NEEDED, the rec+0x1C counter and the score (`DS:4572`, 6 digits).
 
 ### 3.3 Part tables [confirmed live + decoded from resources, 2026-10-19]
 - **Loader `R053F_0002`**: loads resource `0x2F5 + [DS:4590]` where `DS:4590` = rec+0x2E = **vehicle index
@@ -241,7 +283,7 @@ auto-opened (fresh level).
           R08F5_05A3(); O0E0D_0635(); memcpy(rec+0x1A <- block+0, 20)
           R053F_03C9(block+0x14)   part states
           R0622_10E7(block+0x26C doors, block+0x302 boxes)   rooms
-          R0834_0B95(block+0x492)  inventory;   [94] = 1
+          R0834_0B95(block+0x492)  actor positions (inventory comes back via block+0x14 owners);   [94] = 1
        else FRESH (0x8EB):
           R08F5_094D()  generate warehouse;  [4582] = R053F_0316()  (PARTS NEEDED)
           if level==0: [458A]=0, [457E]=10
@@ -361,7 +403,9 @@ in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writ
    solve a puzzle → door-open function.
 3. Open a box → find writer to the live box list / inventory → part-pickup function and part IDs.
 4. Exit building → confirm snapshot into block; re-enter → confirm restore path & level generation entry.
-5. Map rec+0x40..0x27D by collecting known parts and diffing saves (`tools/players_dat.py`).
+5. ~~Map rec+0x40..0x27D~~ (puzzle table + building blocks, §3.1). Run `tools/players_dat.py -v` on a real
+   save and compare with the warehouse on screen (doors open, boxes left, parts held) to confirm §3.1 live.
+6. Name the rec+0x1C HUD counter in-game and confirm rec+0x1E = chimp count (§3.2).
 
 ## 4.10 Title screen and LPX images
 - Title routine `O0E28_043F`: background 0x1002 (raw LPX 320x200), palettes 0x1000 (shows) / 0x1004 (blanks indices
