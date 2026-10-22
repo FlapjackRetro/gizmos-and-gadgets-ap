@@ -124,7 +124,7 @@ Initial values from the fresh-level path of `R02E0_0820` (§4.6). `DS` addresses
 | Rec off | DS | Init (fresh) | Use |
 |---|---|---|---|
 | 0x1A | 457C | 0 | **Level intro done.** Warehouse loop (`O0E30_0C89`) injects UI event `0x3EB` (blueprint) instead of reading input while it is 0. |
-| 0x1C | 457E | 10, **only when level==0** (so it carries over between levels) | **HUD 3-digit counter** (drawn by `R0A04_02E9` at 0x11E,0xB1). `R08F5_0895` spends one: launches actor 1 from the player's position and decrements; when it reaches 0 and no empty boxes are left (`[7A00]==0`), it adds `[7A02]` empty boxes to the level. In-game name TBD — candidate AP filler item ("+N"). |
+| 0x1C | 457E | 10, **only when level==0** (so it carries over between levels) | **Bananas** (user-confirmed name; HUD 3 digits, drawn by `R0A04_02E9` at 0x11E,0xB1). **`R02E0_0AEA(n)` adds n bananas**; opening an empty box gives 5. `R08F5_0895` throws one: launches actor 1 (the banana) from the player's position and decrements. **Anti-softlock:** when bananas hit 0 and no empty boxes are left (`[7A00]==0`), it adds `[7A02]` new empty boxes (`R0622_0F4E(1000)`). Candidate AP filler item ("+5 bananas" = call `R02E0_0AEA(5)` or add to `DS:457E`). |
 | 0x1E | 4580 | `DS:00B2[level]` = **1, 2, 2, 3, 3** | read only by the warehouse generator `R08F5_04CF` (Ghidra cannot decompile it cleanly). Hypothesis: number of Cyberchimps per level. |
 | 0x20 | 4582 | `R053F_0316()` | PARTS NEEDED (HUD, `R0A04_02E9` at 0x129,0xA6) |
 | 0x22 | 4584 | 0 | decremented in `O0E30_060F` when an assembled object has `+0x0E≠0`; compared with level-header word `+6` by `O0E30_00A6` to toggle a HUD icon (0x1D, frames 0x25/0x26) |
@@ -134,7 +134,7 @@ Initial values from the fresh-level path of `R02E0_0820` (§4.6). `DS` addresses
 | 0x2A | 458C | — | no code references found |
 | 0x2C | 458E | `rand(100) < 50` | only the write found; probably read through a pointer |
 
-HUD row: `R0A04_02E9` draws PARTS NEEDED, the rec+0x1C counter and the score (`DS:4572`, 6 digits).
+HUD row: `R0A04_02E9` draws PARTS NEEDED, bananas (rec+0x1C) and the score (`DS:4572`, 6 digits).
 
 ### 3.3 Part tables [confirmed live + decoded from resources, 2026-10-19]
 - **Loader `R053F_0002`**: loads resource `0x2F5 + [DS:4590]` where `DS:4590` = rec+0x2E = **vehicle index
@@ -213,7 +213,7 @@ for the ending; flag `[0xA0D4]`).
 ```
 obj = R0622_1265(room [7AA4], object [7ACA]);   ; cdecl: last push = first arg  if obj.taken(+8) return
 contents = obj.(+0x0C+0x12)        ; 1000 = empty, else part id (0x8E-byte entries in far table [663C])
-empty : R02E0_0AEA(5); R0622_0D8F(remove); dec [7A00]
+empty : R02E0_0AEA(5) (+5 bananas); R0622_0D8F(remove); dec [7A00]
 part  : needed = R053F_0189(part); isnew = R0834_08D7(actor 0, part)   ; ADD TO INVENTORY
         R0A04_076B(part) (show name); msg 0x104A/0x1044; R0622_0D8F(remove)
         if isnew==0 && needed: dec [4582]  ; rec+0x20 = PARTS NEEDED (HUD)
@@ -405,7 +405,7 @@ in a separate variable (patch `R02E0_0820` at 0x83D to read it) rather than writ
 4. Exit building → confirm snapshot into block; re-enter → confirm restore path & level generation entry.
 5. ~~Map rec+0x40..0x27D~~ (puzzle table + building blocks, §3.1). Run `tools/players_dat.py -v` on a real
    save and compare with the warehouse on screen (doors open, boxes left, parts held) to confirm §3.1 live.
-6. Name the rec+0x1C HUD counter in-game and confirm rec+0x1E = chimp count (§3.2).
+6. ~~Name the rec+0x1C counter~~ (bananas). Confirm rec+0x1E = chimp count (§3.2).
 
 ## 4.10 Title screen and LPX images
 - Title routine `O0E28_043F`: background 0x1002 (raw LPX 320x200), palettes 0x1000 (shows) / 0x1004 (blanks indices

@@ -95,7 +95,7 @@ def parse_record(r, part_counts=None):
         'slot': s16(r, 0x14),
         'live_warehouse_hdr': r[0x1A:0x2E].hex(),   # copied to/from block+0x00
         'parts_needed': s16(r, 0x20),
-        'counter_1c': s16(r, 0x1C),                 # HUD 3-digit counter, see RE_NOTES §3.2
+        'bananas': s16(r, 0x1C),                    # HUD banana count, see RE_NOTES §3.2
         'vehicle': s16(r, 0x2E),
         'current_building': s16(r, 0x30),
         'current_level': s16(r, 0x32),
@@ -149,7 +149,7 @@ def main(path, verbose=False):
         print(f"\n[{slot}] {p['name']}  score={p['score']}  races won={p['races_won_total']}/15")
         print(f"   current building={p['current_building']} level={p['current_level'] + 1} vehicle={p['vehicle']}"
               f"  last race idx per bldg={p['last_race_won_idx']}  in-progress={p['warehouse_in_progress']}")
-        print(f"   parts needed={p['parts_needed']}  counter(rec+0x1C)={p['counter_1c']}"
+        print(f"   parts needed={p['parts_needed']}  bananas={p['bananas']}"
               f"  per-vehicle bytes={p['per_vehicle_byte']}")
         for i, b in enumerate(p['buildings']):
             if not b['in_progress']:
