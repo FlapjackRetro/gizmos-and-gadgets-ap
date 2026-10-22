@@ -300,6 +300,11 @@ static int on_box_open(void *u, GGEvent *e)
     int v = cur_vehicle();
     if (!cfg.box_checks || v < 0 || e->contents == GG_BOX_EMPTY || e->contents < 0 || e->contents >= 0x40)
         return GG_CONTINUE;                                  /* empty boxes keep their bananas */
+    /* A part the player recycled (HUD recycle bin R0A04_0A82, or the assembly room) is put back
+     * into a box in a random room with flag 0x4000 at part-table +0x36. It is the player's own part
+     * coming back, not a location: let the game hand it over as usual. */
+    uint32_t part = far_at(api->ds_base() + 0x663C) + (uint32_t)e->contents * 0x8Eu;
+    if (rd16(part + 0x36) & 0x4000) return GG_CONTINUE;
     char what[48];
     snprintf(what, sizeof what, "box: level %d part %d", v, e->contents);
     send_check(LOC_BOX(v, e->contents), what);
