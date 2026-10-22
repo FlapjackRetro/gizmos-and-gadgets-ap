@@ -3,7 +3,8 @@
 unvroomm.py - flatten a Borland VROOMM-overlaid DOS EXE for static analysis.
 
 Each overlay's code is appended to the MZ load image as an ordinary segment,
-its overlay fixups become MZ relocations, and every INT 3Fh stub entry
+its overlay fixups (segment-table selectors) are resolved to real segments and
+become MZ relocations, and every INT 3Fh stub entry
 (CD 3F lo hi 00) is rewritten into a far jump (EA lo hi seg seg) to the real
 code. The result is meant for Ghidra/IDA, not for running.
 
@@ -41,9 +42,11 @@ def main(src, dst):
 
     if data[load_end:load_end + 4] != b"FBOV":
         sys.exit(f"no FBOV overlay header at file offset {load_end:#x}")
-    ovr_size, segtab_foff, nseg = struct.unpack_from("<III", data, load_end + 4)
+    ovr_size, segtab_foff, nseg = struct.unpack_from("<IIH", data, load_end + 4)
     ovr_base = load_end + 16
     segtab = segtab_foff - hdr_size  # convert file offset to image offset
+    # Selector (index * 8) -> segment paragraph, as the original table holds it.
+    segtable = [u16(image, segtab + 8 * i) for i in range(nseg)]
     print(f"load image {len(image):#x} bytes, overlay data {ovr_size:#x} bytes, "
           f"{nseg} segment-table entries at image {segtab:#x}")
 
@@ -77,9 +80,18 @@ def main(src, dst):
         new_seg = len(image) // 16
         if new_seg > 0xFFFF:
             sys.exit("flattened image exceeds 1 MB")
-        image.extend(code)
+        # Overlay fixups hold *selectors* (index * 8 into the segment table), not
+        # paragraphs: the overlay manager swaps in the real segment at load time.
+        # Do the same here, then let the MZ loader add the load base as usual.
+        code = bytearray(code)
         for j in range(relsize // 2):
-            relocs.append((new_seg, u16(fix, 2 * j)))
+            off = u16(fix, 2 * j)
+            sel = u16(code, off)
+            if sel % 8 or sel // 8 >= nseg:
+                sys.exit(f"overlay {seg:#06x} fixup at {off:#06x} holds {sel:#06x}, not a selector")
+            struct.pack_into("<H", code, off, segtable[sel // 8])
+            relocs.append((new_seg, off))
+        image.extend(code)
         pad_to_para()
 
         entries = []

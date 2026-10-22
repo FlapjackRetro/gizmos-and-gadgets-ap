@@ -45,9 +45,9 @@ Leaked source module names (assert strings): `\source\electric.c`, `\source\puzz
 
 ### Ghidra (flattened EXE) [2026-10-22]
 Ghidra's MZ loader only maps the resident image (511 functions) — every overlay call ends at an `INT 3Fh` stub.
-`tools/unvroomm.py ssg.exe ssg_flat.exe` appends all 36 overlay code blocks as ordinary segments, turns their
-fixups into MZ relocations (3,220 total) and rewrites each stub entry `CD 3F lo hi 00` into `JMP FAR newseg:lo`.
-Ghidra then finds 963 functions and follows overlay calls through the stubs (`thunk_FUN_…`). `ssg_flat.map` lists
+`tools/unvroomm.py ssg.exe ssg_flat.exe` appends all 36 overlay code blocks as ordinary segments, resolves their
+fixups (segment-table selectors) to real segments and makes them MZ relocations (3,220 total) and rewrites each stub entry `CD 3F lo hi 00` into `JMP FAR newseg:lo`.
+Ghidra then finds 903 functions and follows overlay calls through the stubs (`thunk_FUN_…`). `ssg_flat.map` lists
 stub → new segment. **Analysis only — it does not run.**
 - Ghidra load segment 0x1000: resident `R<seg>_<off>` = linear `0x10000 + seg*16 + off`; overlay `O<stub>_<off>` =
   linear `0x10000 + newseg*16 + off` (newseg from the map, e.g. O0E30 → 1DFE, O0E18 → 1B6A, O0E7A → 2DE6).
