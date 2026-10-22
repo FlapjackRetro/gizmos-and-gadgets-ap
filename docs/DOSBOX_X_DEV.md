@@ -1,5 +1,7 @@
 # Development target: DOSBox-X
 
+> **Legacy.** Development now targets the native recompilation (see `docs/MOD.md`). This page is kept for reference.
+
 DOSBox-X is the reference emulator for development, chosen for its built-in debugger, save states and
 `DEBUGBOX`. Other DOSBox flavors (Staging, vanilla, DOSBox Pure) will be covered later by
 compatibility testing. The client's memory-location strategy (Borland signature scan, see RE_NOTES §2)

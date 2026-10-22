@@ -11,3 +11,4 @@ __pycache__/
 *.bin
 MEMDUMP.TXT
 memdump.txt
+build-mod/

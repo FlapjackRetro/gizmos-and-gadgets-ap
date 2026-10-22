@@ -88,12 +88,15 @@ locations reachable, and a building is stuck until its race is won. So:
 - Dialog system mapped (RE_NOTES §4.5); next: how `O0E83_0655` lays out buttons, and injecting the picker call at `02E0:0463`.
 
 ## Client architecture
-- Python AP client (CommonClient-based) + a DOSBox memory interface:
-  - Windows: attach to `dosbox-x.exe` (dev target; other flavors later) with pymem, find emulated RAM, scan for the Borland
-    signature → DS base. Read/write words at DS+offset.
-  - Poll at ~5–10 Hz: building, level indices, races-won, box/door state, inventory.
-- Patcher: apply byte patches to a copy of `ssg.exe` (a `.apgg` patch or simple byte list).
+**Target: the native recompilation** (`gizmos-and-gadgets-recomp`), not DOSBox. The game side is a recomp mod
+(`mod/ap_mod.c`, see `docs/MOD.md`) that hooks the game's events directly: building click, level enter/ready,
+box open, puzzle result, door open, race end, plus safe points to grant items with the game's own routines.
+- Mod ↔ client: files in `<game dir>/ap/` (`checks.txt`, `received.txt`, `config.txt`); a localhost socket can
+  replace them later without changing the ids.
+- Python AP client (CommonClient-based): forwards checks, appends received items, writes level unlocks/selection.
 - Save handling: one AP seed ↔ one player slot in PLAYERS.DAT; client verifies the player name matches the slot.
+- **Legacy:** the DOSBox-X route (`tools/patcher.py`, `docs/DOSBOX_X_DEV.md`, memory polling) is kept for
+  reference; the RE notes and hook addresses it produced are what the recomp's mod API is built on.
 
 ## Future items
 ### In-game Archipelago item labels

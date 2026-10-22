@@ -2,19 +2,27 @@
 
 An [Archipelago](https://github.com/ArchipelagoMW/Archipelago) randomizer for *Super Solvers: Gizmos & Gadgets!* (The Learning Company, DOS, v1.0).
 
-**Status:** reverse-engineering / design. Nothing playable yet.
+**Status:** early development. The game side is a mod for the native recompilation; the Archipelago client and
+apworld are next. Nothing playable yet.
 
-**Development target:** DOSBox-X. Other DOSBox flavors will be tested later.
+**Target:** the native recompilation of the game, `gizmos-and-gadgets-recomp` (FlapjackRetro), which loads mods.
+The earlier DOSBox-X route (EXE patcher, emulator memory polling) is kept for reference only.
 
-## Patching
+## The mod
+`mod/ap_mod.c`: build against the recomp's `include/gg_mod.h` and drop `ap_mod.dll` / `ap_mod.so` into
+`<game dir>/mods/`. Build steps, files, location/item ids and test results: [`docs/MOD.md`](docs/MOD.md).
+
+## Patching (legacy, DOSBox-X)
 `python tools/patcher.py path/to/ssg.exe` writes `SSG_AP.EXE` next to it (original untouched). `--list` shows
 the patches; each one verifies the original bytes first.
 
 ## Contents
+- `mod/ap_mod.c`, `mod/CMakeLists.txt`: the Archipelago mod for the recomp; `mod/tests/test_driver.c`: headless test helper.
+- `docs/MOD.md`: the mod — build, behaviour, client files, ids, verification.
 - `docs/RE_NOTES.md`: executable layout, `PLAYERS.DAT` save format, in-memory player record, hook points (race win confirmed).
 - `docs/AP_DESIGN.md`: draft locations, items, progression, multi-level access plan and client architecture.
 - `docs/KNOWN_ISSUES.md`: observed issues and their status.
-- `docs/DOSBOX_X_DEV.md`: DOSBox-X dev setup, debugger workflow and hook hunt list.
+- `docs/DOSBOX_X_DEV.md` (legacy): DOSBox-X dev setup, debugger workflow and hook hunt list.
 - `tools/dbgaddr.py`: prints DOSBox-X breakpoint commands for a given load segment.
 - `tools/memdiff.py`: diffs MEMDUMPBIN dumps to find the variables an in-game action changes.
 - `tools/resources.py`: list/extract resources from `gizmo00x.dat`, decompressing with the game's own routine run in `tools/x86emu.py` (a minimal 8086 interpreter).
