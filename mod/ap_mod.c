@@ -53,6 +53,7 @@ static struct {
     int door_checks;
     int title_logo;          /* use GIZMOAP1.DAT (Archipelago logo on the title screen) if present */
     int chimps;              /* Cyberchimps from the YAML: 1 with, 0 without, -1 not given (the game asks) */
+    int races_required;      /* goal: this many different races won (YAML, default 15) */
     int avail[3][5];         /* level open in the picker (client: avail.<b>=11000); -1 = not given */
 } cfg;
 
@@ -107,6 +108,7 @@ static void load_config(void)
 {
     char p[1100], line[256];
     cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 0; cfg.title_logo = 1; cfg.chimps = -1;
+    cfg.races_required = 15;
     for (int b = 0; b < 3; b++) for (int l = 0; l < 5; l++) cfg.avail[b][l] = -1;
     path(p, sizeof p, "config.txt");
     FILE *f = fopen(p, "r");
@@ -123,6 +125,7 @@ static void load_config(void)
         else if (!strcmp(key, "door_checks")) cfg.door_checks = v;
         else if (!strcmp(key, "title_logo")) cfg.title_logo = v;
         else if (!strcmp(key, "chimps")) cfg.chimps = v != 0;
+        else if (!strcmp(key, "races_required") && v >= 1 && v <= 15) cfg.races_required = v;
     }
     fclose(f);
 }
@@ -450,10 +453,81 @@ static int on_building_selected(void *u, uint32_t addr, GGRegs *r)
     return 0;
 }
 
+/* ---- won levels: enterable, but never raced again ---------------------------------------------------
+ * The race door (O0E30_00A6) opens while [4584] (vehicle slots filled) = the level's slot count (part header
+ * +6), and clicking it (region DS:223C, code 0x3F0 -> O0E30 0x12FA) starts the race under the same test;
+ * filling the last slot also gives +100 and sets [4586], which makes the room show hint 0x1053 ("finished
+ * building your vehicle ... click on the doorway"). In a won level the mod keeps [4584] RACE_LOCK above the
+ * real count (it still goes up and down as parts are placed and taken off, and is saved with the warehouse),
+ * so the door, the race and the bonus never come; keeps [4586] = 0 (no hint); and gives the door region its
+ * own code, which shows a message instead. */
+#define RACE_LOCK      0x100
+#define DS_SLOTS_DONE  0x4584
+#define DS_DOOR_BONUS  0x4586
+#define DS_RACE_DOOR   0x223C                 /* the assembly room's race door region (+0x12 click code) */
+#define DOOR_CODE      0x0F02
+
+static int level_won(int v) { return v >= 0 && (won_mask() >> v & 1); }
+
+static void lock_race(int v)
+{
+    if (!level_won(v)) return;
+    uint16_t n = api->ds_read16(DS_SLOTS_DONE);
+    if (n < RACE_LOCK) api->ds_write16(DS_SLOTS_DONE, (uint16_t)(n + RACE_LOCK));
+    api->ds_write16(DS_DOOR_BONUS, 0);       /* else the room repeats "finished building ... click the doorway" */
+}
+
+static void race_door_region(int v)
+{
+    uint16_t want = level_won(v) ? DOOR_CODE : 0x3F0, have = api->ds_read16(DS_RACE_DOOR + 0x12);
+    if (have == 0x3F0 || have == DOOR_CODE) api->ds_write16(DS_RACE_DOOR + 0x12, want);
+}
+
+static void say(const char *title, const char *a, const char *b)
+{
+    if (!ui_ready()) return;
+    const char *l[2] = { a, b };
+    UiSession s;
+    ui_begin(&s);
+    ui_message(title, l, b ? 2 : 1, 0);
+    ui_end(&s);
+}
+
+/* Site podium_choice (O0E36_0573, the podium after a race, `sub ax, 7D0h`): ax = the sign clicked. After a win:
+ * Rerun Race (7D0) is refused; Next Level (7D1) goes to this building's next level when it is open (the
+ * picker's rule), else to the Technology Center (7D3). After a loss everything stays as in the game. */
+static int on_podium(void *u, uint32_t addr, GGRegs *r)
+{
+    (void)u; (void)addr;
+    if (api->ds_read16(0x4560) != 0) return 0;                /* lost */
+    int b = (int16_t)api->ds_read16(GG_DS_BUILDING), lv = (int16_t)api->ds_read16(GG_DS_LEVEL);
+    if (b < 0 || b > 2 || lv < 0 || lv > 4) return 0;
+    if (r->ax == 0x7D0) {
+        say("Race won", "You won this race already.", "Pick another sign.");
+        r->ax = 0;                                            /* not a sign: ignored */
+    } else if (r->ax == 0x7D1) {
+        load_config();
+        int open[5];
+        open_levels(b, open);
+        if (lv < 4 && open[lv + 1]) {
+            picked[b] = lv + 1;
+            api->log("ap: podium: next level %d", lv + 2);
+        } else {
+            char s[48];
+            snprintf(s, sizeof s, "Level %d is not open yet.", lv + 2);
+            say("Next Level", lv < 4 ? s : "This was the building's last level.", "Back to the Technology Center.");
+            r->ax = 0x7D3;
+            api->log("ap: podium: next level not open, Technology Center");
+        }
+    }
+    return 0;
+}
+
 static int on_level_ready(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     in_level = cur_vehicle();
+    lock_race(in_level);                                     /* before the assembly room draws its door */
     if (entering >= 0 && entering == in_level) {
         /* save at once (the game's own save: snapshot into the block, PLAYERS.DAT), so the block and the
          * file agree with st.wh_level from here on; a new level is thereby generated exactly once */
@@ -515,6 +589,13 @@ static int on_assembly_site(void *u, uint32_t addr, GGRegs *r)
     (void)u; (void)addr;
     int v = cur_vehicle();
     if (v < 0 || in_level != v) return 0;
+    lock_race(v);
+    race_door_region(v);
+    uint32_t code_at = (uint32_t)r->ss * 16u + (uint16_t)(r->bp - 0x22);
+    if (rd16(code_at) == DOOR_CODE) {
+        api->mem()[code_at] = 0; api->mem()[code_at + 1] = 0;
+        say("Race track", "You won this level's race already.", "It cannot be raced again.");
+    }
     static InvItem items[MAX_RECEIVED];
     int n = ap_inventory(items, MAX_RECEIVED);
     if (inventory_site(r, items, n, v, carried_in(v), deposited) > 0) {
@@ -712,13 +793,20 @@ static void heartbeat(void)
     rename(tmp, p);
 }
 
+static int popcount15(int m)
+{
+    int n = 0;
+    for (int v = 0; v < 15; v++) n += m >> v & 1;
+    return n;
+}
+
 static int on_frame(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     frames++;
     if (frames % 30 == 0) {
         poll_received();
-        if (!st.goal_sent && st.won >= 0 && (st.won & 0x7FFF) == 0x7FFF) {
+        if (!st.goal_sent && st.won >= 0 && popcount15(st.won) >= cfg.races_required) {
             st.goal_sent = 1; save_state();
             send_line("goal");
             api->log("ap: goal reached");
@@ -771,6 +859,8 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
     api->on_event(GG_EV_WAREHOUSE_TICK, on_warehouse_tick, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_assembly_tick, NULL);
+    if (!api->on_site(api->site_addr("podium_choice"), on_podium, NULL))
+        api->log("ap: podium_choice site missing (recomp too old): the podium works as in the game");
     if (!api->on_site(api->site_addr("chimps_prompt"), on_chimps_prompt, NULL))
         api->log("ap: chimps_prompt site missing (recomp too old): the game asks about chimps");
     if (!api->on_site(api->site_addr("chimp_box_open"), on_chimp_box_open, NULL) ||

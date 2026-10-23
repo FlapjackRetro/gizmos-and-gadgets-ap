@@ -1,7 +1,7 @@
 """Gizmos and Gadgets client: bridges the recomp's Archipelago mod and the Archipelago server.
 
 The mod (mod/ap_mod.c) and this client share files in <game folder>/ap/ (docs/MOD.md):
-  checks.txt    mod appends location ids ("goal" when 15 races are won)  -> LocationChecks / goal
+  checks.txt    mod appends location ids ("goal" once races_required races are won)  -> LocationChecks / goal
   received.txt  client writes item ids in the server's order            <- ReceivedItems
   config.txt    client writes settings and which levels are open
   game.txt      mod rewrites about once a second: the game is running (player, place, items applied)
@@ -100,6 +100,7 @@ class GizmosContext(CommonContext):
         if not (self.game_dir and self.seed_ok):
             return
         lines = ["door_checks=0", "box_checks=1", "open_world=1", "title_logo=1"]
+        lines.append(f"races_required={int(self.slot_data.get('races_required', 15))}")
         if "cyberchimps" in self.slot_data:
             lines.append(f"chimps={1 if self.slot_data['cyberchimps'] else 0}")
         lines += [f"avail.{b}=" + "".join("1" if self.level_open(b * 5 + lv) else "0" for lv in range(5))
@@ -272,7 +273,7 @@ class GizmosContext(CommonContext):
         if goal and not self.goal_sent:
             self.goal_sent = True
             await self.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}])
-            logger.info("Goal sent: all 15 races won!")
+            logger.info("Goal sent: enough races won!")
 
     def make_gui(self):
         ui = super().make_gui()

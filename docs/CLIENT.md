@@ -21,7 +21,8 @@ Copy the `.apworld` into Archipelago's `custom_worlds/` folder. Requires Archipe
 | Race rule | every non-cosmetic slot of the level built, stat slots with a part of tier ≥ min(k, best tier) — the thresholds the race simulations proved sufficient (`data/race_requirements.tsv`, `data/flight_requirements.tsv`) |
 | Classification | parts that meet their slot's threshold: progression; other non-cosmetic parts: useful; paint/decals: filler |
 | Option `cyberchimps` | on (default): play with Cyberchimps; off: none. Replaces the game's question for a new player (the mod shows the setting) and is applied on every level entry |
-| Goal | all 15 races won |
+| Option `races_required` | 1–15 (default 15): how many different races must be won |
+| Goal | `races_required` different races won |
 
 Ids are the mod's (`docs/MOD.md`), e.g. part 4 of Aircraft level 1 = location and item `0x47471144`.
 Item names: `"<Building> Level <n> - <part name>"` (plus `#<part>` when a level has two parts of that name);
@@ -33,6 +34,7 @@ Launcher → **Gizmos and Gadgets Client**, or
 `python -m worlds.gizmos_and_gadgets.client --gamedir <game folder> --connect <host:port> --name <slot>`.
 
 - Forwards new lines of `ap/checks.txt` as `LocationChecks`, and `goal` as the goal status.
+- Passes the options to the mod (`config.txt`): `chimps`, `races_required`, level availability.
 - Keeps `ap/received.txt` equal to the server's received-items list (own items included: boxes never give their
   part directly), so the mod grants each one once, in order.
 - Writes `ap/config.txt`: settings (`chimps` from the `cyberchimps` option) and `avail.<building>` (which levels
@@ -47,7 +49,7 @@ Launcher → **Gizmos and Gadgets Client**, or
 ## Tested (2026-10-22, Archipelago 0.6.9, this workspace)
 
 - `test/` (WorldTestBase): all-state reachability, fill, counts, mod ids, first race needs its
-  parts, level 2 locked until the race: 17 tests pass (default and `level_access: open`).
+  parts, level 2 locked until the race: 21 tests pass (default and `level_access: open`).
 - Generation with Gizmos and Gadgets + APQuest, from the folder and from the packaged `.apworld`.
 - End to end on a local MultiServer: a server `/send` of an Aircraft L1 part → `received.txt` → the mod granted it
   in the warehouse ("needed"); a box opened in the headless recomp → `checks.txt` → client → server
@@ -56,8 +58,6 @@ Launcher → **Gizmos and Gadgets Client**, or
   level opened in the picker.
 
 ## To do
-- Race end and goal not exercised in a real race yet (needs a built vehicle headless); unlocking was tested by
-  sending the race location (`avail.1` 10000 → 11000, picker shows Level 2).
 - In-game text for found items (other players' items show nothing yet).
 - Level unlock items (a third `level_access` mode), if wanted.
 - DeathLink / hints display / GUI tab, if wanted.

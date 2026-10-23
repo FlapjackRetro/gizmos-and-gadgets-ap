@@ -38,3 +38,19 @@ class TestOpen(GizmosTestBase):
     def test_all_levels_open(self) -> None:
         for v in range(15):
             self.assertTrue(self.can_reach_region(level_name(v)))
+
+
+class TestFewRaces(GizmosTestBase):
+    options = {"races_required": 3, "cyberchimps": False}
+
+    def test_goal_after_three_wins(self) -> None:
+        state = self.multiworld.state
+        self.assertFalse(self.multiworld.completion_condition[self.player](state))
+        wins = [f"{level_name(v)} Won" for v in (0, 5, 10)]
+        from .. import GizmosItem
+        from BaseClasses import ItemClassification
+        for w in wins:
+            state.collect(GizmosItem(w, ItemClassification.progression, None, self.player), True)
+        self.assertTrue(self.multiworld.completion_condition[self.player](state))
+        self.assertEqual(self.world.fill_slot_data()["races_required"], 3)
+        self.assertFalse(self.world.fill_slot_data()["cyberchimps"])

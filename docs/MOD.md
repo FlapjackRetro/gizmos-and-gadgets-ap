@@ -26,7 +26,9 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Box opened, empty | vanilla (+5 bananas), not a check |
 | Box opened, holding a part the player recycled or once held (box sprite `0x333`/`0x344`) | vanilla pickup, not a check |
 | Door opened (puzzle solved) | sends the door's location only with `door_checks=1` (off: doors are not locations for now) |
-| Race started | keeps a copy of the level's warehouse (a won race discards it) |
+| Race started | keeps a copy of the level's warehouse (a won race discards it); a won level is restored from it |
+| Podium after a win | Rerun Race refused; Next Level only to an open level, else the Technology Center (site `podium_choice`, recomp PR #3) |
+| Won level, assembly room | race door stays shut even with the vehicle complete; clicking it says the race was won (below) |
 | Race won | sends the race location; keeps the game's race counters right for any order; `goal` once all 15 levels are won |
 | In the warehouse / assembly room | grants received bananas (+5 each), one about every 1.5 s. Received parts go to the Archipelago inventory |
 | Assembly room / blueprint | draws in the bottom-left of the HUD: the "Pieces" box with the number of received parts of this level in the Archipelago inventory, and a Cyberchimp (future: checks held by chimps). `hud.c`; built at run time from the game's own door-puzzle background `0x2084`, digits `0x204F` and chimp frame `0x103B`/1, colours remapped to the assembly room's |
@@ -93,6 +95,17 @@ the warehouse and the list stay together; a fresh level starts with none. Verifi
 took a check box in normal play (the part record stayed), and a scripted chimp took one, dropped it after a
 banana, and the player's opening sent the check (`TEST_CHIMP`).
 
+## Won levels
+
+A won level can be entered again (picker) for its remaining checks; it is restored from the copy taken at race
+start, so the winning vehicle and the floor parts are there. Its race is locked: the race door (`O0E30_00A6`)
+opens and the race starts (`0x12FA`) only while `[4584]` (slots filled) equals the level's slot count, so in a
+won level the mod keeps `[4584]` 0x100 above the real count (at level ready and every assembly pass; parts can
+still be placed and taken off, the count follows), keeps `[4586]` 0 (no +100 bonus, no "finished building"
+hint), and gives the door's region (`DS:223C`) the code `0xF02`, which the loop head answers with "You won this
+level's race already". After a win, the podium refuses Rerun Race, and Next Level goes to the building's next
+level only when the seed has opened it (else to the Technology Center).
+
 ## One saved warehouse per level
 
 The player record holds one warehouse per building. The mod keeps one per level in `ap/levels/<v>.bin` (a copy
@@ -119,7 +132,7 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 |---|---|---|
 | `checks.txt` | mod (appends) | one location id per line; `goal` when the game is complete |
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
-| `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `chimps` (1/0, from the YAML; absent = the game asks), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
+| `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `chimps` (1/0, from the YAML; absent = the game asks), `races_required` (goal, default 15), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
 | `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory) |
 | `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), items in the game, checks carried by chimps |
 | `levels/<v>.bin` | mod | the saved warehouse of level `v` |
@@ -190,7 +203,7 @@ puzzles to pass, saves):
   warehouse (PARTS NEEDED 3 vs 6), an opened box stays gone after switching to L2 and back;
 - race counters for out-of-order wins and replays: `mod/tests/unit_race.c` (host-side).
 
-Not yet tested live: a real race end (needs a built vehicle headless) and the goal line.
+Race end and goal: tested with a forced win (the race runs; the test driver sets the slot count and the result).
 
 ## Known limitations / to do
 - No in-game text for found items yet (the box just disappears); needs the item-label work.

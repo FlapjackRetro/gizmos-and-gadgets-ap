@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
-from Options import Choice, DefaultOnToggle, PerGameCommonOptions
+from Options import Choice, DefaultOnToggle, PerGameCommonOptions, Range
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, launch_subprocess
 
@@ -89,10 +89,19 @@ class Cyberchimps(DefaultOnToggle):
     display_name = "Cyberchimps"
 
 
+class RacesRequired(Range):
+    """How many different races you must win to finish (goal). Any races count, in any building."""
+    display_name = "Races Required"
+    range_start = 1
+    range_end = 15
+    default = 15
+
+
 @dataclass
 class GizmosOptions(PerGameCommonOptions):
     level_access: LevelAccess
     cyberchimps: Cyberchimps
+    races_required: RacesRequired
 
 
 class GizmosItem(Item):
@@ -195,11 +204,14 @@ class GizmosWorld(World):
 
     def set_rules(self) -> None:
         wins = [f"{level_name(v)} Won" for v in range(15)]
-        self.multiworld.completion_condition[self.player] = lambda state: state.has_all(wins, self.player)
+        need = self.options.races_required.value
+        self.multiworld.completion_condition[self.player] = \
+            lambda state: state.has_from_list(wins, self.player, need)
 
     def get_filler_item_name(self) -> str:
         return BANANAS
 
     def fill_slot_data(self) -> Dict[str, Any]:
         return {"id_base": BASE, "level_access": self.options.level_access.current_key,
-                "cyberchimps": bool(self.options.cyberchimps.value)}
+                "cyberchimps": bool(self.options.cyberchimps.value),
+                "races_required": self.options.races_required.value}

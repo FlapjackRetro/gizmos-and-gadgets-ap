@@ -14,6 +14,9 @@
  * TEST_CHIMP=t:n:obj  at warehouse tick t, chimp actor n opens box obj of the player's room (O0E0D_0000, flat
  *                     C000:0000, with the actor's room/object set); 40 ticks later it is hit by a banana
  *                     (O0E0D_00A1(n)); 40 ticks after that the player opens the room's last box (the dropped one).
+ * TEST_COMPLETE=t    at assembly-room pass t, count the vehicle as complete ([4584] = slots, as if every slot
+ *                     were filled), so the race door opens
+ * TEST_WIN=1          every race counts as won (race_end: won = 1)
  * TEST_PASS_PUZZLES=1 every door puzzle counts as solved (so Go Back opens the door).
  */
 #include <stdlib.h>
@@ -108,12 +111,21 @@ static int on_tick_chimp(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+static int complete_at = -1, force_win;
+static int on_race_end_t(void *u, GGEvent *e) { (void)u; if (force_win) { e->won = 1; e->aborted = 0; api->log("test: race forced won"); } return GG_CONTINUE; }
 static int give_at = -1, give_part_id = -1;
 static int on_asm(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     static int t;
-    if (give_at >= 0 && ++t == give_at) {
+    ++t;
+    if (complete_at >= 0 && t == complete_at) {
+        const uint8_t *m = api->mem();
+        uint32_t hdr = (uint32_t)api->ds_read16(0x663A) * 16u + api->ds_read16(0x6638);
+        api->ds_write16(0x4584, (uint16_t)(m[hdr + 6] | m[hdr + 7] << 8));
+        api->log("test: vehicle counted complete (%d slots)", api->ds_read16(0x4584));
+    }
+    if (give_at >= 0 && t == give_at) {
         int r = api->give_part(give_part_id);
         api->log("test: give_part(%d) in the assembly room -> %d", give_part_id, r);
     }
@@ -139,6 +151,9 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_dump, NULL);
     s = getenv("TEST_GIVE_ASM");
     if (s) { give_at = atoi(s); const char *c = strchr(s, ':'); give_part_id = c ? atoi(c + 1) : 0; }
+    s = getenv("TEST_COMPLETE"); complete_at = s ? atoi(s) : -1;
+    s = getenv("TEST_WIN"); force_win = s && *s == '1';
+    api->on_event(GG_EV_RACE_END, on_race_end_t, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_asm, NULL);
     s = getenv("TEST_CHIMP");
     if (s) { chimp_t = atoi(s); const char *c1 = strchr(s, ':'); if (c1) { chimp_n = atoi(c1 + 1); c1 = strchr(c1 + 1, ':'); if (c1) chimp_obj = atoi(c1 + 1); } }

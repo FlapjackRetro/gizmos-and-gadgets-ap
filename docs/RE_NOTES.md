@@ -457,3 +457,16 @@ plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door
   `R0834_0990(actor, part, 1)` and `R0622_0DF0(actor+0x1A, actor+0x14, actor+0x1C, part, 0)` (box at its feet).
 - `R0622_0DF0(room, x, y, contents, flag)`: sprite 0x332 (0x343 in rooms with flag 1), +1 when the part has
   `+0x36 & 0x4000`; does not touch the part record. Appends the object to the room (`+0x9E` count).
+
+## 4.16 Race door, podium [traced 2026-10-23, used live on the recomp]
+- Assembly room: `[4584]` = vehicle slots filled (`inc` at 0x126D when a part is placed, `dec` at 0x647), compared
+  with the part header `+6` (slot count). Door `O0E30_00A6(anim)`: `[A0D0]` = door shown open (0 at set-up,
+  0x1ABD); opens (sprite 0x26) when complete, closes (0x25) when not. Filling the last slot with `[4586]` = 0 sets
+  it and gives +100 (`R02E0_0ACE(100, 0)`); while `[4586]` the loop shows hint 0x1053 ("finished building ...
+  click on the doorway"). Door region `DS:223C` (296,107 24×56) code 0x3F0 → 0x12FA: complete → `[BE]` = 1,
+  `[A0CA]` = 8 (to the race), else hint 0x1054. Fresh level (R02E0 0x93F): `[4586]` = `[4584]` = 0.
+- Podium (main state 12, `O0E36_0573`, flat `C54B`): regions `DS:22FE` (5 × 0x16): 0x7D0 Rerun Race (5,82) →
+  state 11 with `[455E]` = 1; 0x7D1 Next Level (76,56) → state 4, only while `[A0D4]` (won, `[4596+2b]` < 4 and
+  `[5C0E]` != 15); 0x7D2 (140,56) → state 5, only while `[A0D2]` (lost); 0x7D3 Technology Center (204,56) → state
+  3; 0x7D4 (281,62) menu. Leaving by 7D1/7D3 after a win (`[4560]` = 0) clears `[459C+2b]` and saves.
+  Next Level then reaches `R02E0_0820` (level enter) with the game's level = races won in the building.
