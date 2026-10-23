@@ -115,7 +115,7 @@ class GizmosContext(CommonContext):
     def _replace(self, name: str, text: str, root: bool = False) -> None:
         dst = self.root_path(name) if root else self.ap_path(name)
         tmp = dst + ".tmp"
-        with open(tmp, "w") as f:
+        with open(tmp, "w", newline="\n") as f:   # "\n" also on Windows: the mod counts bytes
             f.write(text)
         os.replace(tmp, dst)
 
@@ -141,7 +141,7 @@ class GizmosContext(CommonContext):
         if items[:len(self.written_items)] != self.written_items:
             self._replace("received.txt", "".join(f"{i}\n" for i in items))   # the mod re-reads a shorter file
         elif len(items) > len(self.written_items):
-            with open(self.ap_path("received.txt"), "a") as f:
+            with open(self.ap_path("received.txt"), "a", newline="\n") as f:
                 f.write("".join(f"{i}\n" for i in items[len(self.written_items):]))
         else:
             return
@@ -334,15 +334,16 @@ class GizmosContext(CommonContext):
         if not (self.seed_ok and self.slot is not None):
             return
         try:
-            with open(self.ap_path("checks.txt")) as f:
+            with open(self.ap_path("checks.txt"), "rb") as f:   # binary: checks_read is a byte offset
                 f.seek(self.checks_read)
-                data = f.read()
+                raw = f.read()
         except OSError:
             return
-        end = data.rfind("\n") + 1          # only whole lines
+        end = raw.rfind(b"\n") + 1         # only whole lines
         if not end:
             return
-        self.checks_read += len(data[:end].encode())
+        self.checks_read += end
+        data = raw[:end].decode("ascii", "replace")
         ids, goal = set(), False
         for line in data[:end].split():
             if line == "goal":

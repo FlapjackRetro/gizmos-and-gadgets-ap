@@ -101,7 +101,7 @@ static void send_line(const char *line)
 {
     char p[1300];
     path(p, sizeof p, "checks.txt");
-    FILE *f = fopen(p, "a");
+    FILE *f = fopen(p, "ab");                               /* binary: "\n" only, the client counts bytes */
     if (!f) { api->log("ap: cannot write %s", p); return; }
     fprintf(f, "%s\n", line);
     fclose(f);
@@ -219,12 +219,14 @@ static void load_state(void)
     fclose(f);
 }
 
-/* New lines in received.txt (the client only ever appends). */
+/* New lines in received.txt (the client only ever appends). Read in binary: rx_size is a byte offset into the
+ * file, and in text mode Windows turns "\r\n" into "\n", so the count would fall one byte short per line and
+ * the next read would start inside a line already read (lines read twice: duplicated items). */
 static void poll_received(void)
 {
     char p[1300], line[64];
     path(p, sizeof p, "received.txt");
-    FILE *f = fopen(p, "r");
+    FILE *f = fopen(p, "rb");
     if (!f) return;
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
