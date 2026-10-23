@@ -49,7 +49,9 @@ def race_location(v: int) -> str:
 
 
 def box_location(v: int, pid: int) -> str:
-    return f"{PART_NAMES[v][pid]} (box)"
+    """A box is named by its number, not by the part it holds in the vanilla game: in a seed it holds any item.
+    Box n = the box of the level's part n (part table order, 1-based), i.e. location id base + 0x1000 + v*0x40 + n-1."""
+    return f"{level_name(v)} - Box {pid + 1}"
 
 
 def thresholds(v: int) -> Dict[int, int]:

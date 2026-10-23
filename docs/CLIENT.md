@@ -11,7 +11,7 @@ python tools/build_apworld.py            # -> dist/gizmos_and_gadgets.apworld
 Copy the `.apworld` into Archipelago's `custom_worlds/` folder. Requires Archipelago 0.6.9 or newer. The data in
 `apworld/gizmos_and_gadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
-## The world (v0.3.0)
+## The world (v0.3.1)
 
 | | |
 |---|---|
@@ -26,7 +26,8 @@ Copy the `.apworld` into Archipelago's `custom_worlds/` folder. Requires Archipe
 
 Ids are the mod's (`docs/MOD.md`), e.g. part 4 of Aircraft level 1 = location and item `0x47471144`.
 Item names: `"<Building> Level <n> - <part name>"` (plus `#<part>` when a level has two parts of that name);
-box locations are the item name plus ` (box)`.
+box locations are `"<Building> Level <n> - Box <k>"`, k = 1 … the level's part count (the box of the level's part
+k − 1 in the game's part table; named by number, since in a seed a box holds any item).
 
 ## The client
 

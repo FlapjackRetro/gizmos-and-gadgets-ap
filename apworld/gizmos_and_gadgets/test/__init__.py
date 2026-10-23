@@ -16,7 +16,7 @@ class TestDefault(GizmosTestBase):
     def test_ids_match_mod(self) -> None:
         # docs/MOD.md: box of part p in level v = base + 0x1000 + v*0x40 + p; race = base + v
         self.assertEqual(LOCATION_IDS[race_location(5)], BASE + 5)
-        self.assertEqual(LOCATION_IDS[f"{PART_NAMES[5][4]} (box)"], 0x47471144)
+        self.assertEqual(LOCATION_IDS["Aircraft Level 1 - Box 5"], 0x47471144)
 
     def test_first_race_needs_parts(self) -> None:
         self.assertFalse(self.can_reach_location(race_location(0)))
