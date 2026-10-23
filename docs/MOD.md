@@ -61,9 +61,9 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
   - **Chimp opens a box** (`O0E0D_0000`): a part goes into the chimp's inventory (`R0834_08D7(chimp, part)`) and
     the box is removed. The chimp keeps it. An *empty* box opened by a chimp is moved to a random other room
     (`R0622_0F4E(1000)`).
-  - **Chimp drops a part** (`O0E0D_00A1`, an actor-script command run from `R0834` at 0x48F; the banana hit is the
-    likely trigger, not yet confirmed): the part leaves the chimp's inventory and a new box holding it appears where
-    the chimp stands (`R0622_0DF0`). Opening it fires the normal box event with the same part → same location.
+  - **Chimp drops a part** when hit by a banana (confirmed in play): `O0E0D_00A1` removes a part from the chimp's
+    inventory and creates a box holding it where the chimp stands (`R0622_0DF0`, normal sprite). The player walks
+    over and opens it like any box → the normal box event with the same part → same location.
   - **Recycled parts are never checks** (design rule): the player can only recycle a part they actually obtained
     (from their own game or received through the client), by dropping it on the recycle bin (warehouse HUD
     `R0A04_0A82`, or the assembly room) or, later, from the Archipelago inventory dialog. Recycling sets part
@@ -75,14 +75,15 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
     as a box → vanilla pickup, no check). The Archipelago inventory's "recycle" must go through the same
     mechanism (set 0x4000, then `R0622_0F4E(part)`), so its boxes are marked too.
   - **Pickup with two of that kind already held** (`R08F5_0002` → `R053F_0216 == 2`): refused with a message
-    (`0x1047`); the box is not removed and the part stays in it.
+    (`0x1047`); the box is not removed and the part stays in it (also for a chimp-dropped box). The mod's box hook
+    runs before that test, so a **check box always opens**: the check is sent and the box removed even when the
+    player holds two of that kind, since nothing goes into the inventory. Recycled boxes keep the vanilla refusal.
   - **Part owner** (part table `+0x0C`): -1 = in a box, 0 = the player, n = actor n (chimps). E.g. a chimp may
     already hold a part when the level starts. This is how the mod can count checks held by chimps.
-  - **Open question:** `R08F5_0180` (a player-actor script command, slot `+0x6A`) moves a random part from
-    another actor's inventory straight into the player's; if the player already holds two of that kind, one of
-    theirs goes into a box in a random room (`R0622_0F4E`, not marked recycled). If this is how the player gets a
-    part back from a chimp, it bypasses the box event (no check is sent, the real part is given). Needs a live
-    test of what a banana hit does, then a hook.
+  - **Unidentified:** `R08F5_0180` (a player-actor script command, slot `+0x6A`) moves a random part from another
+    actor's inventory straight into the player's; with two of that kind already held, one of the player's goes
+    into a box in a random room (`R0622_0F4E`, not marked recycled). It is *not* the banana path (that drops a
+    box). Find out when it runs; if it can move a not-yet-checked part to the player, it needs a hook.
 - **Doors**: both sides of a door share a key (lower room, higher room, pair number `link >> 6`); the rank is the
   key's position among the level's puzzle doors (kind `+0x16 == 8`), sorted. Computed by the mod from the rooms in
   memory, and the same as `tools/warehouse.py`'s static count, so the apworld only needs the counts per level.
