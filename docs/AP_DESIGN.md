@@ -154,6 +154,18 @@ Chimps" / "Without Chimps"). Replace that choice with an informational pop-up th
 player's YAML (slot data, passed to the mod through the client's `config.txt`), and apply that setting. Needs: a
 `chimps` option in the apworld, and finding where the game stores the choice.
 
+### To-do: Microsoft Defender SmartScreen warning
+Windows shows "Windows protected your PC … Unknown publisher" when starting `gizmos.exe` (the recomp build).
+See what can be done. Options to evaluate (not yet checked):
+- SmartScreen judges files that carry the "downloaded from the internet" mark (Mark of the Web) and are unsigned
+  or have no reputation yet. Find out why a locally built `gizmos.exe` gets it (e.g. the install script copying
+  a downloaded file, or the folder it was unpacked from), and whether the install script can avoid it.
+- Code signing for released binaries: a certificate from a code-signing service (paid, or a free programme for
+  open-source projects), set up in the release build. Reputation still builds up over time per certificate.
+- Until then: document "More info → Run anyway" in the setup guide.
+This concerns the recomp's `gizmos.exe` (and `ap_mod.dll` once distributed), so the work may belong in the recomp
+repository.
+
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.
 - Decals are group `0x0C` (cosmetic). Each entry has sprite resource ids at `+0x12`/`+0x14` (e.g. `0x00B6`/
