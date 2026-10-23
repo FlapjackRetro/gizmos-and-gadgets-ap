@@ -149,7 +149,7 @@ Keep the client running while you play: it sends your checks and passes your ite
 
 The mod can show the Archipelago logo on the title screen. It needs `GIZMOAP1.DAT`, a copy of your `gizmo001.dat`
 with the logo drawn in, which you build from your own game files (it can't be downloaded, since it contains game
-data). You need Python 3.8 or newer ([python.org](https://www.python.org/downloads/) or the Microsoft Store) and a
+data). You need Python 3.8 or newer (for example from the Microsoft Store) and a
 copy of this repository (**Code → Download ZIP** on GitHub).
 
 - **Windows:** double-click **`tools\title-logo.bat`** and pick your game folder. It installs the Pillow image

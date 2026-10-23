@@ -7,7 +7,7 @@
   own routine unpacks the game's resources) from the game folder and writes GIZMOAP1.DAT next to them; your
   gizmo001.dat is not changed. The Archipelago mod uses GIZMOAP1.DAT when it is there.
 
-  Needs Python 3.8 or newer (python.org or the Microsoft Store). Pillow is installed for you if it is missing
+  Needs Python 3.8 or newer (for example from the Microsoft Store). Pillow is installed for you if it is missing
   (pip install --user pillow).
 
   The logo is (c) the Archipelago project, CC BY-NC 4.0 (see COPYING.md), so GIZMOAP1.DAT is for non-commercial
@@ -65,7 +65,7 @@ foreach ($cand in @('py -3', 'python', 'python3')) {
     if ($r.Out -eq '1') { $python = @{ Exe = $exe; Pre = $pre }; break }
 }
 if (-not $python) {
-    Fail 'Python 3.8 or newer not found. Install it from python.org (tick "Add python.exe to PATH") or the Microsoft Store, then run this again.'
+    Fail 'Python 3.8 or newer not found. Install Python 3.8 or newer (for example from the Microsoft Store; with the official installer, tick "Add python.exe to PATH"), then run this again.'
 }
 $version = (Get-PythonOutput $python.Exe ($python.Pre + @('-c', 'import sys; print(sys.version.split()[0])'))).Out
 Write-Ok "Python $version ($($python.Exe))"
