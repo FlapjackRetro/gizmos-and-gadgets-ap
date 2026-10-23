@@ -150,8 +150,10 @@ when that slot is full. The player must never lose access to a received check. O
       the new part and recycle one they are holding, or recycle the part just received.
 2. **Inventory managed outside the vanilla system:** a dialog that holds received parts and can send them to the
    conveyor (assembly) or recycle them to the warehouse.
-- Open: what "recycle to the warehouse" means for a received AP item (back into a box so it can be picked up
-  again, vs. kept by the client), so a recycled item is never lost for good.
+- Recycling from the Archipelago inventory must use the game's own recycle mechanism (part `+0x36 |= 0x4000`,
+  then `R0622_0F4E(part)`): the part lands in a box in a random room with the recycled sprite, and the mod treats
+  every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled parts can only exist after the
+  player obtained the part, so they are never locations.
 
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.

@@ -22,7 +22,7 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Level about to load | loads `level.<building>` from the config if set (else the game's choice, capped at level 5, which fixes the "Level-6 Blimp" overflow); a saved warehouse is only restored if it belongs to that level, otherwise a fresh one is built |
 | Box opened, holding a part | sends the box's location; the box disappears and the game gives nothing (the item comes back from the server, also for our own items) |
 | Box opened, empty | vanilla (+5 bananas), not a check |
-| Box opened, holding a part the player recycled | vanilla pickup, not a check |
+| Box opened, holding a part the player recycled (box sprite `0x333`/`0x344`) | vanilla pickup, not a check |
 | Door opened (puzzle solved) | sends the door's location |
 | Race won | sends the race location; `goal` once the game's total-races counter reaches 15 |
 | In the warehouse | grants received items, one about every 1.5 s: parts of the current level via the game's own pickup routine (name shown, PARTS NEEDED counts down), bananas anywhere |
@@ -64,11 +64,25 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
   - **Chimp drops a part** (`O0E0D_00A1`, an actor-script command run from `R0834` at 0x48F; the banana hit is the
     likely trigger, not yet confirmed): the part leaves the chimp's inventory and a new box holding it appears where
     the chimp stands (`R0622_0DF0`). Opening it fires the normal box event with the same part → same location.
-  - **Player recycles a part** (HUD recycle bin `R0A04_0A82`, or the assembly room): part-table `+0x36 |= 0x4000`,
-    and the part goes into a box in a random room. The mod lets such boxes through as vanilla pickups (it is the
-    player's own received part coming back), so recycling never loses an item or re-sends a check.
-  - **Vanilla 3rd-part swap** (`R08F5` 0x21D: picking up a part of a kind the player already holds twice sends one
-    held part back into a random box): only happens on a vanilla pickup, which the mod suppresses for check boxes.
+  - **Recycled parts are never checks** (design rule): the player can only recycle a part they actually obtained
+    (from their own game or received through the client), by dropping it on the recycle bin (warehouse HUD
+    `R0A04_0A82`, or the assembly room) or, later, from the Archipelago inventory dialog. Recycling sets part
+    `+0x36 |= 0x4000` and puts the part into a box in a random room; every box-creating routine (`R0622_0A76`,
+    `R0622_0DF0`) then gives that box sprite `0x333`/`0x344` instead of `0x332`/`0x343`. The mod reads the
+    **box's** sprite (box = `R0622_1265(room, object)`, sprite at `+0x1A`) and lets recycled boxes through as
+    vanilla pickups. It checks the box, not the part flag, because the part's original box (its location) can
+    still be unopened when the player recycles a received copy of it. Verified headless (a recycled part dropped
+    as a box → vanilla pickup, no check). The Archipelago inventory's "recycle" must go through the same
+    mechanism (set 0x4000, then `R0622_0F4E(part)`), so its boxes are marked too.
+  - **Pickup with two of that kind already held** (`R08F5_0002` → `R053F_0216 == 2`): refused with a message
+    (`0x1047`); the box is not removed and the part stays in it.
+  - **Part owner** (part table `+0x0C`): -1 = in a box, 0 = the player, n = actor n (chimps). E.g. a chimp may
+    already hold a part when the level starts. This is how the mod can count checks held by chimps.
+  - **Open question:** `R08F5_0180` (a player-actor script command, slot `+0x6A`) moves a random part from
+    another actor's inventory straight into the player's; if the player already holds two of that kind, one of
+    theirs goes into a box in a random room (`R0622_0F4E`, not marked recycled). If this is how the player gets a
+    part back from a chimp, it bypasses the box event (no check is sent, the real part is given). Needs a live
+    test of what a banana hit does, then a hook.
 - **Doors**: both sides of a door share a key (lower room, higher room, pair number `link >> 6`); the rank is the
   key's position among the level's puzzle doors (kind `+0x16 == 8`), sorted. Computed by the mod from the rooms in
   memory, and the same as `tools/warehouse.py`'s static count, so the apworld only needs the counts per level.

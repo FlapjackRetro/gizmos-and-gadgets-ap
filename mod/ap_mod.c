@@ -300,11 +300,17 @@ static int on_box_open(void *u, GGEvent *e)
     int v = cur_vehicle();
     if (!cfg.box_checks || v < 0 || e->contents == GG_BOX_EMPTY || e->contents < 0 || e->contents >= 0x40)
         return GG_CONTINUE;                                  /* empty boxes keep their bananas */
-    /* A part the player recycled (HUD recycle bin R0A04_0A82, or the assembly room) is put back
-     * into a box in a random room with flag 0x4000 at part-table +0x36. It is the player's own part
-     * coming back, not a location: let the game hand it over as usual. */
-    uint32_t part = far_at(api->ds_base() + 0x663C) + (uint32_t)e->contents * 0x8Eu;
-    if (rd16(part + 0x36) & 0x4000) return GG_CONTINUE;
+    /* A box made for a recycled part is the player's own part coming back, not a location: let the
+     * game hand it over as usual. Recycling (HUD recycle bin R0A04_0A82, the assembly room, or the
+     * Archipelago inventory later) sets part +0x36 bit 0x4000, and every routine that creates a box
+     * (R0622_0A76, R0622_0DF0) then gives it sprite 0x333 / 0x344 instead of 0x332 / 0x343. The
+     * mark is checked on the box, not the part: the part's own original box (its location) may still
+     * be unopened if the player recycled a received copy of it. Box = R0622_1265(room, object). */
+    uint16_t args[2] = { (uint16_t)e->room, (uint16_t)e->object };
+    uint32_t bp = api->call_far(0x0622, 0x1265, 2, args);
+    uint32_t box = (bp >> 16) * 16u + (bp & 0xFFFFu);
+    uint16_t sprite = rd16(box + 0x1A);
+    if (sprite == 0x333 || sprite == 0x344) return GG_CONTINUE;
     char what[48];
     snprintf(what, sizeof what, "box: level %d part %d", v, e->contents);
     send_check(LOC_BOX(v, e->contents), what);
