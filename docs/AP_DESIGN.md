@@ -138,6 +138,22 @@ when that slot is full. The player must never lose access to a received check. O
   every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled parts can only exist after the
   player obtained the part, so they are never locations.
 
+### To-do: assembly-room sprite for the Archipelago inventory
+Add a representative sprite (an object the player can click) in the assembly room that opens the static
+Archipelago inventory dialog for management: move a stored part into the vanilla inventory, or recycle it (see
+"limited player inventory"). The static inventory itself stays out of the chimps' reach.
+
+### To-do: assembly-room sprite for checks held by chimps
+Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the
+level's chimps are currently holding, and of what type (this game's parts vs. other players' items). The part
+table's owner field (`+0x0C`: n = actor n) tells which parts a chimp holds (`docs/MOD.md`).
+
+### To-do: chimps setting from the YAML
+When a new player file is started, the game asks whether to play with or without chimps (dialog 0x1067, "With
+Chimps" / "Without Chimps"). Replace that choice with an informational pop-up that states the setting read from the
+player's YAML (slot data, passed to the mod through the client's `config.txt`), and apply that setting. Needs: a
+`chimps` option in the apworld, and finding where the game stores the choice.
+
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.
 - Decals are group `0x0C` (cosmetic). Each entry has sprite resource ids at `+0x12`/`+0x14` (e.g. `0x00B6`/
