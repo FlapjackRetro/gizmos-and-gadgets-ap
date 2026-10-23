@@ -198,6 +198,13 @@ See what can be done. Options to evaluate (not yet checked):
 This concerns the recomp's `gizmos.exe` (and `ap_mod.dll` once distributed), so the work may belong in the recomp
 repository.
 
+### To-do: no HUD part counter or part name after moving a part out of the Pieces box
+When a part is moved from the Archipelago inventory to the conveyor and the dialog closes, the HUD's lower right
+shows the vanilla part counter (e.g. `07`, the red "parts needed" digits) and the moved part's name (e.g. "4 wheels
+with ball bearings"), as if the player had picked the part up. Hide both: closing the dialog should leave the HUD
+as it was before it opened. Seen in play 2026-10-23 (Alternative Energy level 3). Possibly caused by the HUD
+item-name pointer (DS:879A/879C, refresh bit 0x10 in DS:132C) being set when the part is put on the belt.
+
 ### Re-entering won levels, without re-racing (done 2026-10-23)
 Won levels stay enterable for their remaining checks, but their race is locked out:
 1. On the podium after a win: **Rerun Race** is refused (message); **Next Level** goes to this building's next
