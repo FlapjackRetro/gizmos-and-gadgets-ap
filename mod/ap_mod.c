@@ -17,6 +17,7 @@
  *   puzzle door    base + 0x2000 + v*0x40 + rank     rank of the door in the level (see door_rank)
  *   item: part     base + 0x1000 + v*0x40 + part     (same numbers as the box locations)
  *   item: bananas  base + 0x0F00                      +5 bananas
+ *   item: access   base + 0x0E00 + v                  opens level v (item_progression; the client writes avail)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 #define LOC_BOX(v, p)      (AP_BASE + 0x1000u + (unsigned)(v) * 0x40u + (unsigned)(p))
 #define LOC_DOOR(v, r)     (AP_BASE + 0x2000u + (unsigned)(v) * 0x40u + (unsigned)(r))
 #define ITEM_BANANAS       (AP_BASE + 0x0F00u)
+#define ITEM_ACCESS(v)     (AP_BASE + 0x0E00u + (unsigned)(v))   /* level_access: item_progression */
 
 #define MAX_RECEIVED 4096
 #define GG_DS_CHIMPS 0x4578   /* player record +0x16: 1 = with Cyberchimps (set by the new-player question) */
@@ -318,6 +320,11 @@ static void grant_pending(void)
             return;
         }
         if (is_part_item(id, &iv, &part)) continue;          /* the Archipelago inventory */
+        if (id >= ITEM_ACCESS(0) && id < ITEM_ACCESS(15)) {  /* opens a level: the client's avail.<b> */
+            rx_done[i] = 1; save_state();
+            api->log("ap: received access to level %u", id - ITEM_ACCESS(0));
+            continue;
+        }
         rx_done[i] = 1;                                      /* unknown item: skip it */
         api->log("ap: unknown item %u ignored", id);
     }
@@ -689,8 +696,8 @@ static int on_box_open(void *u, GGEvent *e)
  *   chimp holds (a chimp only takes a box while holding nothing). [bp-4] = the box (R0622_1265(actor+0x1A
  *   room, actor+0x40 object)), box +0x1E = its part, +0x1A sprite; actor +0x42 = actor number.
  *   For a check box: the mod removes the box (R0622_0D8F(room, box), as the game does), notes that this
- *   chimp carries the box's check, and makes the routine leave (ZF = 0: `jnz` to the exit). A chimp that
- *   carries a check counts as holding something, as in vanilla.
+ *   chimp carries the box's check, and makes the routine leave (ZF = 0: `jnz` to the exit). A chimp may carry
+ *   several checks (its real inventory stays empty, so it keeps going for boxes).
  *   site chimp_drop, O0E0D_00A1(actor) at `or ax, [bp-6]` after dx:ax = O0E20_0101(list, actor, 0) = the
  *   part the chimp drops when a banana hits it (0 = none). [bp-4] = the actor (DS:7A8A + 0xA0 n).
  *   Carried checks drop first, one per hit: the mod makes the box at the chimp's feet as the routine
@@ -711,13 +718,6 @@ static void chimp_changed(void)
     if (!chimp_save_pending) { chimp_save_pending = 1; api->defer(chimp_save, NULL); }
 }
 
-static int carried_by(int v, int actor)
-{
-    int n = 0;
-    for (int i = 0; i < ncarried; i++) n += carried[i].v == v && carried[i].actor == actor;
-    return n;
-}
-
 static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
 {
     (void)u; (void)addr;
@@ -728,7 +728,8 @@ static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
     uint32_t box_far = (uint32_t)rd16(frame + (uint16_t)(r->bp - 2)) << 16 | rd16(frame + (uint16_t)(r->bp - 4));
     uint32_t actor = (actor_far >> 16) * 16u + (actor_far & 0xFFFF), box = (box_far >> 16) * 16u + (box_far & 0xFFFF);
     int n = (int16_t)rd16(actor + 0x42);
-    if (carried_by(v, n)) { r->flags &= (uint16_t)~GG_FLAG_ZF; return 1; }   /* already carries a check */
+    /* A chimp that carries a check still takes check boxes: its real inventory is empty, so the game's chimp
+     * logic keeps walking to boxes, and refusing here made it pick at the same box forever (seen in play). */
     int part = (int16_t)rd16(box + 0x1E);
     uint16_t sprite = rd16(box + 0x1A);
     if (part < 0 || part >= 0x40 || sprite == 0x333 || sprite == 0x344) return 0;   /* recycled: a real part */

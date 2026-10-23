@@ -8,16 +8,16 @@ recomp mod (`docs/MOD.md`); the client connects it to the server through the fil
 ```sh
 python tools/build_apworld.py            # -> dist/gizmosandgadgets.apworld
 ```
-Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.9 or newer. The data in
+Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.8 or newer. The data in
 `apworld/gizmosandgadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
-## The world (v0.3.1)
+## The world (v0.4.1)
 
 | | |
 |---|---|
 | Locations | 15 races, 532 part boxes (the box that holds each part). Puzzle doors are left out for now |
 | Items | the 532 parts (per level: a part only works in its own level, as in the game), `5 Bananas` as filler |
-| Access | option `level_access`: `race_progression` (default: a building's level *n*+1 opens when its level *n* race is won; won levels stay open) or `open` (all 15 levels from the start). The in-game level picker shows the open levels |
+| Access | option `level_access`: `race_progression` (default: a building's level *n*+1 opens when its level *n* race is won; won levels stay open), `open` (all 15 levels from the start) or `item_progression` (level 1 of each building open; the other 12 open with their `<Building> Level <n> Access` item, base + `0x0E00` + v, in any order). The in-game level picker shows the open levels |
 | Race rule | every non-cosmetic slot of the level built, stat slots with a part of tier ≥ min(k, best tier) — the thresholds the race simulations proved sufficient (`data/race_requirements.tsv`, `data/flight_requirements.tsv`) |
 | Classification | parts that meet their slot's threshold: progression; other non-cosmetic parts: useful; paint/decals: filler |
 | Option `cyberchimps` | on (default): play with Cyberchimps; off: none. Replaces the game's question for a new player (the mod shows the setting) and is applied on every level entry |
@@ -49,10 +49,10 @@ Launcher → **Gizmos and Gadgets Client**, or
 - Remembers the last game folder (`gizmos_and_gadgets_gamedir.txt` in Archipelago's user folder).
 - Commands: `/gamedir <path>`, `/game` (game status), `/levels` (open levels).
 
-## Tested (2026-10-22, Archipelago 0.6.9, this workspace)
+## Tested (2026-10-22, Archipelago 0.6.9; 2026-10-23 also 0.6.8: tests, templates, generation, client)
 
 - `test/` (WorldTestBase): all-state reachability, fill, counts, mod ids, first race needs its
-  parts, level 2 locked until the race: 21 tests pass (default and `level_access: open`).
+  parts, level 2 locked until the race: 25 tests pass (default and `level_access: open`).
 - Generation with Gizmos and Gadgets + APQuest, from the folder and from the packaged `.apworld`.
 - End to end on a local MultiServer: a server `/send` of an Aircraft L1 part → `received.txt` → the mod granted it
   in the warehouse ("needed"); a box opened in the headless recomp → `checks.txt` → client → server
@@ -61,5 +61,4 @@ Launcher → **Gizmos and Gadgets Client**, or
   level opened in the picker.
 
 ## To do
-- Level unlock items (a third `level_access` mode), if wanted.
 - DeathLink / hints display / GUI tab, if wanted.

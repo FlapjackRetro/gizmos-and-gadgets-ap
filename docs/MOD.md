@@ -45,8 +45,8 @@ game's inventory lists, so chimps cannot take them and the two-of-a-kind limit n
 assembly room, a click on the Pieces box opens a dialog in the game's style (`inventory.c`, drawn with
 `ui.c`) listing every received part that is not in the game yet:
 
-- This level's parts first (they can be picked), then other levels' parts, greyed, as
-  `Aircraft 2: small fuselage ...` (a part only works in its own level). Six rows; Up/Down move, PgUp/PgDn/Home/End
+- Only the parts of the level that is loaded (a part only works in its own level; the others are listed when
+  their level is). Six rows; Up/Down move, PgUp/PgDn/Home/End
   and the Up/Down buttons scroll, Enter or a click picks, Esc or Close closes. Names come from the game's own
   part tables (resource `0x2F5 + v`, entry `+0x16` = the name's text resource).
 - Picking a part checks the game's limit (two parts of a kind, `R053F_0216` on the player's list as the pickup
@@ -87,7 +87,7 @@ player is intercepted (box events above); a chimp opening one is intercepted too
 
 | Site | Mod |
 |---|---|
-| `chimp_box_open` (`O0E0D_0000`, after `R053F_02BB` = parts the chimp holds) | check box (normal sprite): the mod removes the box, notes "chimp n carries the check of part p" and the chimp's real inventory stays as it was. A chimp carrying a check counts as holding something (vanilla chimps carry one part at most), so it takes no more boxes. Recycled boxes and empty boxes stay vanilla |
+| `chimp_box_open` (`O0E0D_0000`, after `R053F_02BB` = parts the chimp holds) | check box (normal sprite): the mod removes the box, notes "chimp n carries the check of part p" and the chimp's real inventory stays as it was. A chimp may carry several checks: its real inventory stays empty, so the game's chimp logic keeps going for boxes (refusing further boxes made a chimp pick at one box forever, seen in play). Recycled boxes and empty boxes stay vanilla |
 | `chimp_drop` (`O0E0D_00A1`, the part a banana-hit chimp drops) | carried checks drop **first**, one per hit, as a check box at the chimp's feet (normal sprite, even if the player holds the real part); then the chimp's real parts, as vanilla. Opening that box sends the check |
 
 Carried checks are saved in `state.txt` (`chimp=v,actor,part`) and the game is saved at the next safe point, so
@@ -150,6 +150,7 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
 | Puzzle door (not used for now) | base + `0x2000` + v × `0x40` + rank | 653 |
 | Item: part | base + `0x1000` + v × `0x40` + part | 532 |
 | Item: +5 bananas | base + `0x0F00` | filler |
+| Item: level access (`level_access: item_progression`) | base + `0x0E00` + v | 12 (levels 2–5 of each building) |
 
 - **Boxes** are identified by the part inside, not by position: box placement is random per fresh warehouse, but
   every part of a level is in exactly one box (RE_NOTES §4.11), so a location travels with its part. The 90 empty

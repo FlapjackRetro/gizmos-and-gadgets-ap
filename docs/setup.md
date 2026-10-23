@@ -14,7 +14,7 @@ This guide covers installing the Gizmos & Gadgets randomizer and its APWorld for
   [gizmos-and-gadgets-recomp](https://github.com/FlapjackRetro/gizmos-and-gadgets-recomp). It runs the game
   without DOSBox and loads mods. You build it from your own `ssg.exe` (step 2). Use a build made from the recomp's
   current version: the randomizer relies on hook points added to it on 2026-10-23.
-- **[Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases)** 0.6.9 or newer, to generate games, host
+- **[Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases)** 0.6.8 or newer, to generate games, host
   them and run the Gizmos and Gadgets client.
 - From this project's [Releases page](https://github.com/FlapjackRetro/gizmos-and-gadgets-ap/releases):
   - `ap_mod.dll`, the game mod (Windows)
@@ -92,7 +92,7 @@ Restart the Archipelago Launcher afterwards so it picks up the new world.
 
    | Option | Default | What it does |
    |---|---|---|
-   | `level_access` | `race_progression` | `race_progression`: a building's next level opens when you win the race of the level before it (as in the game; won levels stay open). `open`: all 15 levels can be entered from the start |
+   | `level_access` | `race_progression` | `race_progression`: a building's next level opens when you win the race of the level before it (as in the game; won levels stay open). `open`: all 15 levels can be entered from the start. `item_progression`: level 1 of each building is open; each other level opens when you receive its *Level Access* item (e.g. `Aircraft Level 3 Access`) |
    | `cyberchimps` | on | Play with Cyberchimps in the warehouse. They open boxes and carry off what they find, Archipelago checks too, and steal parts from you. Off: no chimps |
    | `races_required` | 15 | How many different races you must win to finish. Any races count, in any building |
 
@@ -106,6 +106,7 @@ Restart the Archipelago Launcher afterwards so it picks up the new world.
    ```
    /gamedir C:\DOS\Gizmos
    ```
+   Do this before you create the player in the game: the game reads your settings (Cyberchimps) from the folder.
 3. Connect to the server: type the address (e.g. `/connect archipelago.gg:38281`) or use the box at the top, and
    enter your slot name. The client binds the game folder to this seed and slot.
 4. Start `gizmos.exe`. The client says **Game connected** once the game is running with the mod; `/game` shows the
@@ -128,7 +129,8 @@ Keep the client running while you play: it sends your checks and passes your ite
 - **Your parts arrive in the Pieces box.** Received parts don't appear in the warehouse: they wait in the
   **Pieces** box at the bottom left of the assembly room's HUD, whose counter shows how many are there for this
   level. Click it to open the Archipelago inventory: pick a part of this level to put it on the conveyor belt, as
-  many as you like, then **Close**. Parts of other levels are shown greyed; a part only works in its own level.
+  many as you like, then **Close**. It lists only this level's parts: a part only works in its own level, so other levels' parts show up when you
+  play those levels.
   The game's rule of at most two parts of a kind still applies: if you already have two, recycle one first.
   Bananas you receive are added by themselves.
 - **Parts you move are ordinary parts.** Lay them on the assembly floor or drop them in the recycle bin; they never
@@ -139,7 +141,7 @@ Keep the client running while you play: it sends your checks and passes your ite
   not from the assembly floor or the Pieces box. The Cyberchimp next to the Pieces box tells you how many checks
   this level's chimps carry. Without chimps it is grey.
 - **Races.** Building the vehicle and winning the race is a check, and opens the building's next level (with
-  `race_progression`). On the podium, **Next Level** goes to that level if it is open, otherwise to the Technology
+  `race_progression`; with `item_progression` levels open only with their Access items). On the podium, **Next Level** goes to that level if it is open, otherwise to the Technology
   Center. A race you have won can't be raced again: *Rerun Race* is refused, and when you go back into a won level
   for its remaining checks, its race door stays shut even with the vehicle complete. You can still take the
   vehicle apart.
