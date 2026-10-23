@@ -1,15 +1,15 @@
 # The apworld and the client
 
-`apworld/gizmos_and_gadgets/` is the Archipelago world (generation) and the client (play). The game side is the
+`apworld/gizmosandgadgets/` is the Archipelago world (generation) and the client (play). The game side is the
 recomp mod (`docs/MOD.md`); the client connects it to the server through the files in `<game folder>/ap/`.
 
 ## Install
 
 ```sh
-python tools/build_apworld.py            # -> dist/gizmos_and_gadgets.apworld
+python tools/build_apworld.py            # -> dist/gizmosandgadgets.apworld
 ```
-Copy the `.apworld` into Archipelago's `custom_worlds/` folder. Requires Archipelago 0.6.9 or newer. The data in
-`apworld/gizmos_and_gadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
+Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.9 or newer. The data in
+`apworld/gizmosandgadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
 ## The world (v0.3.1)
 
@@ -32,7 +32,7 @@ k − 1 in the game's part table; named by number, since in a seed a box holds a
 ## The client
 
 Launcher → **Gizmos and Gadgets Client**, or
-`python -m worlds.gizmos_and_gadgets.client --gamedir <game folder> --connect <host:port> --name <slot>`.
+`python -m worlds.gizmosandgadgets.client --gamedir <game folder> --connect <host:port> --name <slot>`.
 
 - Forwards new lines of `ap/checks.txt` as `LocationChecks`, and `goal` as the goal status.
 - Passes the options to the mod (`config.txt`): `chimps`, `races_required`, level availability.
@@ -46,6 +46,7 @@ Launcher → **Gizmos and Gadgets Client**, or
 - Binds the game folder to one seed and slot (`ap/seed.txt`), and records the in-game player that plays it; another
   seed in the same folder is refused, and a different signed-in player gets a warning. This is what makes picking
   up a half-played seed safe: same folder, same player, and the client says when something does not match.
+- Remembers the last game folder (`gizmos_and_gadgets_gamedir.txt` in Archipelago's user folder).
 - Commands: `/gamedir <path>`, `/game` (game status), `/levels` (open levels).
 
 ## Tested (2026-10-22, Archipelago 0.6.9, this workspace)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate apworld/gizmos_and_gadgets/data.py from the extracted tables in data/.
+"""Generate apworld/gizmosandgadgets/data.py from the extracted tables in data/.
 
 Usage: python tools/make_apworld_data.py
 Inputs: data/parts_all.tsv, data/race_requirements.tsv, data/flight_requirements.tsv, data/warehouse_counts.tsv
@@ -41,7 +41,7 @@ def main():
     for v in range(15):
         out.append(f'    {v}: ({req[v][0]}, {tuple(req[v][1])!r}),')
     out += ['}', '', f'DOORS = {doors!r}', '']
-    dst = os.path.join(ROOT, 'apworld', 'gizmos_and_gadgets', 'data.py')
+    dst = os.path.join(ROOT, 'apworld', 'gizmosandgadgets', 'data.py')
     open(dst, 'w').write('\n'.join(out))
     print('wrote', dst, sum(len(p) for p in parts.values()), 'parts')
 

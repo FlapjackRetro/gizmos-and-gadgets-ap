@@ -9,7 +9,7 @@ The mod (mod/ap_mod.c) and this client share files in <game folder>/ap/ (docs/MO
   seed.txt      client: which seed, slot and in-game player this game folder belongs to
 
 Run: from the Launcher ("Gizmos and Gadgets Client"), or
-  python -m worlds.gizmos_and_gadgets.client --gamedir <game folder> [--connect host:port] [--name slot]
+  python -m worlds.gizmosandgadgets.client --gamedir <game folder> [--connect host:port] [--name slot]
 """
 import asyncio
 import os
@@ -24,6 +24,7 @@ from NetUtils import ClientStatus
 from . import BASE, BUILDINGS, GAME, level_name
 
 POLL_SECONDS = 0.5
+LAST_DIR_FILE = "gizmos_and_gadgets_gamedir.txt"   # in Archipelago's user folder: the last game folder used
 GAME_TIMEOUT = 5.0          # seconds without a game.txt update before the game counts as gone
 
 
@@ -78,6 +79,11 @@ class GizmosContext(CommonContext):
             logger.error(f"Not a folder: {path}")
             return
         self.game_dir = path
+        try:                                    # remembered for the next start of the client
+            with open(Utils.user_path(LAST_DIR_FILE), "w") as f:
+                f.write(path)
+        except OSError:
+            pass
         os.makedirs(os.path.join(path, "ap"), exist_ok=True)
         if not os.path.isdir(os.path.join(path, "mods")):
             logger.warning("No mods/ folder there: copy ap_mod.dll / ap_mod.so into <game folder>/mods/.")
@@ -320,7 +326,18 @@ async def game_watcher(ctx: GizmosContext) -> None:
 
 def launch(*args: str) -> None:
     async def main(a):
-        ctx = GizmosContext(a.connect, a.password, a.gamedir)
+        gamedir = a.gamedir
+        if not gamedir:
+            try:
+                with open(Utils.user_path(LAST_DIR_FILE)) as f:
+                    gamedir = f.read().strip() or None
+            except OSError:
+                gamedir = None
+        ctx = GizmosContext(a.connect, a.password, gamedir)
+        if ctx.game_dir:
+            logger.info(f"Game folder: {ctx.game_dir} (change it with /gamedir <path>)")
+        else:
+            logger.info("Set the game folder (the one with gizmos.exe and gizmo000.dat): /gamedir <path>")
         if a.name:
             ctx.auth = a.name
         ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
