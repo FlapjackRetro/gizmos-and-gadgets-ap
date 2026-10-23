@@ -8,10 +8,10 @@ recomp mod (`docs/MOD.md`); the client connects it to the server through the fil
 ```sh
 python tools/build_apworld.py            # -> dist/gizmosandgadgets.apworld
 ```
-Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.9 or newer. The data in
+Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.8 or newer. The data in
 `apworld/gizmosandgadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
-## The world (v0.3.1)
+## The world (v0.3.2)
 
 | | |
 |---|---|
@@ -49,7 +49,7 @@ Launcher → **Gizmos and Gadgets Client**, or
 - Remembers the last game folder (`gizmos_and_gadgets_gamedir.txt` in Archipelago's user folder).
 - Commands: `/gamedir <path>`, `/game` (game status), `/levels` (open levels).
 
-## Tested (2026-10-22, Archipelago 0.6.9, this workspace)
+## Tested (2026-10-22, Archipelago 0.6.9; 2026-10-23 also 0.6.8: tests, templates, generation, client)
 
 - `test/` (WorldTestBase): all-state reachability, fill, counts, mod ids, first race needs its
   parts, level 2 locked until the race: 21 tests pass (default and `level_access: open`).

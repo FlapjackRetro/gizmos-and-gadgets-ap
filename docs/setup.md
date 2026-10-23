@@ -14,7 +14,7 @@ This guide covers installing the Gizmos & Gadgets randomizer and its APWorld for
   [gizmos-and-gadgets-recomp](https://github.com/FlapjackRetro/gizmos-and-gadgets-recomp). It runs the game
   without DOSBox and loads mods. You build it from your own `ssg.exe` (step 2). Use a build made from the recomp's
   current version: the randomizer relies on hook points added to it on 2026-10-23.
-- **[Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases)** 0.6.9 or newer, to generate games, host
+- **[Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases)** 0.6.8 or newer, to generate games, host
   them and run the Gizmos and Gadgets client.
 - From this project's [Releases page](https://github.com/FlapjackRetro/gizmos-and-gadgets-ap/releases):
   - `ap_mod.dll`, the game mod (Windows)
