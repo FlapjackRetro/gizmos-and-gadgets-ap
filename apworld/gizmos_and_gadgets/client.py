@@ -4,6 +4,7 @@ The mod (mod/ap_mod.c) and this client share files in <game folder>/ap/ (docs/MO
   checks.txt    mod appends location ids ("goal" once races_required races are won)  -> LocationChecks / goal
   received.txt  client writes item ids in the server's order            <- ReceivedItems
   config.txt    client writes settings and which levels are open
+  labels.txt    client writes what each of this slot's locations holds (shown in the game when a box opens)
   game.txt      mod rewrites about once a second: the game is running (player, place, items applied)
   seed.txt      client: which seed, slot and in-game player this game folder belongs to
 
@@ -12,6 +13,7 @@ Run: from the Launcher ("Gizmos and Gadgets Client"), or
 """
 import asyncio
 import os
+import re
 import time
 from typing import Dict, List, Optional
 
@@ -123,6 +125,26 @@ class GizmosContext(CommonContext):
         else:
             return
         self.written_items = items
+
+    def label(self, item) -> str:
+        """What the game shows when the box of this location opens: short, plain ASCII."""
+        name = self.item_names.lookup_in_slot(item.item, item.player)
+        if item.player == self.slot:
+            text = name.split(" - ", 1)[1] if " - " in name else name     # "<Building> Level n - <part>"
+            text = re.sub(r" #\d+$", "", text)                        # "#<part>" only tells same names apart
+        else:
+            text = f"{name} for {self.player_names.get(item.player, '?')}"
+        text = "".join(ch if 32 <= ord(ch) < 127 else "?" for ch in text)
+        # the HUD's name line holds 3 lines of about 19 characters and wraps at spaces; cut longer words
+        words = [w if len(w) <= 18 else w[:17] + "." for w in text.split()]
+        text = " ".join(words)
+        return text if len(text) <= 56 else text[:55].rstrip() + "."
+
+    def write_labels(self) -> None:
+        if not (self.game_dir and self.seed_ok):
+            return
+        lines = [f"{loc}={self.label(item)}" for loc, item in sorted(self.locations_info.items())]
+        self._replace("labels.txt", "\n".join(lines) + "\n")
 
     def read_seed_file(self) -> Dict[str, str]:
         out: Dict[str, str] = {}
@@ -240,6 +262,10 @@ class GizmosContext(CommonContext):
                 logger.info(self.levels_text())
                 if self.game_alive:
                     self.check_player()
+                asyncio.create_task(self.send_msgs([{"cmd": "LocationScouts", "create_as_hint": 0,
+                                                      "locations": sorted(self.server_locations)}]))
+        elif cmd == "LocationInfo":
+            self.write_labels()
         elif cmd == "ReceivedItems":
             self.write_received()
         elif cmd == "RoomUpdate" and "checked_locations" in args:

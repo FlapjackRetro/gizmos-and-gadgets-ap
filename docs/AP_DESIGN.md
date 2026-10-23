@@ -78,16 +78,15 @@ box open, puzzle result, door open, race end, plus safe points to grant items wi
   reference; the RE notes and hook addresses it produced are what the recomp's mod API is built on.
 
 ## Future items
-### In-game Archipelago item labels
-Swap part names shown in-game for Archipelago item labels (e.g. "Bob's Progressive Wings"), so a box shows what
-it actually sends/holds. What we know:
-- Part names are type-`S` string resources (ids from `0x278`), referenced by part-table entry `+0x16`.
-- At load time `R053F_0002` loads each name into its own far block and stores the pointer at entry `+0x86`;
-  the pickup message reads it from there (`R0A04_076B`).
-- Options: (a) the client writes replacement text into those blocks at runtime (simplest; length-limited to the
-  original allocation unless we reallocate), (b) patch the `S` resources in a copy of `gizmo000.dat`
-  (needs an archive rewriter), (c) point `+0x86` at a client-managed buffer.
-- TBD: find other places text is drawn (blueprint screen labels, part inventory screen) and their length limits.
+### In-game Archipelago item labels (done 2026-10-23)
+Opening a check box shows what it held, in the HUD line where the game shows a part's name after a pickup:
+`5 Bananas`, `fat envelope` (this game's part, now in the Archipelago inventory) or `Shield for Quester`.
+- The client scouts all of the slot's locations on connecting (`LocationScouts`, no hints) and writes
+  `ap/labels.txt` (`<location id>=<text>`): plain ASCII, words over 18 characters cut, at most 56 characters (the
+  HUD line wraps at spaces, 3 lines of about 19 characters); own parts without the level prefix and `#n`.
+- The mod points the HUD's name pointer (`DS:879A`, refresh bit 0x10 in `DS:132C`, as `R0A04_0754` does) at its
+  own copy of the text. Without a label (client not connected yet): "Archipelago item".
+- Not done: labels for race locations (the podium), received items ("from <player>").
 
 ### Box pickups as Archipelago checks
 Opening a box that holds an Archipelago check must **show the item's text** (the AP item name, from the label

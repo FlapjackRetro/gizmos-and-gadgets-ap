@@ -35,7 +35,8 @@ static const GGApi *api;
 #define REG_OFF   0
 #define SCR_OFF   (UI_REGIONS * 0x1C)
 #define STR_OFF   (SCR_OFF + 16)
-#define BLOCK     (STR_OFF + UI_STR_SLOTS * UI_STR_LEN)
+#define LBL_OFF   (STR_OFF + UI_STR_SLOTS * UI_STR_LEN)
+#define BLOCK     (LBL_OFF + UI_LABEL_LEN)
 
 static uint16_t blk_seg, blk_off;
 
@@ -76,6 +77,20 @@ uint16_t ui_str(int slot, const char *s)
     memcpy(blk(off), s, n);
     blk(off)[n] = 0;
     return (uint16_t)(blk_off + off);
+}
+
+/* The HUD's item-name line (DS:879A far pointer, refresh bit 0x10 in DS:132C; R0A04_0754 does the same for a
+ * part's name) pointed at our own text, which stays valid until the game shows the next name. */
+void ui_hud_name(const char *s)
+{
+    if (!ui_ready()) return;
+    size_t n = strlen(s);
+    if (n > UI_LABEL_LEN - 1) n = UI_LABEL_LEN - 1;
+    memcpy(blk(LBL_OFF), s, n);
+    blk(LBL_OFF)[n] = 0;
+    api->ds_write16(0x879A, (uint16_t)(blk_off + LBL_OFF));
+    api->ds_write16(0x879C, blk_seg);
+    api->ds_write16(0x132C, api->ds_read16(0x132C) | 0x10);
 }
 
 uint32_t ui_scratch(void) { return (uint32_t)blk_seg << 16 | (uint16_t)(blk_off + SCR_OFF); }

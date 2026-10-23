@@ -35,6 +35,7 @@ Launcher → **Gizmos and Gadgets Client**, or
 
 - Forwards new lines of `ap/checks.txt` as `LocationChecks`, and `goal` as the goal status.
 - Passes the options to the mod (`config.txt`): `chimps`, `races_required`, level availability.
+- Scouts the slot's locations on connecting and writes `ap/labels.txt`, so an opened box shows its item.
 - Keeps `ap/received.txt` equal to the server's received-items list (own items included: boxes never give their
   part directly), so the mod grants each one once, in order.
 - Writes `ap/config.txt`: settings (`chimps` from the `cyberchimps` option) and `avail.<building>` (which levels
@@ -58,6 +59,5 @@ Launcher → **Gizmos and Gadgets Client**, or
   level opened in the picker.
 
 ## To do
-- In-game text for found items (other players' items show nothing yet).
 - Level unlock items (a third `level_access` mode), if wanted.
 - DeathLink / hints display / GUI tab, if wanted.

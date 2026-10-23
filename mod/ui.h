@@ -18,6 +18,9 @@ uint16_t ui_str(int slot, const char *s);   /* string slot 0..UI_STR_SLOTS-1 (UI
 uint32_t ui_scratch(void);                  /* 16 bytes of guest scratch (far pointer seg:off) */
 #define UI_STR_SLOTS 40
 #define UI_STR_LEN   64
+#define UI_LABEL_LEN 64
+/* show text in the HUD's item-name line, where the game shows a part's name after a pickup */
+void ui_hud_name(const char *s);
 
 /* drawing */
 void ui_color(int c);

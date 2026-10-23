@@ -22,7 +22,7 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Building chosen | the **level picker** (below); "Return to Technology Center" stays on the Technology Center screen |
 | Level about to load | loads the picked level; restores its saved warehouse if it was played before, else generates it (once) |
 | Level ready | saves at once (the game's own save), so a level is never generated twice |
-| Box opened, holding a part | sends the box's location; the box disappears and the game gives nothing (the item comes back from the server, also for our own items) |
+| Box opened, holding a part | sends the box's location; the box disappears and the game gives nothing (the item comes back from the server, also for our own items); the HUD shows what the box held (`labels.txt`) |
 | Box opened, empty | vanilla (+5 bananas), not a check |
 | Box opened, holding a part the player recycled or once held (box sprite `0x333`/`0x344`) | vanilla pickup, not a check |
 | Door opened (puzzle solved) | sends the door's location only with `door_checks=1` (off: doors are not locations for now) |
@@ -136,6 +136,7 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 | `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory) |
 | `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), items in the game, checks carried by chimps |
 | `levels/<v>.bin` | mod | the saved warehouse of level `v` |
+| `labels.txt` | client | `<location id>=<text>`: what each location of this slot holds, shown when its box opens |
 | `seed.txt` | client | the seed/slot and in-game player this game folder belongs to |
 
 ## Ids
@@ -206,7 +207,6 @@ puzzles to pass, saves):
 Race end and goal: tested with a forced win (the race runs; the test driver sets the slot count and the result).
 
 ## Known limitations / to do
-- No in-game text for found items yet (the box just disappears); needs the item-label work.
 - A player who enters a later level first starts it with the bananas of the level header (0 for a new player
   past level 1; the game sets 10 only on level 1).
 - Chimp check carrying needs the recomp's hook sites `chimp_box_open` / `chimp_drop` (recomp PR #1); with an older

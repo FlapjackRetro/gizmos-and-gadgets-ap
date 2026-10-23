@@ -77,7 +77,7 @@ static long rx_size;         /* bytes of received.txt already read */
 
 static char dir_ap[1024];
 static int picked[3] = { -1, -1, -1 };   /* level chosen in the picker, for the next LEVEL_ENTER */
-static int frames, last_grant_frame;
+static int last_grant_frame;
 static int in_level = -1;    /* vehicle index of the warehouse that is set up, -1 none */
 
 /* ---- files -------------------------------------------------------------------------------- */
@@ -94,6 +94,43 @@ static void send_line(const char *line)
     if (!f) { api->log("ap: cannot write %s", p); return; }
     fprintf(f, "%s\n", line);
     fclose(f);
+}
+
+/* ---- item labels (ap/labels.txt, client: "<location id>=<text>") ------------------------------------ */
+#define MAX_LABELS 700
+static struct { unsigned loc; char text[64]; } labels[MAX_LABELS];
+static int nlabels, labels_frame = -1000;
+static int frames;
+
+static void load_labels(void)
+{
+    char p[1100], line[256];
+    snprintf(p, sizeof p, "%s/labels.txt", dir_ap);
+    FILE *f = fopen(p, "r");
+    if (!f) return;
+    nlabels = 0;
+    while (nlabels < MAX_LABELS && fgets(line, sizeof line, f)) {
+        char *eq = strchr(line, '=');
+        if (!eq) continue;
+        *eq = 0;
+        char *t = eq + 1, *nl = strpbrk(t, "\r\n");
+        if (nl) *nl = 0;
+        labels[nlabels].loc = (unsigned)strtoul(line, NULL, 10);
+        snprintf(labels[nlabels].text, sizeof labels[nlabels].text, "%s", t);
+        nlabels++;
+    }
+    fclose(f);
+}
+
+static const char *label_of(unsigned loc)
+{
+    for (int pass = 0; pass < 2; pass++) {
+        for (int i = 0; i < nlabels; i++) if (labels[i].loc == loc) return labels[i].text;
+        if (pass || frames - labels_frame < 60) break;        /* re-read at most once a second */
+        labels_frame = frames;
+        load_labels();
+    }
+    return NULL;
 }
 
 static void send_check(unsigned id, const char *what)
@@ -638,6 +675,8 @@ static int on_box_open(void *u, GGEvent *e)
     char what[48];
     snprintf(what, sizeof what, "box: level %d part %d", v, e->contents);
     send_check(LOC_BOX(v, e->contents), what);
+    const char *lbl = label_of(LOC_BOX(v, e->contents));
+    ui_hud_name(lbl ? lbl : "Archipelago item");             /* what the box held, where a part's name goes */
     return GG_SUPPRESS;                                      /* the box goes; the item comes from the server */
 }
 
