@@ -31,7 +31,9 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | In the warehouse / assembly room | grants received bananas (+5 each), one about every 1.5 s. Received parts go to the Archipelago inventory |
 | Assembly room / blueprint | draws in the bottom-left of the HUD: the "Pieces" box with the number of received parts of this level in the Archipelago inventory, and a Cyberchimp (future: checks held by chimps). `hud.c`; built at run time from the game's own door-puzzle background `0x2084`, digits `0x204F` and chimp frame `0x103B`/1, colours remapped to the assembly room's |
 | Pieces box clicked (assembly room) | the **Archipelago inventory** dialog (below) |
-| Cyberchimp clicked (assembly room) | "Cyberchimps": the checks this level's chimps carry, and how many of the player's own parts they have (never checks) |
+| New player created | with `chimps` known: instead of the game's "With Chimps / Without Chimps" question (site `chimps_prompt`, recomp PR #2), a message states the YAML's setting, which the game stores (`DS:4578`) |
+| Level about to load (also) | `chimps` known: `DS:4578` set from it, so an older player file follows the YAML too |
+| Cyberchimp clicked (assembly room) | "Cyberchimps": the checks this level's chimps carry, and how many of the player's own parts they have (never checks). Playing without chimps: the sprite is grey and not clickable |
 | About once a second | writes `ap/game.txt` (heartbeat for the client) |
 
 ## Archipelago inventory
@@ -117,7 +119,7 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 |---|---|---|
 | `checks.txt` | mod (appends) | one location id per line; `goal` when the game is complete |
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
-| `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
+| `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `chimps` (1/0, from the YAML; absent = the game asks), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
 | `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory) |
 | `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), items in the game, checks carried by chimps |
 | `levels/<v>.bin` | mod | the saved warehouse of level `v` |
@@ -194,7 +196,6 @@ Not yet tested live: a real race end (needs a built vehicle headless) and the go
 - No in-game text for found items yet (the box just disappears); needs the item-label work.
 - A player who enters a later level first starts it with the bananas of the level header (0 for a new player
   past level 1; the game sets 10 only on level 1).
-- Chimps-carrying-checks display.
 - Chimp check carrying needs the recomp's hook sites `chimp_box_open` / `chimp_drop` (recomp PR #1); with an older
   recomp the mod logs it and chimps take check boxes as in vanilla (the stand-in record can then end up in two
   lists, see below).

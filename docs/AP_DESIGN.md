@@ -107,19 +107,13 @@ Where this hooks in (`R08F5_0002`, see RE_NOTES §4.3):
 **Decided — other players' items:** a box holding another game's item simply disappears from G&G when it is
 opened (the check is sent, the item text is shown, nothing enters the inventory).
 
-### To-do: Cyberchimps carry checks around
-Chimps pick up parts all the time (`O0E0D_0000` takes parts from boxes; `R0622_0F4E` drops a part into a box in
-a random room), so in a chimp-enabled game a check is not fixed to one box: it can move between rooms or be
-held by a chimp. Consequences and plan:
-- A hint can only point to a **building and level**; the player may have to search that whole level, chimps
-  included.
-- Needs a way to show that a chimp is holding a check. Likely a mod in the **assembly area**: an interaction that
-  lists how many checks the chimps of that level are holding, and of what type (own-game part vs. other player's
-  item).
-- Still to decide: whether chimps may pick up AP checks at all (an option could exclude them), and how a chimp
-  carrying a check is drawn or reported in the warehouse.
+### Cyberchimps carry checks around (done)
+Chimps open boxes, so in a chimp-enabled game a check is not fixed to one box: a chimp may carry it until hit with
+a banana. A hint can only point to a building and level. Implemented (MOD.md, "Cyberchimps and check boxes"): a
+chimp carries the check, not the part; it drops carried checks first; the assembly room's Cyberchimp sprite tells
+how many checks the level's chimps carry; the YAML option `cyberchimps` can turn chimps off.
 
-### To-do: limited player inventory vs. received items
+### Limited player inventory vs. received items (done: the Archipelago inventory)
 The vanilla inventory holds only **two items per part type**, so items received from the multiworld can arrive
 when that slot is full. The player must never lose access to a received check. Options:
 1. **Accept-or-recycle prompt (EXE-side):**
@@ -143,18 +137,18 @@ when that slot is full. The player must never lose access to a received check. O
   picks until Close / Esc. The conveyor is updated in place when the dialog closes (no room reload; see
   RE_NOTES §4.14) and the level is saved. A moved part is the player's like any other: it can be laid on the
   floor or recycled, and chimps can steal it, but it never goes back to the Archipelago inventory.
-- Still open: a "recycle" action in the dialog itself (not needed so far: the vanilla bin covers moved parts).
+- **Decided:** no recycle action in the dialog: every part goes Archipelago inventory -> conveyor -> the vanilla
+  recycle bin.
 - **Decided 2026-10-23 — chimps and check boxes:** a chimp that opens a check box carries the *check*, not the
   part (the part record is only the box's stand-in and may be the player's real part by then). Hit with a
   banana, it drops carried checks first, then real parts it stole -- a player who left a moved part on the
   conveyor instead of the floor has to hit the chimp more than once to get it back. Done in the mod with two
   recomp hook sites (MOD.md, "Cyberchimps and check boxes").
-- Recycling from the Archipelago inventory must use the game's own recycle mechanism (part `+0x36 |= 0x4000`,
-  then `R0622_0F4E(part)`): the part lands in a box in a random room with the recycled sprite, and the mod treats
-  every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled parts can only exist after the
-  player obtained the part, so they are never locations.
+- Recycling (the vanilla bin) marks the part `+0x36 |= 0x4000` and puts it in a box in a random room with the
+  recycled sprite; the mod treats every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled
+  parts can only exist after the player obtained the part, so they are never locations.
 
-### To-do: assembly-room sprite for the Archipelago inventory
+### Assembly-room sprite for the Archipelago inventory (done)
 Add a representative sprite (an object the player can click) in the assembly room that opens the static
 Archipelago inventory dialog for management: move a stored part into the vanilla inventory, or recycle it (see
 "limited player inventory"). The static inventory itself stays out of the chimps' reach.
@@ -169,12 +163,11 @@ Archipelago inventory dialog for management: move a stored part into the vanilla
   have the same colour in all three buildings (greys exact, browns to the grey of equal brightness), the counter
   drawn with the puzzle's own digit sprites (`0x204F`), at (4, 167). Shows the received parts of the current
   level that are not in the game yet. Also drawn on the blueprint screen (same loop, same free corner).
-- **Done:** clicking it opens the inventory dialog (above). Optional: the lid animation from `0x2087` (3 frames)
-  on click. The chimps sprite is to its right.
+- **Done:** clicking it opens the inventory dialog (above). The chimps sprite is to its right.
 
-### To-do: assembly-room sprite for checks held by chimps
+### Assembly-room sprite for checks held by chimps (done)
 Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the
-level's chimps are currently holding, and of what type (this game's parts vs. other players' items). The part
+level's chimps are currently holding. The part
 table's owner field (`+0x0C`: n = actor n) tells which parts a chimp holds (`docs/MOD.md`).
 - Graphic (chosen 2026-10-23): a Cyberchimp, container `0x103B` frame 1 (31×31, facing front; `0x103B` and
   `0x103F` are the chimps' animation sets, palette `0x100A` = the warehouse's). **Done (`mod/hud.c`):** drawn on the
@@ -183,17 +176,16 @@ table's owner field (`+0x0C`: n = actor n) tells which parts a chimp holds (`doc
 - **Done 2026-10-23 (`mod/inventory.c`, `chimp_dialog`):** clicking it opens "Cyberchimps": how many Archipelago
   checks this level's chimps carry (the mod's carried-check list), how many of the player's own parts they have
   (part owner = an actor; stolen or recycled parts, never checks), and "Hit one with a banana to make it drop."
-  Not shown: what the carried checks hold (this game's parts vs. other players' items) -- that needs location
-  scouting through the client.
+  **Decided:** it does not say what the carried checks hold.
 
-### To-do: chimps setting from the YAML
+### Chimps setting from the YAML (done 2026-10-23)
 When a new player file is started, the game asks whether to play with or without chimps (dialog 0x1067, "With
-Chimps" / "Without Chimps"). Replace that choice with an informational pop-up that states the setting read from the
-player's YAML (slot data, passed to the mod through the client's `config.txt`), and apply that setting. Needs: a
-`chimps` option in the apworld, and finding where the game stores the choice.
-- When the YAML says to play **without chimps**, the chimps sprite on the assembly room HUD is drawn **in grayscale**
-  (each index remapped to the assembly-room grey of the same brightness, as the Pieces box's browns are) and is
-  **not clickable** (no mouse region, so no informational pop-up).
+Chimps" / "Without Chimps", `O0E83_0C5E`, called from `O0E2D` 0x1307; the answer is stored at `DS:4578`, player
+record +0x16, 1 = with). Now: apworld option `cyberchimps` (default on) -> slot data -> the client's `config.txt`
+(`chimps=1/0`) -> the mod skips the question (site `chimps_prompt`, recomp PR #2) and shows a message with the
+setting instead; it also sets `DS:4578` on every level entry. Without chimps, the Cyberchimp on the assembly room
+HUD is drawn in grayscale (each index to the assembly-room grey of the same brightness) and is not clickable.
+Verified headless for both settings (message, `[4578]`, chimps in the warehouse or none, grey sprite).
 
 ### To-do: Microsoft Defender SmartScreen warning
 Windows shows "Windows protected your PC … Unknown publisher" when starting `gizmos.exe` (the recomp build).

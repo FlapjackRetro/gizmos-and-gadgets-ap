@@ -41,6 +41,7 @@
 #define ITEM_BANANAS       (AP_BASE + 0x0F00u)
 
 #define MAX_RECEIVED 4096
+#define GG_DS_CHIMPS 0x4578   /* player record +0x16: 1 = with Cyberchimps (set by the new-player question) */
 #define MAX_DOORS    80
 
 static const GGApi *api;
@@ -51,6 +52,7 @@ static struct {
     int box_checks;          /* part boxes are checks: the part goes to the multiworld */
     int door_checks;
     int title_logo;          /* use GIZMOAP1.DAT (Archipelago logo on the title screen) if present */
+    int chimps;              /* Cyberchimps from the YAML: 1 with, 0 without, -1 not given (the game asks) */
     int avail[3][5];         /* level open in the picker (client: avail.<b>=11000); -1 = not given */
 } cfg;
 
@@ -104,7 +106,7 @@ static void send_check(unsigned id, const char *what)
 static void load_config(void)
 {
     char p[1100], line[256];
-    cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 0; cfg.title_logo = 1;
+    cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 0; cfg.title_logo = 1; cfg.chimps = -1;
     for (int b = 0; b < 3; b++) for (int l = 0; l < 5; l++) cfg.avail[b][l] = -1;
     path(p, sizeof p, "config.txt");
     FILE *f = fopen(p, "r");
@@ -120,6 +122,7 @@ static void load_config(void)
         else if (!strcmp(key, "box_checks")) cfg.box_checks = v;
         else if (!strcmp(key, "door_checks")) cfg.door_checks = v;
         else if (!strcmp(key, "title_logo")) cfg.title_logo = v;
+        else if (!strcmp(key, "chimps")) cfg.chimps = v != 0;
     }
     fclose(f);
 }
@@ -370,6 +373,7 @@ static int on_level_enter(void *u, GGEvent *e)
     load_config();
     int b = e->building;
     if (b < 0 || b > 2) return GG_CONTINUE;
+    if (cfg.chimps >= 0) api->ds_write16(GG_DS_CHIMPS, (uint16_t)cfg.chimps);   /* the YAML's, for every level */
     if (picked[b] >= 0) e->level = picked[b];             /* the level picker's choice */
     picked[b] = -1;
     if (e->level > 4) e->level = 4;                          /* all 5 won: the game would load level 6 */
@@ -404,6 +408,25 @@ static void open_levels(int b, int open[5])
     for (int l = 0; l < 5; l++)
         open[l] = cfg.avail[b][l] >= 0 ? cfg.avail[b][l]
                 : (l == 0 || (won >> (b * 5 + l - 1) & 1) || (won >> (b * 5 + l) & 1));
+}
+
+/* Site chimps_prompt (O0E2D 0x1307: call O0E83_0C5E, the new player's "With Chimps / Without Chimps" question;
+ * ax != 0 -> [4578] = 1). With the YAML's setting known, tell the player instead of asking and skip the call. */
+static int on_chimps_prompt(void *u, uint32_t addr, GGRegs *r)
+{
+    (void)u; (void)addr;
+    load_config();
+    if (cfg.chimps < 0 || !ui_ready()) return 0;               /* no client yet: the game asks */
+    const char *l[3] = { "Set by your Archipelago settings:",
+                         cfg.chimps ? "this game has Cyberchimps." : "this game has no Cyberchimps.",
+                         cfg.chimps ? "They may carry off parts and checks." : "No chimps will get in your way." };
+    UiSession s;
+    ui_begin(&s);
+    ui_message("Cyberchimps", l, 3, 0);
+    ui_end(&s);
+    r->ax = (uint16_t)cfg.chimps;
+    api->log("ap: new player: Cyberchimps %s (from the YAML)", cfg.chimps ? "on" : "off");
+    return 1;
 }
 
 /* Site building_selected (R02E0_0148 at 0x463: mov [bp-6], 1 = leave the select loop and enter the
@@ -467,7 +490,7 @@ static int on_assembly_tick(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     mark_obtained();
-    hud_tick(waiting_parts());
+    hud_tick(waiting_parts(), api->ds_read16(GG_DS_CHIMPS) != 0);
     if (frames - last_grant_frame >= 90) { last_grant_frame = frames; grant_pending(); }
     return GG_CONTINUE;
 }
@@ -748,6 +771,8 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
     api->on_event(GG_EV_WAREHOUSE_TICK, on_warehouse_tick, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_assembly_tick, NULL);
+    if (!api->on_site(api->site_addr("chimps_prompt"), on_chimps_prompt, NULL))
+        api->log("ap: chimps_prompt site missing (recomp too old): the game asks about chimps");
     if (!api->on_site(api->site_addr("chimp_box_open"), on_chimp_box_open, NULL) ||
         !api->on_site(api->site_addr("chimp_drop"), on_chimp_drop, NULL))
         api->log("ap: chimp sites missing (recomp too old): chimps take check boxes as in vanilla");

@@ -100,6 +100,8 @@ class GizmosContext(CommonContext):
         if not (self.game_dir and self.seed_ok):
             return
         lines = ["door_checks=0", "box_checks=1", "open_world=1", "title_logo=1"]
+        if "cyberchimps" in self.slot_data:
+            lines.append(f"chimps={1 if self.slot_data['cyberchimps'] else 0}")
         lines += [f"avail.{b}=" + "".join("1" if self.level_open(b * 5 + lv) else "0" for lv in range(5))
                   for b in range(3)]
         text = "\n".join(lines) + "\n"

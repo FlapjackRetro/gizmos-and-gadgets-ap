@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
-from Options import Choice, PerGameCommonOptions
+from Options import Choice, DefaultOnToggle, PerGameCommonOptions
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, launch_subprocess
 
@@ -82,9 +82,17 @@ class LevelAccess(Choice):
     default = 0
 
 
+class Cyberchimps(DefaultOnToggle):
+    """Play with Cyberchimps in the warehouse (the game's "With Chimps" choice for a new player). Chimps open boxes
+    and carry off what they find -- also Archipelago checks, which a chimp drops again when hit with a banana --
+    and steal parts from you. Off: no chimps. The game does not ask; it shows this setting instead."""
+    display_name = "Cyberchimps"
+
+
 @dataclass
 class GizmosOptions(PerGameCommonOptions):
     level_access: LevelAccess
+    cyberchimps: Cyberchimps
 
 
 class GizmosItem(Item):
@@ -193,4 +201,5 @@ class GizmosWorld(World):
         return BANANAS
 
     def fill_slot_data(self) -> Dict[str, Any]:
-        return {"id_base": BASE, "level_access": self.options.level_access.current_key}
+        return {"id_base": BASE, "level_access": self.options.level_access.current_key,
+                "cyberchimps": bool(self.options.cyberchimps.value)}

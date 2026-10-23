@@ -11,7 +11,7 @@ python tools/build_apworld.py            # -> dist/gizmos_and_gadgets.apworld
 Copy the `.apworld` into Archipelago's `custom_worlds/` folder. Requires Archipelago 0.6.9 or newer. The data in
 `apworld/gizmos_and_gadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
-## The world (v0.2.0)
+## The world (v0.3.0)
 
 | | |
 |---|---|
@@ -20,6 +20,7 @@ Copy the `.apworld` into Archipelago's `custom_worlds/` folder. Requires Archipe
 | Access | option `level_access`: `race_progression` (default: a building's level *n*+1 opens when its level *n* race is won; won levels stay open) or `open` (all 15 levels from the start). The in-game level picker shows the open levels |
 | Race rule | every non-cosmetic slot of the level built, stat slots with a part of tier ≥ min(k, best tier) — the thresholds the race simulations proved sufficient (`data/race_requirements.tsv`, `data/flight_requirements.tsv`) |
 | Classification | parts that meet their slot's threshold: progression; other non-cosmetic parts: useful; paint/decals: filler |
+| Option `cyberchimps` | on (default): play with Cyberchimps; off: none. Replaces the game's question for a new player (the mod shows the setting) and is applied on every level entry |
 | Goal | all 15 races won |
 
 Ids are the mod's (`docs/MOD.md`), e.g. part 4 of Aircraft level 1 = location and item `0x47471144`.
@@ -34,8 +35,8 @@ Launcher → **Gizmos and Gadgets Client**, or
 - Forwards new lines of `ap/checks.txt` as `LocationChecks`, and `goal` as the goal status.
 - Keeps `ap/received.txt` equal to the server's received-items list (own items included: boxes never give their
   part directly), so the mod grants each one once, in order.
-- Writes `ap/config.txt`: settings and `avail.<building>` (which levels the picker offers), updated when a race
-  location is checked.
+- Writes `ap/config.txt`: settings (`chimps` from the `cyberchimps` option) and `avail.<building>` (which levels
+  the picker offers), updated when a race location is checked.
 - **Game connection:** watches `ap/game.txt` (the mod rewrites it every second): logs "Game connected" with the
   signed-in player, place and how many received items are in the game, and "Game not responding" when it stops.
 - Binds the game folder to one seed and slot (`ap/seed.txt`), and records the in-game player that plays it; another

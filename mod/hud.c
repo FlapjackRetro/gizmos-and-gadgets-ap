@@ -7,7 +7,8 @@
  *     198 (green surround) and 211 (shadow) are transparent; rows 12..14 (plain texture above "Pieces") are
  *     dropped so it fits the HUD's 33 rows. Counter: the puzzle's own digit sprites (0x204F), centred where
  *     the puzzle draws its count.
- *   - Cyberchimp (checks held by chimps): container 0x103B, frame 1 (31x31, facing front).
+ *   - Cyberchimp (checks held by chimps): container 0x103B, frame 1 (31x31, facing front); a grey copy when the
+ *     game is played without chimps.
  * Their colours come from other palettes (the puzzle's 0x2085, the warehouse's 0x100A), so each index is
  * remapped to an assembly room index (tables below). Every target index has the same colour in the assembly
  * rooms of all three buildings. Box: greys exact, browns to the grey of the same brightness. Chimp: nearest
@@ -32,7 +33,8 @@ typedef struct {
     uint8_t probe_val[4];
 } Sprite;
 
-static Sprite box, chimp;
+static Sprite box, chimp, chimp_grey;
+static int chimps_on = 1, chimp_shown = -1;     /* which chimp is on screen */
 static uint16_t dig_off[10], dig_seg;       /* digit LPX images inside the loaded 0x204F container */
 static uint8_t dig_w[10];
 static int ready = -1;                      /* -1 not tried, 0 failed, 1 built */
@@ -48,6 +50,11 @@ static const uint8_t chimp_from[] = { 64, 66, 68, 69, 71, 72, 76, 77, 78, 79, 10
                                       108, 109, 110, 111, 112, 113, 114, 115, 117, 118 };
 static const uint8_t chimp_to[] = { 0, 204, 195, 216, 7, 211, 199, 198, 14, 15, 200, 193, 200, 194, 244, 14, 195,
                                     194, 26, 216, 216, 195, 246, 210, 212, 199, 195 };
+
+/* the same, grey: each chimp_to index -> the assembly-room grey of the same brightness (0.299 R + 0.587 G +
+ * 0.114 B; greys 0, 7, 15, 204..214), measured from the screen in the assembly room */
+static const uint8_t grey_from[] = { 0, 7, 14, 15, 26, 193, 194, 195, 198, 199, 200, 204, 210, 211, 212, 216, 244, 246 };
+static const uint8_t grey_to[] = { 0, 7, 204, 15, 212, 214, 210, 214, 207, 208, 210, 204, 210, 211, 212, 214, 212, 214 };
 
 static uint32_t call(uint16_t s, uint16_t o, int n, uint16_t a0, uint16_t a1, uint16_t a2, uint16_t a3, uint16_t a4)
 {
@@ -165,8 +172,12 @@ static int build_chimp(void)
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
             if (fill[y][x]) fill[y][x] = remap(px[y][x], chimp_from, chimp_to, sizeof chimp_from, &px[y][x]);
-    chimp.x = 76; chimp.y = 200 - h - 1;
-    return lpx_build(&chimp, w, h, px, fill);
+    chimp.x = chimp_grey.x = 76; chimp.y = chimp_grey.y = 200 - h - 1;
+    if (!lpx_build(&chimp, w, h, px, fill)) return 0;
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+            if (fill[y][x]) fill[y][x] = remap(px[y][x], grey_from, grey_to, sizeof grey_from, &px[y][x]);
+    return lpx_build(&chimp_grey, w, h, px, fill);
 }
 
 static int build_digits(void)
@@ -218,20 +229,22 @@ static void draw_box(int count)
 
 void hud_init(const GGApi *a) { api = a; }
 
-void hud_tick(int count)
+void hud_tick(int count, int chimps)
 {
     if (ready < 0) {
         ready = build_box() && build_digits() && build_chimp();
         if (!ready) api->log("ap: hud: sprites not available");
     }
     if (!ready) return;
+    chimps_on = chimps != 0;
+    const Sprite *c = chimps_on ? &chimp : &chimp_grey;
     int drew = 0;
     if (missing(&box) || count != shown) { draw_box(count); drew = 1; }
-    if (missing(&chimp)) { draw_sprite(&chimp); drew = 1; }
+    if (missing(c) || chimp_shown != chimps_on) { draw_sprite(c); chimp_shown = chimps_on; drew = 1; }
     if (drew) call(0x0581, 0x052A, 0, 0, 0, 0, 0, 0);             /* flush, as the game does after drawing */
 }
 
-void hud_forget(void) { shown = -1; }
+void hud_forget(void) { shown = -1; chimp_shown = -1; }
 
 int hud_box_rect(int *x, int *y, int *w, int *h)
 {
@@ -242,7 +255,7 @@ int hud_box_rect(int *x, int *y, int *w, int *h)
 
 int hud_chimp_rect(int *x, int *y, int *w, int *h)
 {
-    if (ready != 1) return 0;
+    if (ready != 1 || !chimps_on) return 0;
     *x = chimp.x; *y = chimp.y; *w = chimp.w; *h = chimp.h;
     return 1;
 }
