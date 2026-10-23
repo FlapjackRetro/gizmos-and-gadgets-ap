@@ -128,8 +128,8 @@ when that slot is full. The player must never lose access to a received check. O
   (which chimps steal from) until the player moves a part into the vanilla inventory.
 - **Done 2026-10-23 (option 2, `mod/inventory.c`):** received parts stay in the Archipelago inventory (no more
   automatic grants in the warehouse; bananas still arrive by themselves). Clicking the Pieces box in the
-  assembly room opens a dialog in the game's style listing every received part not in the game yet: this
-  level's parts can be picked, other levels' are greyed with their level in front. Six rows, scrolled with
+  assembly room opens a dialog in the game's style listing the received parts of the loaded level that are
+  not in the game yet (other levels' parts are listed in their own level). Six rows, scrolled with
   Up/Down/PgUp/PgDn/Home/End, the Up and Down buttons, or the mouse. Picking a part checks the game's own limit
   (two of a kind): when full, a message says to recycle a part first and nothing else happens; otherwise the part
   goes into the vanilla inventory (counts for PARTS NEEDED) and leaves the list. The dialog stays open for more

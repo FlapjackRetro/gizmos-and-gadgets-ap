@@ -129,7 +129,8 @@ Keep the client running while you play: it sends your checks and passes your ite
 - **Your parts arrive in the Pieces box.** Received parts don't appear in the warehouse: they wait in the
   **Pieces** box at the bottom left of the assembly room's HUD, whose counter shows how many are there for this
   level. Click it to open the Archipelago inventory: pick a part of this level to put it on the conveyor belt, as
-  many as you like, then **Close**. Parts of other levels are shown greyed; a part only works in its own level.
+  many as you like, then **Close**. It lists only this level's parts: a part only works in its own level, so other levels' parts show up when you
+  play those levels.
   The game's rule of at most two parts of a kind still applies: if you already have two, recycle one first.
   Bananas you receive are added by themselves.
 - **Parts you move are ordinary parts.** Lay them on the assembly floor or drop them in the recycle bin; they never

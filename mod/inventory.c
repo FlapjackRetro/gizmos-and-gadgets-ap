@@ -6,8 +6,8 @@
  * finished click in the record DS:A20 ([A20] = 2, x at A2A, y at A2C) until R098D_0106 reads it; the mod
  * looks at it at the head of the assembly loop (O0E30_0C89, site assembly_tick) and takes it.
  *
- * The dialog (ui.c, the game's style) lists every received part that is not in the game yet: this level's
- * parts can be picked, other levels' are greyed (a part only works in its own level). Picking one checks the
+ * The dialog (ui.c, the game's style) lists the received parts of the level that is loaded that are not in the
+ * game yet (a part only works in its own level; other levels' parts wait for theirs). Picking one checks the
  * game's own limit -- two parts of a kind (R053F_0216 on the player's list, as the box pickup R08F5_0002
  * and R0834_08D7 do) -- and either says to recycle a part first or gives the part (api->give_part, the
  * pickup without the box). The dialog stays open for more picks until the player closes it. Moved parts
@@ -224,7 +224,7 @@ static void draw_sub(void)
     int usable = 0;
     for (int i = 0; i < nent; i++) usable += ent[i].usable;
     if (!nent) snprintf(s, sizeof s, "No parts waiting.");
-    else snprintf(s, sizeof s, "%d for this level, %d in all", usable, nent);
+    else snprintf(s, sizeof s, "%d part%s for this level", usable, usable == 1 ? "" : "s");
     s_sub = ui_str(1, s);
     ui_color(0xF);
     ui_fill(X + 8, Y + 9 + fh + 2, W - 16, fh + 1);
@@ -523,8 +523,9 @@ int inventory_site(GGRegs *r, InvItem *items, int n, int cur_v, int chimp_checks
     if (what != 1) return 0;
     nent = 0;
     for (int i = 0; i < n && nent < MAX_ITEMS; i++) {
+        if (items[i].v != cur_v) continue;             /* only this level's parts: they only work here */
         ent[nent].it = items[i];
-        ent[nent].usable = items[i].v == cur_v;
+        ent[nent].usable = 1;
         load_level_names(items[i].v);                  /* the loader's scratch is free until the box is saved */
         nent++;
     }
