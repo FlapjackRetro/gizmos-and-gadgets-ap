@@ -21,7 +21,7 @@ commands and tests: [`docs/CLIENT.md`](docs/CLIENT.md).
 the patches; each one verifies the original bytes first.
 
 ## Contents
-- `mod/ap_mod.c`, `mod/CMakeLists.txt`: the Archipelago mod for the recomp; `mod/tests/test_driver.c`: headless test helper.
+- `mod/ap_mod.c`, `mod/picker.c`, `mod/CMakeLists.txt`: the Archipelago mod for the recomp (checks, items, level picker, per-level saves); `mod/tests/`: headless test helper mod and a host-side unit test.
 - `apworld/gizmos_and_gadgets/`: the Archipelago world and client; `tools/make_apworld_data.py` (data from `data/`), `tools/build_apworld.py` (packaging).
 - `docs/CLIENT.md`: the apworld and client — install, logic, commands, tests.
 - `docs/MOD.md`: the mod — build, behaviour, client files, ids, verification.

@@ -8,13 +8,15 @@
  *                     that new box (the room's last) is the one opened.
  * TEST_DROP=part      the same, but without marking it: drop `part` as a box as a chimp would (to test that
  *                     ap_mod marked a part the player obtained).
+ * TEST_SAVE=1         after opening the box, save the game the way leaving the warehouse does (DS:94 = 1,
+ *                     O0E18_01EA)
  * TEST_PASS_PUZZLES=1 every door puzzle counts as solved (so Go Back opens the door).
  */
 #include <stdlib.h>
 #include "gg_mod.h"
 
 static const GGApi *api;
-static int open_at, box_obj, recycle = -1, mark = 1, pass, ticks;
+static int open_at, box_obj, recycle = -1, mark = 1, pass, ticks, save_after;
 
 static int on_tick(void *u, GGEvent *e)
 {
@@ -37,6 +39,7 @@ static int on_tick(void *u, GGEvent *e)
         api->ds_write16(0x7ACA, (uint16_t)box_obj);
         api->log("test: opening box %d in room %d", box_obj, api->ds_read16(GG_DS_PLAYER_ROOM));
         api->call_far(0x08F5, 0x0002, 2, args);
+        if (save_after) { api->ds_write16(0x94, 1); api->call_far(0xC0DA, 0x01EA, 0, NULL); api->log("test: saved"); }
     }
     return GG_CONTINUE;
 }
@@ -73,6 +76,7 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     const char *s = getenv("TEST_OPEN_BOX"); open_at = s ? atoi(s) : 0;
     s = getenv("TEST_BOX_OBJ"); box_obj = s ? atoi(s) : 0;
     s = getenv("TEST_RECYCLE"); recycle = s ? atoi(s) : -1;
+    s = getenv("TEST_SAVE"); save_after = s && *s == '1';
     s = getenv("TEST_DROP"); if (s) { recycle = atoi(s); mark = 0; }
     s = getenv("TEST_DUMP_OWNERS"); dump_at = s ? atoi(s) : 0;
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_dump, NULL);

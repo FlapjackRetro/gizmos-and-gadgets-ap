@@ -7,5 +7,5 @@
    (`/gamedir <path>`), and connect to the server.
 4. Start the game. Use one player name per seed.
 
-In the client, `/level <building> <n>` chooses which level a building loads next (1-5, among the levels
-you have unlocked), `/level <building> auto` returns to the game's own choice.
+After clicking a building, pick the level in the game's level picker (locked levels are greyed out).
+Client commands: `/game` (is the game running, which player), `/levels` (open levels).

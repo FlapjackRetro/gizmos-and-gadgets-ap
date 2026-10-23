@@ -11,7 +11,7 @@ emulator memory scanning are needed.
 cmake -S mod -B build-mod -DGG_RECOMP_DIR=/path/to/gizmos-and-gadgets-recomp
 cmake --build build-mod            # ap_mod.so / ap_mod.dll
 ```
-Copy `ap_mod.dll` (Windows) or `ap_mod.so` into `<game dir>/mods/`, or run `gizmos --mod path/to/ap_mod.so`.
+The mod is `ap_mod.c` + `picker.c`. Copy `ap_mod.dll` (Windows) or `ap_mod.so` into `<game dir>/mods/`, or run `gizmos --mod path/to/ap_mod.so`.
 The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC command lines).
 
 ## What it does (v0)
@@ -19,17 +19,46 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Game event | Mod |
 |---|---|
 | Building clicked | `open_world=1`: always let the player in, even when all 5 races are won |
-| Level about to load | loads `level.<building>` from the config if set (else the game's choice, capped at level 5, which fixes the "Level-6 Blimp" overflow); a saved warehouse is only restored if it belongs to that level, otherwise a fresh one is built |
+| Building chosen | the **level picker** (below); "Return to Technology Center" stays on the Technology Center screen |
+| Level about to load | loads the picked level; restores its saved warehouse if it was played before, else generates it (once) |
+| Level ready | saves at once (the game's own save), so a level is never generated twice |
 | Box opened, holding a part | sends the box's location; the box disappears and the game gives nothing (the item comes back from the server, also for our own items) |
 | Box opened, empty | vanilla (+5 bananas), not a check |
 | Box opened, holding a part the player recycled or once held (box sprite `0x333`/`0x344`) | vanilla pickup, not a check |
-| Door opened (puzzle solved) | sends the door's location |
-| Race won | sends the race location; `goal` once the game's total-races counter reaches 15 |
-| In the warehouse | grants received items, one about every 1.5 s: parts of the current level via the game's own pickup routine (name shown, PARTS NEEDED counts down), bananas anywhere |
+| Door opened (puzzle solved) | sends the door's location only with `door_checks=1` (off: doors are not locations for now) |
+| Race started | keeps a copy of the level's warehouse (a won race discards it) |
+| Race won | sends the race location; keeps the game's race counters right for any order; `goal` once all 15 levels are won |
+| In the warehouse | grants received items, one about every 1.5 s: parts of the current level via the game's own pickup routine (name shown, PARTS NEEDED counts down), bananas anywhere; saves after each part |
+| About once a second | writes `ap/game.txt` (heartbeat for the client) |
 
-Received parts wait until the player is in their level's warehouse. A part waits while the player already holds
-two of that kind (the inventory limit; see the to-do in `AP_DESIGN.md`). When a level's warehouse is generated
-fresh, the parts already received for it are granted again.
+Received parts wait until the player is in their level's warehouse, and while the player already holds two of
+that kind (the inventory limit; see the to-do in `AP_DESIGN.md`).
+
+## Level picker
+
+After a building is clicked at the Technology Center, a dialog in the game's style lists
+`Level 1 - <vehicle>` … `Level 5 - <vehicle>` and `Return to Technology Center`. Vehicle names come from the
+game's blueprint resources (`Level 1 - Blimp`, `Level 4 - Class III Gas-Powered Racer`). Levels that are not open
+are greyed out and cannot be focused or picked. Keys: Up/Left and Down/Right move (skipping greyed entries,
+wrapping), Enter picks, Esc returns, `1`–`5` and `r` are hotkeys; the mouse works as in the game's dialogs
+(hover moves the focus, a click picks). Open levels come from the client (`avail.<b>` in `config.txt`, from the
+seed's `level_access`); without a client: level 1, each level after a won one, and won levels.
+
+How: the site `building_selected` (`R02E0_0148` at `0x463`, `mov [bp-6], 1`) runs the picker; returning 1 skips
+the instruction, so the select loop continues as if nothing was clicked. The game's dialog runner cannot be used
+as is (one row of buttons; its structs are passed by value, beyond `call_far`'s 8 words), so `mod/picker.c`
+repeats its steps with the game's own primitives (RE_NOTES §4.12): same box, buttons, focus, press animation,
+mouse regions and input loop.
+
+## One saved warehouse per level
+
+The player record holds one warehouse per building. The mod keeps one per level in `ap/levels/<v>.bin` (a copy
+of the building's 0x6BA-byte block) and swaps it in before the game loads a level, so the game restores it.
+`state.txt` records which level the block in `PLAYERS.DAT` holds; it changes only after the game has saved that
+level (at level ready), so a copy is never filed under the wrong level. Copies are taken before the block is
+replaced, at race start, at level ready and after each granted part. Race counters: the game adds 1 to the
+building's "last race won" and to the total after a win; the mod first sets the building's counter to its
+distinct wins - 1 and does not let a replayed race count twice (`mod/tests/unit_race.c`).
 
 ## Title-screen logo
 
@@ -47,11 +76,11 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 |---|---|---|
 | `checks.txt` | mod (appends) | one location id per line; `goal` when the game is complete |
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
-| `config.txt` | client / user | `key=value`: `open_world`, `box_checks`, `door_checks`, `title_logo` (1/0, default 1; `title_logo` is read at startup), `level.0` / `level.1` / `level.2` (0-based level to load for Automotive / Aircraft / Alt-Energy, -1 = game's choice). Re-read on every level entry |
-| `state.txt` | mod | which level each building's saved warehouse belongs to, which received items are already in the game |
-
-The Python client (to do) connects to the Archipelago server, forwards `checks.txt` lines as `LocationChecks`,
-appends received items to `received.txt`, and writes `config.txt` (level unlocks / level picker).
+| `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
+| `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` (received items in the game), `received` |
+| `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), granted items |
+| `levels/<v>.bin` | mod | the saved warehouse of level `v` |
+| `seed.txt` | client | the seed/slot and in-game player this game folder belongs to |
 
 ## Ids
 
@@ -61,7 +90,7 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
 |---|---|---|
 | Race won | base + `0x0000` + v | 15 |
 | Part box | base + `0x1000` + v × `0x40` + part | 532 (one per part of each level; the box follows its part) |
-| Puzzle door | base + `0x2000` + v × `0x40` + rank | 653 |
+| Puzzle door (not used for now) | base + `0x2000` + v × `0x40` + rank | 653 |
 | Item: part | base + `0x1000` + v × `0x40` + part | 532 |
 | Item: +5 bananas | base + `0x0F00` | filler |
 
@@ -107,19 +136,21 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
 
 ## Verified headless (recomp, 2026-10-22)
 
-From a blank `PLAYERS.DAT`, Aircraft level 1 (v = 5), with `mod/tests/test_driver.c` (opens a box from code,
-forces puzzles to pass):
-- two items in `received.txt` (part 1 of v5, +5 bananas) were granted on entering the warehouse ("needed": PARTS
-  NEEDED counted down);
-- box 1 of room 1 (part 4) → location `0x47471144` sent, box removed, nothing given; box 0 (empty) → vanilla;
-- puzzle door 49 of room 1 (room 1 ↔ 6, pair 16) → door rank 12, matching the static computation;
-- `level.1=3` in `config.txt` → Aircraft level 4 loaded directly on a new player.
+From a blank `PLAYERS.DAT`, Aircraft (v = 5..9), with `mod/tests/test_driver.c` (opens a box from code, forces
+puzzles to pass, saves):
+- received items (part 1 of v5, +5 bananas) granted on entering the warehouse; a granted part is still in the
+  inventory in the next session and is not granted twice;
+- box checks with suppression; empty, recycled and once-held parts' boxes vanilla; door ranks match the static data;
+- picker: game-style dialog, greyed levels skipped by the arrows and ignored by clicks, Enter / Esc / mouse,
+  Return keeps the Technology Center usable;
+- per-level saves over four sessions (L1 new, L2 new, L1 restored, L1 restored): each level keeps its own
+  warehouse (PARTS NEEDED 3 vs 6), an opened box stays gone after switching to L2 and back;
+- race counters for out-of-order wins and replays: `mod/tests/unit_race.c` (host-side).
 
-Not yet tested live: race end, restore of a saved warehouse, the goal line.
+Not yet tested live: a real race end (needs a built vehicle headless) and the goal line.
 
 ## Known limitations / to do
 - No in-game text for found items yet (the box just disappears); needs the item-label work.
-- A player who enters a later level directly starts with 0 bananas (the game sets 10 only on level 1).
-- If the player quits without saving after an item was granted, the restored warehouse lacks it but the mod has
-  it marked as granted. Fix: check the part table's owner field (`+0x0C`, 0 = player) instead of remembering.
-- Level picker UI (pager dialog) instead of `config.txt`; inventory-full prompt; chimps carrying checks.
+- A player who enters a later level first starts it with the bananas of the level header (0 for a new player
+  past level 1; the game sets 10 only on level 1).
+- Inventory-full prompt / Archipelago inventory; chimps-carrying-checks display.

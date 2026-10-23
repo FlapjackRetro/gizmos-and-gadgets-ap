@@ -58,34 +58,13 @@ rewriting game code**:
 3. Alternative if (2) proves fragile: patch the building-entry code to show a level picker. More work,
    since that code is likely in an overlay.
 
-## Level select & "open world" (planned)
-Vanilla allows **one active level per building** (3 at a time), which would starve early spheres: few
-locations reachable, and a building is stuck until its race is won. So:
-
-- **Level-select dialog** inserted on the building select screen: after the player clicks a building, a dialog
-  asks which of its 5 levels to load (only unlocked levels selectable). This replaces the client-command idea above.
-- **YAML option `level_access`:**
-  - `open_world` — all 15 levels selectable from the start; no level-unlock items in the pool.
-  - `progressive` — `Progressive <Building> Level` items unlock levels (vanilla-like, but decoupled from race wins).
-- Mechanics already known (RE_NOTES §3–4):
-  - Selecting level *L* of building *b*: the enter-building routine `R02E0_0820` (state 3) derives level and vehicle
-    from `DS:4596[b]` alone. **Preferred: patch `0x83D` to read a separate picker variable**, because `4596[b]` also
-    drives the parked-vehicle display in the Technology Center (= races won) and the finished-building logic; the part table then comes from
-    resource `0x2F5 + vehicle`.
-  - The save record holds **one warehouse snapshot per building** (block at rec+0x27E+b*0x6BA, flag `459C[b]`).
-    Revisiting a different level of the same building means swapping that block: store the other levels'
-    snapshots outside the record (client side, or an extra file), restore on select; flag 0 → fresh level.
-  - Race win must no longer advance the building (`inc [bx+4596]` at file 0x45B7 → NOP).
-- Building click handler found: `R02E0_0148` (state 2); picker hooks in at `02E0:0463` after `[4592]` is set,
-  and the vanilla "building finished" refusal (`[4596+2b]==4`) must be removed (RE_NOTES §4.4).
-- **Picker UI decision: pager** (2026-10-19). One dialog per building showing "Level N of 5" + the vehicle
-  title (from the blueprint layout resource for that vehicle), with Previous / Next / Enter / Cancel.
-  Built on the game's dialog runner `O0E83_08EE` (RE_NOTES §4.5), modelled on the help-page pager
-  `O0E83_0907`. Existing dialogs show ≤ 2 buttons, so the safe first version is **[Next] [Enter]** buttons +
-  **PgUp/PgDn** hotkeys (already in the hotkey table) for previous/next and **Esc** to cancel; a 4-button row is
-  a stretch goal pending analysis of the layout core `O0E83_0655`. Locked levels (progressive mode) are skipped
-  or shown greyed with a "locked" line.
-- Dialog system mapped (RE_NOTES §4.5); next: how `O0E83_0655` lays out buttons, and injecting the picker call at `02E0:0463`.
+## Level select & "open world" (implemented, docs/MOD.md)
+- After clicking a building at the Technology Center, a dialog in the game's style offers `Level 1 - <vehicle>` …
+  `Level 5 - <vehicle>` and `Return to Technology Center`; arrow keys and the mouse select, locked levels are
+  greyed out. YAML `level_access`: `open` (all levels) or `race_progression` (next level after the previous race).
+- A level is generated once and saved at once; afterwards it is always restored (one saved warehouse per level,
+  kept by the mod in `ap/levels/`; PLAYERS.DAT itself only holds one per building).
+- The client checks the game is running with the mod (heartbeat) and that the in-game player matches the seed.
 
 ## Client architecture
 **Target: the native recompilation** (`gizmos-and-gadgets-recomp`), not DOSBox. The game side is a recomp mod

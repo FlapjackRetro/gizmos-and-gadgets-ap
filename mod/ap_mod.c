@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gg_mod.h"
+#include "picker.h"
 #ifdef _WIN32
 #  include <direct.h>
 #  define MKDIR(p) _mkdir(p)
@@ -47,12 +48,13 @@ static struct {
     int box_checks;          /* part boxes are checks: the part goes to the multiworld */
     int door_checks;
     int title_logo;          /* use GIZMOAP1.DAT (Archipelago logo on the title screen) if present */
-    int level[3];            /* level to load per building (0-based), -1 = the game's choice */
+    int avail[3][5];         /* level open in the picker (client: avail.<b>=11000); -1 = not given */
 } cfg;
 
 /* ---- state (ap/state.txt) ---------------------------------------------------------------- */
 static struct {
-    int wh_level[3];         /* level the building's saved warehouse belongs to, -1 none */
+    int wh_level[3];         /* level whose warehouse the building's block in the player record holds, -1 none */
+    int won;                 /* bit v: the race of level v was won (-1 = not known yet: take the game's counters) */
     int goal_sent;
 } st;
 
@@ -63,6 +65,7 @@ static int rx_n;
 static long rx_size;         /* bytes of received.txt already read */
 
 static char dir_ap[1024];
+static int picked[3] = { -1, -1, -1 };   /* level chosen in the picker, for the next LEVEL_ENTER */
 static int frames, last_grant_frame;
 static int in_level = -1;    /* vehicle index of the warehouse that is set up, -1 none */
 
@@ -93,22 +96,22 @@ static void send_check(unsigned id, const char *what)
 static void load_config(void)
 {
     char p[1100], line[256];
-    cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 1; cfg.title_logo = 1;
-    cfg.level[0] = cfg.level[1] = cfg.level[2] = -1;
+    cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 0; cfg.title_logo = 1;
+    for (int b = 0; b < 3; b++) for (int l = 0; l < 5; l++) cfg.avail[b][l] = -1;
     path(p, sizeof p, "config.txt");
     FILE *f = fopen(p, "r");
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
-        char key[64]; int v;
+        char key[64]; int v; char bits[8];
+        if (sscanf(line, " avail.%d = %5s", &v, bits) == 2 && v >= 0 && v < 3) {
+            for (int l = 0; l < 5; l++) cfg.avail[v][l] = bits[l] == '1';
+            continue;
+        }
         if (sscanf(line, " %63[^= ] = %d", key, &v) != 2) continue;
         if (!strcmp(key, "open_world")) cfg.open_world = v;
         else if (!strcmp(key, "box_checks")) cfg.box_checks = v;
         else if (!strcmp(key, "door_checks")) cfg.door_checks = v;
         else if (!strcmp(key, "title_logo")) cfg.title_logo = v;
-        else if (!strncmp(key, "level.", 6)) {
-            int b = atoi(key + 6);
-            if (b >= 0 && b < 3) cfg.level[b] = v < 0 ? -1 : (v > 4 ? 4 : v);
-        }
     }
     fclose(f);
 }
@@ -120,6 +123,7 @@ static void save_state(void)
     FILE *f = fopen(p, "w");
     if (!f) return;
     for (int b = 0; b < 3; b++) fprintf(f, "wh_level.%d=%d\n", b, st.wh_level[b]);
+    fprintf(f, "won=%d\n", st.won);
     fprintf(f, "goal_sent=%d\n", st.goal_sent);
     for (int i = 0; i < rx_n; i++) if (rx_done[i]) fprintf(f, "done=%d\n", i);
     fclose(f);
@@ -129,6 +133,7 @@ static void load_state(void)
 {
     char p[1100], line[128];
     st.wh_level[0] = st.wh_level[1] = st.wh_level[2] = -1;
+    st.won = -1;
     path(p, sizeof p, "state.txt");
     FILE *f = fopen(p, "r");
     if (!f) return;
@@ -136,6 +141,7 @@ static void load_state(void)
         int b, v;
         if (sscanf(line, "wh_level.%d=%d", &b, &v) == 2 && b >= 0 && b < 3) st.wh_level[b] = v;
         else if (sscanf(line, "goal_sent=%d", &v) == 1) st.goal_sent = v;
+        else if (sscanf(line, "won=%d", &v) == 1) st.won = v;
         else if (sscanf(line, "done=%d", &v) == 1 && v >= 0 && v < MAX_RECEIVED) rx_done[v] = 1;
     }
     fclose(f);
@@ -240,6 +246,8 @@ static int is_part_item(unsigned id, int *v, int *part)
     return 1;
 }
 
+static void save_level(void);
+
 /* One item per call, so each name stays on screen for a moment. */
 static void grant_pending(void)
 {
@@ -263,6 +271,7 @@ static void grant_pending(void)
             }
             mark_obtained();
             rx_done[i] = 1; save_state();
+            save_level();                                    /* a granted part is never lost to quitting */
             api->log("ap: received part %d of level %d%s", part, iv, r ? " (needed)" : "");
             return;
         }
@@ -278,33 +287,153 @@ static int on_building_click(void *u, GGEvent *e)
     return cfg.open_world ? GG_ALLOW : GG_CONTINUE;
 }
 
+/* ---- one saved warehouse per level ------------------------------------------------------------
+ * The player record keeps one warehouse per building (block b at DS:47E0 + b*0x6BA, 0x6BA bytes: the
+ * 20-byte warehouse header, part states, doors, boxes, inventory; RE_NOTES §3) and the flag DS:459C+2b
+ * "block holds a saved warehouse". The game writes the block when it saves (O0E18_01EA: on leaving the
+ * warehouse for a race or the Technology Center, and from the menu). The mod keeps a copy per level in
+ * ap/levels/<v>.bin and swaps them in and out of the block, so a level is generated once and then always
+ * restored. */
+#define BLOCK(b)     (0x47E0u + (unsigned)(b) * 0x6BAu)
+#define BLOCK_SIZE   0x6BA
+#define SAVED(b)     (0x459Cu + 2u * (unsigned)(b))
+
+static void level_path(char *out, size_t n, int v) { snprintf(out, n, "%s/levels/%d.bin", dir_ap, v); }
+
+static void capture(int b, int lv)
+{
+    char p[1100];
+    if (lv < 0 || !api->ds_read16((uint16_t)SAVED(b))) return;
+    snprintf(p, sizeof p, "%s/levels", dir_ap);
+    MKDIR(p);
+    level_path(p, sizeof p, b * 5 + lv);
+    FILE *f = fopen(p, "wb");
+    if (!f) { api->log("ap: cannot write %s", p); return; }
+    fwrite(api->mem() + api->ds_base() + BLOCK(b), 1, BLOCK_SIZE, f);
+    fclose(f);
+}
+
+static int install(int b, int lv)
+{
+    char p[1100];
+    uint8_t buf[BLOCK_SIZE];
+    level_path(p, sizeof p, b * 5 + lv);
+    FILE *f = fopen(p, "rb");
+    if (!f) return 0;
+    size_t n = fread(buf, 1, BLOCK_SIZE, f);
+    fclose(f);
+    if (n != BLOCK_SIZE) return 0;
+    memcpy(api->mem() + api->ds_base() + BLOCK(b), buf, BLOCK_SIZE);
+    api->ds_write16((uint16_t)SAVED(b), 1);
+    return 1;
+}
+
+/* The game's own save (O0E18_01EA, flattened C0DA:01EA): warehouse into the block, record into PLAYERS.DAT. */
+static void save_level(void)
+{
+    int b = (int16_t)api->ds_read16(GG_DS_BUILDING), lv = (int16_t)api->ds_read16(GG_DS_LEVEL);
+    if (b < 0 || b > 2 || lv < 0 || lv > 4 || st.wh_level[b] != lv) return;
+    api->ds_write16(0x94, 1);                                /* warehouse changed */
+    api->call_far(0xC0DA, 0x01EA, 0, NULL);
+    capture(b, lv);
+}
+
+static int won_mask(void)
+{
+    if (st.won >= 0) return st.won;
+    int m = 0;                                               /* an older save: the game's in-order counters */
+    for (int b = 0; b < 3; b++) {
+        int last = (int16_t)api->ds_read16((uint16_t)(GG_DS_RACES_WON_IDX + 2 * b));
+        for (int l = 0; l <= last && l < 5; l++) m |= 1 << (b * 5 + l);
+    }
+    return m;
+}
+
+static int entering = -1;      /* vehicle index being entered: saved and recorded once it is ready */
+
 static int on_level_enter(void *u, GGEvent *e)
 {
     (void)u;
     load_config();
     int b = e->building;
     if (b < 0 || b > 2) return GG_CONTINUE;
-    if (cfg.level[b] >= 0) e->level = cfg.level[b];
+    if (picked[b] >= 0) e->level = picked[b];             /* the level picker's choice */
+    picked[b] = -1;
     if (e->level > 4) e->level = 4;                          /* all 5 won: the game would load level 6 */
-    if (e->restore && st.wh_level[b] != e->level) e->restore = 0;   /* the saved warehouse is another level's */
-    if (!e->restore) {
-        /* a fresh warehouse: parts received for this level must be given again */
-        for (int i = 0; i < rx_n; i++) {
+    capture(b, st.wh_level[b]);                              /* keep the block's level before replacing it */
+    entering = b * 5 + e->level;
+    if (install(b, e->level)) {
+        e->restore = 1;                                      /* this level was played before: bring it back */
+    } else {
+        e->restore = 0;                                      /* never played: generate it (once) */
+        for (int i = 0; i < rx_n; i++) {                     /* parts received for it go into the new one */
             int iv, part;
-            if (rx_done[i] && is_part_item(rx_item[i], &iv, &part) && iv == b * 5 + e->level) rx_done[i] = 0;
+            if (rx_done[i] && is_part_item(rx_item[i], &iv, &part) && iv == entering) rx_done[i] = 0;
         }
     }
-    st.wh_level[b] = e->level;
+    /* st.wh_level[b] changes only once the game has saved this level into the block (on_level_ready):
+     * it must always describe what PLAYERS.DAT holds, or a later capture would file one level's
+     * warehouse under another's number */
+    st.wh_level[b] = -1;
     in_level = -1;
     save_state();
-    api->log("ap: entering building %d level %d (%s)", b, e->level + 1, e->restore ? "restored" : "fresh");
+    api->log("ap: entering building %d level %d (%s)", b, e->level + 1, e->restore ? "restored" : "new");
     return GG_CONTINUE;
+}
+
+/* Which levels the picker offers: the client's avail.<b>; without it, level 1, each level after one whose race
+ * was won, and each won level. */
+static void open_levels(int b, int open[5])
+{
+    int won = won_mask();
+    for (int l = 0; l < 5; l++)
+        open[l] = cfg.avail[b][l] >= 0 ? cfg.avail[b][l]
+                : (l == 0 || (won >> (b * 5 + l - 1) & 1) || (won >> (b * 5 + l) & 1));
+}
+
+/* Site building_selected (R02E0_0148 at 0x463: mov [bp-6], 1 = leave the select loop and enter the
+ * building, [4592] = the building). Show the picker; "Return to Technology Center" skips the instruction,
+ * so the select loop carries on as if nothing was clicked. */
+static int on_building_selected(void *u, uint32_t addr, GGRegs *r)
+{
+    (void)u; (void)addr; (void)r;
+    int b = (int16_t)api->ds_read16(GG_DS_BUILDING);
+    if (b < 0 || b > 2) return 0;
+    load_config();
+    int open[5];
+    open_levels(b, open);
+    int won = won_mask(), first = -1;
+    for (int l = 0; l < 5 && first < 0; l++) if (open[l] && !(won >> (b * 5 + l) & 1)) first = l;
+    int lv = picker_run(b, open, first);
+    if (lv == -2) return 0;                                  /* picker failed: the game's own choice */
+    if (lv < 0) { api->log("ap: back to the Technology Center"); return 1; }
+    picked[b] = lv;
+    api->log("ap: picked building %d level %d", b, lv + 1);
+    return 0;
 }
 
 static int on_level_ready(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     in_level = cur_vehicle();
+    if (entering >= 0 && entering == in_level) {
+        /* save at once (the game's own save: snapshot into the block, PLAYERS.DAT), so the block and the
+         * file agree with st.wh_level from here on; a new level is thereby generated exactly once */
+        int b = entering / 5, lv = entering % 5;
+        st.wh_level[b] = lv;
+        save_level();
+        save_state();
+        api->log("ap: level %d saved", entering);
+    }
+    entering = -1;
+    return GG_CONTINUE;
+}
+
+static int on_race_start(void *u, GGEvent *e)
+{
+    (void)u;
+    /* the game saved the warehouse on the way out (R02E0 0x9F8); a won race discards the block, so copy it */
+    if (e->building >= 0 && e->building < 3) capture(e->building, st.wh_level[e->building]);
     return GG_CONTINUE;
 }
 
@@ -367,13 +496,51 @@ static int on_race_end(void *u, GGEvent *e)
 {
     (void)u;
     if (!e->won || e->aborted) return GG_CONTINUE;
-    int v = e->building * 5 + e->level;
+    int b = e->building, v = b * 5 + e->level;
     if (v < 0 || v > 14) return GG_CONTINUE;
     char what[32];
     snprintf(what, sizeof what, "race: level %d", v);
     send_check(LOC_RACE(v), what);
+    /* After this the game counts the win: [4596+2b] += 1 (last race won in the building) and [5C0E] += 1
+     * (15 = game complete). With levels played in any order, keep them = distinct wins: the building's
+     * counter = its wins - 1 before the increment, and a race won before does not count again. */
+    int won = won_mask();
+    int n = 0;
+    for (int l = 0; l < 5; l++) n += won >> (b * 5 + l) & 1;
+    if (won >> v & 1) {
+        api->ds_write16((uint16_t)(GG_DS_RACES_WON_IDX + 2 * b), (uint16_t)(n - 2));    /* +1 -> n - 1 */
+        api->ds_write16(GG_DS_TOTAL_RACES_WON, (uint16_t)(api->ds_read16(GG_DS_TOTAL_RACES_WON) - 1));
+    } else {
+        api->ds_write16((uint16_t)(GG_DS_RACES_WON_IDX + 2 * b), (uint16_t)(n - 1));    /* +1 -> n */
+        won |= 1 << v;
+    }
+    st.won = won;
+    save_state();
     in_level = -1;                                           /* the warehouse is gone after a race */
     return GG_CONTINUE;
+}
+
+/* ap/game.txt, about once a second: tells the client the game is running with the mod, who is signed in,
+ * where they are and how many received items are in the game. Rewritten whole (temp file + rename). */
+static void heartbeat(void)
+{
+    char p[1100], tmp[1110], name[17];
+    const uint8_t *m = api->mem() + api->ds_base() + GG_DS_PLAYER_NAME;
+    int i = 0;
+    for (; i < 16 && m[i] >= 32 && m[i] < 127; i++) name[i] = (char)m[i];
+    name[i] = 0;
+    int applied = 0;
+    for (int k = 0; k < rx_n; k++) applied += rx_done[k];
+    path(p, sizeof p, "game.txt");
+    snprintf(tmp, sizeof tmp, "%s.tmp", p);
+    FILE *f = fopen(tmp, "w");
+    if (!f) return;
+    fprintf(f, "mod=1\nframe=%d\nplayer=%s\nbuilding=%d\nlevel=%d\nin_level=%d\nitems=%d\nreceived=%d\n",
+            frames, name, (int16_t)api->ds_read16(GG_DS_BUILDING), (int16_t)api->ds_read16(GG_DS_LEVEL),
+            in_level >= 0, applied, rx_n);
+    fclose(f);
+    remove(p);                                               /* Windows rename does not replace */
+    rename(tmp, p);
 }
 
 static int on_frame(void *u, GGEvent *e)
@@ -382,13 +549,13 @@ static int on_frame(void *u, GGEvent *e)
     frames++;
     if (frames % 30 == 0) {
         poll_received();
-        /* +1 for the race being counted right now is not needed: the counter updates first */
-        if (!st.goal_sent && api->ds_read16(GG_DS_TOTAL_RACES_WON) >= 15) {
+        if (!st.goal_sent && st.won >= 0 && (st.won & 0x7FFF) == 0x7FFF) {
             st.goal_sent = 1; save_state();
             send_line("goal");
             api->log("ap: goal reached");
         }
     }
+    if (frames % 60 == 0) heartbeat();
     return GG_CONTINUE;
 }
 
@@ -424,13 +591,17 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     load_state();
     poll_received();
     if (cfg.title_logo) title_logo();
+    picker_init(api);
     api->on_event(GG_EV_BUILDING_CLICK, on_building_click, NULL);
+    if (!api->on_site(api->site_addr("building_selected"), on_building_selected, NULL))
+        api->log("ap: building_selected site missing: no level picker");
     api->on_event(GG_EV_LEVEL_ENTER, on_level_enter, NULL);
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
     api->on_event(GG_EV_WAREHOUSE_TICK, on_warehouse_tick, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_assembly_tick, NULL);
     api->on_event(GG_EV_BOX_OPEN, on_box_open, NULL);
     api->on_event(GG_EV_DOOR_OPEN, on_door_open, NULL);
+    api->on_event(GG_EV_RACE_START, on_race_start, NULL);
     api->on_event(GG_EV_RACE_END, on_race_end, NULL);
     api->on_event(GG_EV_FRAME, on_frame, NULL);
     api->log("ap: Archipelago mod ready (%s, %d item(s) received so far)", dir_ap, rx_n);

@@ -6,7 +6,7 @@ gizmos-and-gadgets-ap repository); the client in client.py bridges it to the ser
 Ids match the mod (docs/MOD.md):  base 0x47470000
   race won     base + 0x0000 + v                   v = building * 5 + level (0-based)
   part box     base + 0x1000 + v * 0x40 + part     the box holding that part
-  puzzle door  base + 0x2000 + v * 0x40 + rank
+  (puzzle doors base + 0x2000 + v * 0x40 + rank are reserved; not locations for now)
   item: part   base + 0x1000 + v * 0x40 + part
   item: +5 bananas  base + 0x0F00
 """
@@ -14,11 +14,11 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from BaseClasses import Item, ItemClassification, Location, Region, Tutorial
-from Options import PerGameCommonOptions, Toggle
+from Options import Choice, PerGameCommonOptions
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import Component, Type, components, launch_subprocess
 
-from .data import BUILDINGS, DOORS, PARTS, RACE
+from .data import BUILDINGS, PARTS, RACE
 
 GAME = "Gizmos and Gadgets"
 BASE = 0x47470000
@@ -52,10 +52,6 @@ def box_location(v: int, pid: int) -> str:
     return f"{PART_NAMES[v][pid]} (box)"
 
 
-def door_location(v: int, rank: int) -> str:
-    return f"{level_name(v)} - Door {rank + 1}"
-
-
 def thresholds(v: int) -> Dict[int, int]:
     """Minimum tier per required group for a guaranteed race win (tools/race_logic.py, flight_sim.py):
     every non-cosmetic group must be built; stat groups need tier >= min(k, best tier in the group)."""
@@ -74,18 +70,21 @@ for _v in range(15):
     for _pid, _name in PART_NAMES[_v].items():
         ITEM_IDS[_name] = BASE + 0x1000 + _v * 0x40 + _pid
         LOCATION_IDS[box_location(_v, _pid)] = BASE + 0x1000 + _v * 0x40 + _pid
-    for _r in range(DOORS[_v]):
-        LOCATION_IDS[door_location(_v, _r)] = BASE + 0x2000 + _v * 0x40 + _r
 
 
-class DoorChecks(Toggle):
-    """Every puzzle door (653) is a location. Off: only part boxes and races."""
-    display_name = "Door Checks"
+class LevelAccess(Choice):
+    """Which levels can be entered (the level picker after clicking a building).
+    race_progression: a building's next level opens when you win its race, as in the game; won levels stay open.
+    open: every level of every building can be entered from the start."""
+    display_name = "Level Access"
+    option_race_progression = 0
+    option_open = 1
+    default = 0
 
 
 @dataclass
 class GizmosOptions(PerGameCommonOptions):
-    door_checks: DoorChecks
+    level_access: LevelAccess
 
 
 class GizmosItem(Item):
@@ -154,10 +153,6 @@ class GizmosWorld(World):
                 for pid in PART_NAMES[v]:
                     name = box_location(v, pid)
                     region.locations.append(GizmosLocation(self.player, name, LOCATION_IDS[name], region))
-                if self.options.door_checks:
-                    for r in range(DOORS[v]):
-                        name = door_location(v, r)
-                        region.locations.append(GizmosLocation(self.player, name, LOCATION_IDS[name], region))
                 race = GizmosLocation(self.player, race_location(v), LOCATION_IDS[race_location(v)], region)
                 race.access_rule = self._race_rule(v)
                 region.locations.append(race)
@@ -166,8 +161,8 @@ class GizmosWorld(World):
                 done.place_locked_item(GizmosItem(f"{level_name(v)} Won", ItemClassification.progression,
                                                   None, self.player))
                 region.locations.append(done)
-                # vanilla order: a building's next level opens when this level's race is won
-                if prev is center:
+                # race_progression: a building's next level opens when the previous level's race is won
+                if prev is center or self.options.level_access == LevelAccess.option_open:
                     center.connect(region, f"Enter {level_name(v)}")
                 else:
                     prev_won = f"{level_name(v - 1)} Won"
@@ -198,4 +193,4 @@ class GizmosWorld(World):
         return BANANAS
 
     def fill_slot_data(self) -> Dict[str, Any]:
-        return {"door_checks": bool(self.options.door_checks), "id_base": BASE}
+        return {"id_base": BASE, "level_access": self.options.level_access.current_key}

@@ -384,3 +384,37 @@ of a building share a room layout, with different box counts). Box contents: `R0
 maps values >= part count to 1000 (empty), so every part is in exactly one box. Doors: 32-byte room objects,
 state 7 locked / 9 open, listed once per side. Totals: **622 boxes (532 parts + 90 empty), 653 puzzle doors**,
 plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door, all 16x20).
+
+## 4.12 Dialog internals (for the level picker) [traced 2026-10-22, used live on the recomp]
+- Runner core `O0E83_0655` (near, `ret 0x36`): saves font (`O0E13_0256(0)` returns the old one), `[21A/21C]`,
+  `[96]` (zeroed), cursor mode `R07AB_07DD(1)`, `[865A/865C]` (zeroed), `R0CDD_05DB()`; draws via `O0E83_0389`
+  (layout `O0E83_0000`: **one row** of equal-width buttons, width = longest label + 0x14, gap 10); `R07AB_04BD()`
+  starts a fresh mouse-region list, `0x5D7` registers each button `R07AB_0294(far btn)` (`retf 4`, list head
+  `DS:A32`, next at `+0x0C`); `R098D_00BF()` flushes input; loop `R098D_0106()`; exit in reverse
+  (`R0399_01F1` restores the saved background, `R07AB_0314` unregisters, `R07AB_04E8`, `R07AB_07DD(old)`).
+- Keys (table at `O0E83:08DA`): `0x0D` press focused, `0x1B` cancel (if struct flag), `0x14B` Left = previous,
+  `0x14D` Right = next (wrapping). Up/Down (`0x148`/`0x150`) are not in the game's table.
+- `R098D_0106` events: keys as codes (`0x14x` for extended keys); mouse via the record at `DS:A10`
+  (`[A1E]=1` press) and `DS:A20`, matched against regions by `R07AB_0507(x, y, list)` (rect at `+2..+8`, type
+  `+0 = 0`, priority `+0x0A`); result = region code (`+0x10`/`+0x12`) | `0x4000` (button down over it) |
+  `0x8000` (hovering), or the plain code for a finished click. The runner moves the focus on `|0x4000`/`|0x8000`
+  and presses on the plain code.
+- Button struct (0x1C, array at `DS:BBBC`): `+2` x, `+4` y, `+6` w, `+8` h, `+0x0A` priority 5, `+0x0C` next
+  region, `+0x10`/`+0x12` code, `+0x16` far label, `+0x1A` enabled (0 = grey border).
+- Primitives (cdecl unless noted): `R0399_0100(x,y,w,h)` fill in `[1F4]` colour, `R0399_0072(x,y,len)` hline,
+  `R0399_00B3(x,y,len)` vline, `R0473_010D(x,y,w,h)` frame, `R0399_0146(x,y,w,h)` XOR fill (focus),
+  `R0399_0194(x,y,w,h,far buf)` save / `R0399_01F1(x,y,far buf)` restore screen, `R0581_052A()` flush,
+  `R052C_0072(ticks)` wait; text `O0E13_029C(x,y,far s)`, width `O0E1D_0056(far s)`, height `O0E13_0418`,
+  text colour `O0E13_0243(c)` (font `+0x0A`, `DS:1F6C`), font `O0E13_0256(n)`.
+- Flattened overlay segments on the recomp (`work/ssg_flat.map`): O0E13 = C096, O0E18 = C0DA, O0E1D = C109,
+  O0E28 = C191, O0E83 = D4D6, O0E88 = D5B4.
+- Vehicle names: first `S` element of the blueprint layouts 0x002C+l, 0x00FB+l, 0x0269+l (e.g. "BLIMP").
+
+## 4.13 Saving and the warehouse block [traced 2026-10-22]
+- `O0E18_01EA` = save: if `[94]` (warehouse changed): `[459C+2b] = 1`, block b (`DS:47E0 + b*0x6BA`) ← header
+  `DS:457C` (20 bytes), part states (`R053F_0385`), doors+boxes (`R0622_0FB3`), inventory (`R0834_0B5E`),
+  `[94] = 0`; then the whole record (`DS:4562`, 0x16BD bytes) is written to PLAYERS.DAT at `0x8A0 + [4576]*0x16BD`.
+  Called on leaving the warehouse (`R02E0_012F`), on leaving for a race (`R02E0` 0x9F8: `[BE]` set → saved,
+  dirty, save), and from the menus.
+- A won race clears `[459C+2b]` (the next entry generates the next level).
+- Mouse/keyboard event queue: 16 × 16 bytes at `DS:8556`, head `[1312]`, tail `[1310]`.

@@ -3,25 +3,26 @@
 The mod (mod/ap_mod.c) and this client share files in <game folder>/ap/ (docs/MOD.md):
   checks.txt    mod appends location ids ("goal" when 15 races are won)  -> LocationChecks / goal
   received.txt  client writes item ids in the server's order            <- ReceivedItems
-  config.txt    client writes level choices (/level)
-  seed.txt      client: which seed and slot this game folder belongs to
+  config.txt    client writes settings and which levels are open
+  game.txt      mod rewrites about once a second: the game is running (player, place, items applied)
+  seed.txt      client: which seed, slot and in-game player this game folder belongs to
 
 Run: from the Launcher ("Gizmos and Gadgets Client"), or
   python -m worlds.gizmos_and_gadgets.client --gamedir <game folder> [--connect host:port] [--name slot]
 """
 import asyncio
 import os
-from typing import List, Optional
+import time
+from typing import Dict, List, Optional
 
 import Utils
 from CommonClient import ClientCommandProcessor, CommonContext, get_base_parser, gui_enabled, logger, server_loop
 from NetUtils import ClientStatus
 
-from . import BASE, BUILDINGS, GAME
+from . import BASE, BUILDINGS, GAME, level_name
 
 POLL_SECONDS = 0.5
-BUILDING_ALIASES = {"auto": 0, "automotive": 0, "car": 0, "air": 1, "aircraft": 1, "plane": 1,
-                    "alt": 2, "alternative": 2, "energy": 2, "alt-energy": 2}
+GAME_TIMEOUT = 5.0          # seconds without a game.txt update before the game counts as gone
 
 
 class GizmosCommandProcessor(ClientCommandProcessor):
@@ -34,29 +35,13 @@ class GizmosCommandProcessor(ClientCommandProcessor):
         self.output(f"Game folder: {self.ctx.game_dir or '(not set)'}")
         return True
 
-    def _cmd_level(self, building: str = "", level: str = "") -> bool:
-        """/level <building> <1-5|auto>: which level the building loads next time you enter it."""
-        if not building:
-            self.output(self.ctx.levels_text())
-            return True
-        b = BUILDING_ALIASES.get(building.lower())
-        if b is None and building.isdigit() and 1 <= int(building) <= 3:
-            b = int(building) - 1
-        if b is None:
-            self.output("Building: automotive, aircraft or alt (or 1-3).")
-            return False
-        if level.lower() in ("", "auto"):
-            self.ctx.level_choice[b] = -1
-        elif level.isdigit() and 1 <= int(level) <= 5:
-            lv = int(level) - 1
-            if lv > self.ctx.highest_unlocked(b):
-                self.output(f"{BUILDINGS[b]} Level {lv + 1} is not unlocked yet.")
-                return False
-            self.ctx.level_choice[b] = lv
-        else:
-            self.output("Level: 1-5 or auto.")
-            return False
-        self.ctx.write_config()
+    def _cmd_game(self) -> bool:
+        """Is the game running with the mod, and is it in sync?"""
+        self.output(self.ctx.game_text())
+        return True
+
+    def _cmd_levels(self) -> bool:
+        """Which levels are open in each building."""
         self.output(self.ctx.levels_text())
         return True
 
@@ -73,9 +58,11 @@ class GizmosContext(CommonContext):
         self.checks_read = 0                 # bytes of checks.txt already forwarded
         self.goal_sent = False
         self.written_items: List[int] = []   # what received.txt holds
-        self.level_choice = [-1, -1, -1]
         self.seed_ok = False
         self.slot_data: dict = {}
+        self.written_config = ""
+        self.game_info: Dict[str, str] = {}  # last game.txt
+        self.game_alive = False
         if game_dir:
             self.set_game_dir(game_dir)
 
@@ -94,7 +81,7 @@ class GizmosContext(CommonContext):
             logger.warning("No mods/ folder there: copy ap_mod.dll / ap_mod.so into <game folder>/mods/.")
         self.checks_read = 0
         self.written_items = self._read_received()
-        self._read_config()
+        self.written_config = ""
 
     def _read_received(self) -> List[int]:
         try:
@@ -103,38 +90,30 @@ class GizmosContext(CommonContext):
         except (OSError, ValueError):
             return []
 
-    def _read_config(self) -> None:
-        try:
-            with open(self.ap_path("config.txt")) as f:
-                for line in f:
-                    key, _, val = line.partition("=")
-                    if key.strip().startswith("level."):
-                        b = int(key.strip()[6:])
-                        if 0 <= b < 3:
-                            self.level_choice[b] = int(val)
-        except (OSError, ValueError):
-            pass
+    def _replace(self, name: str, text: str) -> None:
+        tmp = self.ap_path(name + ".tmp")
+        with open(tmp, "w") as f:
+            f.write(text)
+        os.replace(tmp, self.ap_path(name))
 
     def write_config(self) -> None:
-        if not self.game_dir:
+        if not (self.game_dir and self.seed_ok):
             return
-        door = 1 if (self.slot_data or {}).get("door_checks") else 0
-        lines = [f"door_checks={door}", "box_checks=1", "open_world=1", "title_logo=1"]
-        lines += [f"level.{b}={self.level_choice[b]}" for b in range(3)]
-        tmp = self.ap_path("config.txt.tmp")
-        with open(tmp, "w") as f:
-            f.write("\n".join(lines) + "\n")
-        os.replace(tmp, self.ap_path("config.txt"))
+        lines = ["door_checks=0", "box_checks=1", "open_world=1", "title_logo=1"]
+        lines += [f"avail.{b}=" + "".join("1" if self.level_open(b * 5 + lv) else "0" for lv in range(5))
+                  for b in range(3)]
+        text = "\n".join(lines) + "\n"
+        if text != self.written_config:
+            self._replace("config.txt", text)
+            self.written_config = text
 
     def write_received(self) -> None:
         """Keep received.txt equal to the server's item list. It only ever grows, so append."""
-        if not self.game_dir or not self.seed_ok:
+        if not (self.game_dir and self.seed_ok):
             return
         items = [item.item for item in self.items_received]
         if items[:len(self.written_items)] != self.written_items:
-            # a different list (should not happen within one seed): rewrite it; the mod re-reads it
-            with open(self.ap_path("received.txt"), "w") as f:
-                f.write("".join(f"{i}\n" for i in items))
+            self._replace("received.txt", "".join(f"{i}\n" for i in items))   # the mod re-reads a shorter file
         elif len(items) > len(self.written_items):
             with open(self.ap_path("received.txt"), "a") as f:
                 f.write("".join(f"{i}\n" for i in items[len(self.written_items):]))
@@ -142,42 +121,97 @@ class GizmosContext(CommonContext):
             return
         self.written_items = items
 
+    def read_seed_file(self) -> Dict[str, str]:
+        out: Dict[str, str] = {}
+        try:
+            with open(self.ap_path("seed.txt")) as f:
+                for line in f:
+                    k, _, v = line.strip().partition("=")
+                    if v:
+                        out[k] = v
+        except OSError:
+            pass
+        return out
+
     def bind_seed(self) -> bool:
         """A game folder belongs to one seed and slot: its ap/ files would mix otherwise."""
         tag = f"{self.server_seed_name} {self.team} {self.slot}"
-        path = self.ap_path("seed.txt")
-        try:
-            with open(path) as f:
-                old = f.read().strip()
-        except OSError:
-            old = ""
-        if old and old != tag:
-            logger.error(f"This game folder belongs to another seed ({old}). Use a separate game folder per "
-                         f"seed, or delete its ap/ folder (and the PLAYERS.DAT player) to start over.")
+        info = self.read_seed_file()
+        if info.get("seed") and info["seed"] != tag:
+            logger.error(f"This game folder belongs to another seed ({info['seed']}). Use a separate game folder "
+                         f"per seed, or delete its ap/ folder (and that player in PLAYERS.DAT) to start over.")
             return False
-        if not old:
+        if not info.get("seed"):
             for name in ("checks.txt", "received.txt", "state.txt"):
                 if os.path.exists(self.ap_path(name)):
                     logger.error(f"ap/{name} exists but no seed is recorded: delete the ap/ folder first.")
                     return False
-            with open(path, "w") as f:
-                f.write(tag + "\n")
+            self._replace("seed.txt", f"seed={tag}\n")
+            logger.info("This game folder is now bound to this seed.")
         return True
 
+    # ---- the game ------------------------------------------------------------------------------
+    def poll_game(self) -> None:
+        """game.txt: key=value lines the mod rewrites about once a second while the game runs."""
+        try:
+            age = time.time() - os.path.getmtime(self.ap_path("game.txt"))
+            with open(self.ap_path("game.txt")) as f:
+                text = f.read()
+        except OSError:
+            age, text = GAME_TIMEOUT + 1, ""
+        info = dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
+        player_changed = info.get("player") != self.game_info.get("player")
+        if info:
+            self.game_info = info
+        alive = bool(info) and age < GAME_TIMEOUT          # the mod rewrites it about once a second
+        was_alive, self.game_alive = self.game_alive, alive
+        if alive and not was_alive:
+            logger.info("Game connected. " + self.game_text())
+        elif not alive and was_alive:
+            logger.warning("Game not responding (closed, or the mod is not loaded).")
+        if alive and (player_changed or not was_alive):
+            self.check_player()
+
+    def check_player(self) -> None:
+        """Remember which in-game player plays this seed, and warn when a different one is signed in."""
+        player = self.game_info.get("player", "")
+        if not (player and self.seed_ok):
+            return
+        info = self.read_seed_file()
+        if not info.get("player"):
+            with open(self.ap_path("seed.txt"), "a") as f:
+                f.write(f"player={player}\n")
+            logger.info(f"In-game player '{player}' recorded for this seed.")
+        elif info["player"] != player:
+            logger.warning(f"This seed is played as '{info['player']}', but '{player}' is signed in. Sign in as "
+                           f"'{info['player']}' to continue this seed.")
+
+    def game_text(self) -> str:
+        if not self.game_dir:
+            return "Game folder not set (/gamedir)."
+        if not self.game_alive:
+            return "Game: not running (or the Archipelago mod is not loaded)."
+        g = self.game_info
+        place = "Technology Center"
+        if g.get("building", "-1") not in ("-1", "") and g.get("in_level") == "1":
+            place = level_name(int(g["building"]) * 5 + int(g["level"]))
+        applied, total = int(g.get("items", "0")), len(self.written_items)
+        sync = "all received items applied" if applied >= total else f"{applied}/{total} received items applied"
+        return f"Game: running, player '{g.get('player') or '(not signed in)'}', {place}, {sync}."
+
     # ---- levels ------------------------------------------------------------------------------
-    def highest_unlocked(self, b: int) -> int:
-        """Vanilla order: level n+1 of a building opens once its level n race is won."""
-        lv = 0
-        while lv < 4 and (BASE + b * 5 + lv) in self.checked_locations:
-            lv += 1
-        return lv
+    def level_open(self, v: int) -> bool:
+        if self.slot_data.get("level_access") == "open":
+            return True
+        lv = v % 5
+        won = lambda x: (BASE + x) in self.checked_locations
+        return lv == 0 or won(v - 1) or won(v)
 
     def levels_text(self) -> str:
         out = []
         for b in range(3):
-            choice = self.level_choice[b]
-            pick = "game's choice" if choice < 0 else f"Level {choice + 1}"
-            out.append(f"{BUILDINGS[b]}: levels 1-{self.highest_unlocked(b) + 1} open, next entry loads {pick}")
+            marks = " ".join(f"{lv + 1}{'' if self.level_open(b * 5 + lv) else '(locked)'}" for lv in range(5))
+            out.append(f"{BUILDINGS[b]}: {marks}")
         return "\n".join(out)
 
     # ---- server ------------------------------------------------------------------------------
@@ -198,8 +232,12 @@ class GizmosContext(CommonContext):
                 self.write_config()
                 self.write_received()
                 logger.info(self.levels_text())
+                if self.game_alive:
+                    self.check_player()
         elif cmd == "ReceivedItems":
             self.write_received()
+        elif cmd == "RoomUpdate" and "checked_locations" in args:
+            self.write_config()          # a race won opens the next level
 
     async def disconnect(self, allow_autoreconnect: bool = False):
         self.seed_ok = False
@@ -240,9 +278,11 @@ class GizmosContext(CommonContext):
 async def game_watcher(ctx: GizmosContext) -> None:
     while not ctx.exit_event.is_set():
         try:
+            if ctx.game_dir:
+                ctx.poll_game()
             await ctx.forward_checks()
         except Exception as e:  # keep the loop alive; report and carry on
-            logger.exception(f"Reading the game's checks failed: {e}")
+            logger.exception(f"Talking to the game failed: {e}")
         await asyncio.sleep(POLL_SECONDS)
 
 

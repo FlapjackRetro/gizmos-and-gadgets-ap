@@ -1,6 +1,6 @@
 from test.bases import WorldTestBase
 
-from .. import BASE, GAME, LOCATION_IDS, PARTS, PART_NAMES, race_location, thresholds
+from .. import BASE, GAME, LOCATION_IDS, PARTS, PART_NAMES, level_name, race_location, thresholds
 
 
 class GizmosTestBase(WorldTestBase):
@@ -32,9 +32,9 @@ class TestDefault(GizmosTestBase):
         self.assertFalse(self.can_reach_region("Automotive Level 2"))
 
 
-class TestDoors(GizmosTestBase):
-    options = {"door_checks": True}
+class TestOpen(GizmosTestBase):
+    options = {"level_access": "open"}
 
-    def test_counts(self) -> None:
-        real = [loc for loc in self.multiworld.get_locations(self.player) if loc.address is not None]
-        self.assertEqual(len(real), 532 + 15 + 653)
+    def test_all_levels_open(self) -> None:
+        for v in range(15):
+            self.assertTrue(self.can_reach_region(level_name(v)))
