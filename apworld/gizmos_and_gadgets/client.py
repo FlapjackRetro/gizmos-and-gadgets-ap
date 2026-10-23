@@ -196,7 +196,10 @@ class GizmosContext(CommonContext):
         if g.get("building", "-1") not in ("-1", "") and g.get("in_level") == "1":
             place = level_name(int(g["building"]) * 5 + int(g["level"]))
         applied, total = int(g.get("items", "0")), len(self.written_items)
-        sync = "all received items applied" if applied >= total else f"{applied}/{total} received items applied"
+        sync = "all received items in the game" if applied >= total else f"{applied}/{total} received items in the game"
+        waiting = int(g.get("ap_inventory", "0") or 0)
+        if waiting:
+            sync += f", {waiting} part(s) in the Archipelago inventory"
         return f"Game: running, player '{g.get('player') or '(not signed in)'}', {place}, {sync}."
 
     # ---- levels ------------------------------------------------------------------------------

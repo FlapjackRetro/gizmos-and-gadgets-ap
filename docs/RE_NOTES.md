@@ -418,3 +418,31 @@ plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door
   dirty, save), and from the menus.
 - A won race clears `[459C+2b]` (the next entry generates the next level).
 - Mouse/keyboard event queue: 16 × 16 bytes at `DS:8556`, head `[1312]`, tail `[1310]`.
+
+## 4.14 Assembly room conveyor and input [traced 2026-10-23, used live on the recomp]
+- Inventory list: far ptr `DS:7AFC` (count `DS:7AFA`, actor 0 = `DS:7A8A`, `+0x72`), walked with `R09C0_000F`
+  (first) / `R09C0_002E` (next); the items are the part table entries themselves. `R0834_08D7(actor, part)` adds
+  (fails at two of a kind, `R053F_0216(list, kind = R053F_015D(part), far *partner)`), the second of a pair gets
+  `+0x1C` = its partner and the partner `+0x1C` = this | 0x8000 (`-1` = alone). `R0834_0990(actor, part, any)`
+  removes (`any` = 0: only if that actor owns it).
+- Lay-out `O0E30_028F(di, x0)` (far): per item, `+0x8A = 0`, `+0x5E` sprite record; `di` = 1 also loads the
+  sprite (`R05DF_00A1(+0x12)` → `+0x68`, cached and reference-counted at `DS:6640 + 8 i`) and makes mouse regions
+  for items with `+0x36 & 0x8000` (so only once per room); `R05DF_0414(+0x5E)` copies the size. Loose items
+  (`+0x1C & 0x8000`) take belt slots centred at x0, x0 − 0x64, …, y = 0x71 − h, `+0x36 &= ~1`, `[A0C8]++`; a
+  pair's second item sits on its partner (y = 0x4D − h, `+0x36 |= 1`). Set-up calls it as `(1, 0xA0)`, then
+  `R0A04_0B69(1)`, `0x804` (draw the belt, clip x 0x5D–0xE2), `0x70A`.
+- Loop `O0E30_0C89`: `si` = belt position, `[bp-0x72]` = up to 24 loose items (`0xBB2`), `[bp-0xE]` = last
+  position, `[bp-4]` / `[bp-8]` = the middle item and its partner (`0xC25`), `[bp-0x22]` = this pass's input
+  code. `[A080] = 1` redraws the belt (then `0xAB3` remakes the middle item's mouse region `DS:21A2`). Scrolling
+  (Left/Right, `0x880` / `0x986`, `[A086]` = ±1 while moving) shifts every item's `+0x60` by 0x64 in steps of 4.
+  Dragging: `[22A4] != -1`, item `[A07C]`. Codes not in the table at `cs:13AB` go to `0x1330`: ≥ 0xFA0 = drag part
+  `code − 0xFA0` (the floor parts' regions), anything else is ignored.
+- Mouse (`R07A0_0004`, the INT 33h handler): button down → record `DS:A10` = 1 (x `A1A`, y `A1C`, `A1E` = 1);
+  button up → `DS:A20` = 2 (x `A2A`, y `A2C`), `A10` = 0. `R098D_0106` matches them against the region list
+  `DS:A32` (next at `+0x0C`; `R07AB_0507`): the hover/down record gives the region's `+0x10` code (| 0x4000 when
+  just pressed, | 0x8000 otherwise; 0 = nothing), the click record its `+0x12` code. Codes 0x1388–0x13EC and a few
+  keys are handled inside `R098D_0106`. `R07AB_04BD` pushes the list (stack `DS:7A4E`, depth `DS:A50`) and starts
+  an empty one, `R07AB_04E8` pops it, `R07AB_0465` empties it.
+- `R0536_0007` (farmalloc) first runs the heap check: a corrupted heap exits the game with code 2. The loader's
+  scratch block (`DS:6574`, 0xFFFF bytes) does not start at offset 0, so a save into it at a large offset must use
+  a normalised pointer or it wraps around the segment onto the heap.

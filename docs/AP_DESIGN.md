@@ -133,6 +133,20 @@ when that slot is full. The player must never lose access to a received check. O
   from a banana), as in vanilla; parts laid on the assembly-room floor stay immune. Parts in the static Archipelago
   inventory can never be taken by chimps. So that inventory must live outside the game's actor inventory lists
   (which chimps steal from) until the player moves a part into the vanilla inventory.
+- **Done 2026-10-23 (option 2, `mod/inventory.c`):** received parts stay in the Archipelago inventory (no more
+  automatic grants in the warehouse; bananas still arrive by themselves). Clicking the Pieces box in the
+  assembly room opens a dialog in the game's style listing every received part not in the game yet: this
+  level's parts can be picked, other levels' are greyed with their level in front. Six rows, scrolled with
+  Up/Down/PgUp/PgDn/Home/End, the Up and Down buttons, or the mouse. Picking a part checks the game's own limit
+  (two of a kind): when full, a message says to recycle a part first and nothing else happens; otherwise the part
+  goes into the vanilla inventory (counts for PARTS NEEDED) and leaves the list. The dialog stays open for more
+  picks until Close / Esc. The conveyor is updated in place when the dialog closes (no room reload; see
+  RE_NOTES §4.14) and the level is saved. A moved part is the player's like any other: it can be laid on the
+  floor or recycled, and chimps can steal it, but it never goes back to the Archipelago inventory.
+- Still open: a "recycle" action in the dialog itself (not needed so far: the vanilla bin covers moved parts);
+  a received part whose own box is still unopened -- if a chimp opens that box after the part was moved, the
+  game would put the part into the chimp's list while it is still in the player's (see MOD.md, known
+  limitations). A part a chimp already carries is taken out of the chimp's list when it is moved.
 - Recycling from the Archipelago inventory must use the game's own recycle mechanism (part `+0x36 |= 0x4000`,
   then `R0622_0F4E(part)`): the part lands in a box in a random room with the recycled sprite, and the mod treats
   every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled parts can only exist after the
@@ -153,8 +167,8 @@ Archipelago inventory dialog for management: move a stored part into the vanilla
   have the same colour in all three buildings (greys exact, browns to the grey of equal brightness), the counter
   drawn with the puzzle's own digit sprites (`0x204F`), at (4, 167). Shows the received parts of the current
   level that are not in the game yet. Also drawn on the blueprint screen (same loop, same free corner).
-- Still to do: clicking it (open the inventory dialog); optionally the lid animation from `0x2087` (3 frames) on
-  click; the chimps sprite is to its right.
+- **Done:** clicking it opens the inventory dialog (above). Optional: the lid animation from `0x2087` (3 frames)
+  on click. The chimps sprite is to its right.
 
 ### To-do: assembly-room sprite for checks held by chimps
 Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the

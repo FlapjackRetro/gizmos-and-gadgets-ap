@@ -24,6 +24,8 @@
 #include "gg_mod.h"
 #include "picker.h"
 #include "hud.h"
+#include "inventory.h"
+#include "ui.h"
 #ifdef _WIN32
 #  include <direct.h>
 #  define MKDIR(p) _mkdir(p)
@@ -249,10 +251,10 @@ static int is_part_item(unsigned id, int *v, int *part)
 
 static void save_level(void);
 
-/* One item per call, so each name stays on screen for a moment. */
+/* Bananas go straight into the game, one item per call. Parts wait in the Archipelago inventory until the
+ * player moves them onto the conveyor (inventory.c). */
 static void grant_pending(void)
 {
-    int v = cur_vehicle();
     for (int i = 0; i < rx_n; i++) {
         if (rx_done[i]) continue;
         unsigned id = rx_item[i];
@@ -263,22 +265,23 @@ static void grant_pending(void)
             api->log("ap: received 5 bananas");
             return;
         }
-        if (is_part_item(id, &iv, &part)) {
-            if (iv != v || in_level != v) continue;          /* parts belong to their level */
-            int r = api->give_part(part);
-            if (r < 0) {                                     /* already holding two of that kind */
-                api->log("ap: part %d (level %d) waits: inventory full for that kind", part, iv);
-                continue;
-            }
-            mark_obtained();
-            rx_done[i] = 1; save_state();
-            save_level();                                    /* a granted part is never lost to quitting */
-            api->log("ap: received part %d of level %d%s", part, iv, r ? " (needed)" : "");
-            return;
-        }
+        if (is_part_item(id, &iv, &part)) continue;          /* the Archipelago inventory */
         rx_done[i] = 1;                                      /* unknown item: skip it */
         api->log("ap: unknown item %u ignored", id);
     }
+}
+
+/* Received parts not in the game yet: the Archipelago inventory. */
+static int ap_inventory(InvItem *out, int max)
+{
+    int n = 0;
+    for (int i = 0; i < rx_n && n < max; i++) {
+        int iv, part;
+        if (rx_done[i] || !is_part_item(rx_item[i], &iv, &part)) continue;
+        out[n].rx = i; out[n].v = iv; out[n].part = part;
+        n++;
+    }
+    return n;
 }
 
 /* ---- events ------------------------------------------------------------------------------- */
@@ -438,8 +441,7 @@ static int on_race_start(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
-/* Received parts of the current level not in the game yet (waiting: inventory full) -- what the Archipelago
- * inventory will hold. Shown on the Pieces box. */
+/* Received parts of the current level still in the Archipelago inventory: the number on the Pieces box. */
 static int waiting_parts(void)
 {
     int v = cur_vehicle(), n = 0;
@@ -455,7 +457,31 @@ static int on_assembly_tick(void *u, GGEvent *e)
     (void)u; (void)e;
     mark_obtained();
     hud_tick(waiting_parts());
+    if (frames - last_grant_frame >= 90) { last_grant_frame = frames; grant_pending(); }
     return GG_CONTINUE;
+}
+
+static void deposited(int rx)
+{
+    if (rx >= 0 && rx < rx_n) rx_done[rx] = 1;
+    save_state();
+}
+
+/* Site assembly_tick (the loop head of O0E30_0C89): a click on the Pieces box opens the inventory. The
+ * registers are the loop's, which the conveyor update needs (inventory.c). */
+static int on_assembly_site(void *u, uint32_t addr, GGRegs *r)
+{
+    (void)u; (void)addr;
+    int v = cur_vehicle();
+    if (v < 0 || in_level != v) return 0;
+    static InvItem items[MAX_RECEIVED];
+    int n = ap_inventory(items, MAX_RECEIVED);
+    if (inventory_site(r, items, n, v, deposited) > 0) {
+        mark_obtained();
+        save_level();                                        /* moved parts are never lost to quitting */
+        hud_forget();
+    }
+    return 0;
 }
 
 static int on_warehouse_tick(void *u, GGEvent *e)
@@ -543,15 +569,16 @@ static void heartbeat(void)
     int i = 0;
     for (; i < 16 && m[i] >= 32 && m[i] < 127; i++) name[i] = (char)m[i];
     name[i] = 0;
-    int applied = 0;
-    for (int k = 0; k < rx_n; k++) applied += rx_done[k];
+    static InvItem inv[MAX_RECEIVED];
+    int waiting = ap_inventory(inv, MAX_RECEIVED);
     path(p, sizeof p, "game.txt");
     snprintf(tmp, sizeof tmp, "%s.tmp", p);
     FILE *f = fopen(tmp, "w");
     if (!f) return;
-    fprintf(f, "mod=1\nframe=%d\nplayer=%s\nbuilding=%d\nlevel=%d\nin_level=%d\nitems=%d\nreceived=%d\n",
+    fprintf(f, "mod=1\nframe=%d\nplayer=%s\nbuilding=%d\nlevel=%d\nin_level=%d\nitems=%d\nreceived=%d\n"
+            "ap_inventory=%d\n",
             frames, name, (int16_t)api->ds_read16(GG_DS_BUILDING), (int16_t)api->ds_read16(GG_DS_LEVEL),
-            in_level >= 0, applied, rx_n);
+            in_level >= 0, rx_n, rx_n, waiting);
     fclose(f);
     remove(p);                                               /* Windows rename does not replace */
     rename(tmp, p);
@@ -607,6 +634,8 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     if (cfg.title_logo) title_logo();
     picker_init(api);
     hud_init(api);
+    ui_init(api);
+    inventory_init(api);
     api->on_event(GG_EV_BUILDING_CLICK, on_building_click, NULL);
     if (!api->on_site(api->site_addr("building_selected"), on_building_selected, NULL))
         api->log("ap: building_selected site missing: no level picker");
@@ -614,6 +643,8 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
     api->on_event(GG_EV_WAREHOUSE_TICK, on_warehouse_tick, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_assembly_tick, NULL);
+    if (!api->on_site(api->site_addr("assembly_tick"), on_assembly_site, NULL))
+        api->log("ap: assembly_tick site missing: no Archipelago inventory");
     api->on_event(GG_EV_BOX_OPEN, on_box_open, NULL);
     api->on_event(GG_EV_DOOR_OPEN, on_door_open, NULL);
     api->on_event(GG_EV_RACE_START, on_race_start, NULL);

@@ -232,3 +232,10 @@ void hud_tick(int count)
 }
 
 void hud_forget(void) { shown = -1; }
+
+int hud_box_rect(int *x, int *y, int *w, int *h)
+{
+    if (ready != 1) return 0;
+    *x = box.x; *y = box.y; *w = box.w; *h = box.h;
+    return 1;
+}

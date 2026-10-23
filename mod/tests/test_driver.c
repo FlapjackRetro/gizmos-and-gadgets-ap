@@ -10,9 +10,11 @@
  *                     ap_mod marked a part the player obtained).
  * TEST_SAVE=1         after opening the box, save the game the way leaving the warehouse does (DS:94 = 1,
  *                     O0E18_01EA)
+ * TEST_GIVE_ASM=t:p   at assembly-room pass t, give part p (api->give_part), to see what the room does
  * TEST_PASS_PUZZLES=1 every door puzzle counts as solved (so Go Back opens the door).
  */
 #include <stdlib.h>
+#include <string.h>
 #include "gg_mod.h"
 
 static const GGApi *api;
@@ -63,6 +65,18 @@ static int on_tick_dump(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+static int give_at = -1, give_part_id = -1;
+static int on_asm(void *u, GGEvent *e)
+{
+    (void)u; (void)e;
+    static int t;
+    if (give_at >= 0 && ++t == give_at) {
+        int r = api->give_part(give_part_id);
+        api->log("test: give_part(%d) in the assembly room -> %d", give_part_id, r);
+    }
+    return GG_CONTINUE;
+}
+
 static int on_puzzle(void *u, GGEvent *e)
 {
     (void)u;
@@ -80,6 +94,9 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     s = getenv("TEST_DROP"); if (s) { recycle = atoi(s); mark = 0; }
     s = getenv("TEST_DUMP_OWNERS"); dump_at = s ? atoi(s) : 0;
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_dump, NULL);
+    s = getenv("TEST_GIVE_ASM");
+    if (s) { give_at = atoi(s); const char *c = strchr(s, ':'); give_part_id = c ? atoi(c + 1) : 0; }
+    api->on_event(GG_EV_ASSEMBLY_TICK, on_asm, NULL);
     s = getenv("TEST_PASS_PUZZLES"); pass = s && *s == '1';
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick, NULL);
     api->on_event(GG_EV_PUZZLE_RESULT, on_puzzle, NULL);

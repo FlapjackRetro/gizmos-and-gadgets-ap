@@ -11,7 +11,7 @@ emulator memory scanning are needed.
 cmake -S mod -B build-mod -DGG_RECOMP_DIR=/path/to/gizmos-and-gadgets-recomp
 cmake --build build-mod            # ap_mod.so / ap_mod.dll
 ```
-The mod is `ap_mod.c` + `picker.c` + `hud.c`. Copy `ap_mod.dll` (Windows) or `ap_mod.so` into `<game dir>/mods/`, or run `gizmos --mod path/to/ap_mod.so`.
+The mod is `ap_mod.c` + `picker.c` + `hud.c` + `inventory.c` + `ui.c` (game-style dialogs, shared). Copy `ap_mod.dll` (Windows) or `ap_mod.so` into `<game dir>/mods/`, or run `gizmos --mod path/to/ap_mod.so`.
 The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC command lines).
 
 ## What it does (v0)
@@ -28,12 +28,32 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Door opened (puzzle solved) | sends the door's location only with `door_checks=1` (off: doors are not locations for now) |
 | Race started | keeps a copy of the level's warehouse (a won race discards it) |
 | Race won | sends the race location; keeps the game's race counters right for any order; `goal` once all 15 levels are won |
-| In the warehouse | grants received items, one about every 1.5 s: parts of the current level via the game's own pickup routine (name shown, PARTS NEEDED counts down), bananas anywhere; saves after each part |
-| Assembly room / blueprint | draws in the bottom-left of the HUD: the "Pieces" box with the number of received parts of this level still waiting, and a Cyberchimp (future: checks held by chimps). `hud.c`; built at run time from the game's own door-puzzle background `0x2084`, digits `0x204F` and chimp frame `0x103B`/1, colours remapped to the assembly room's |
+| In the warehouse / assembly room | grants received bananas (+5 each), one about every 1.5 s. Received parts go to the Archipelago inventory |
+| Assembly room / blueprint | draws in the bottom-left of the HUD: the "Pieces" box with the number of received parts of this level in the Archipelago inventory, and a Cyberchimp (future: checks held by chimps). `hud.c`; built at run time from the game's own door-puzzle background `0x2084`, digits `0x204F` and chimp frame `0x103B`/1, colours remapped to the assembly room's |
+| Pieces box clicked (assembly room) | the **Archipelago inventory** dialog (below) |
 | About once a second | writes `ap/game.txt` (heartbeat for the client) |
 
-Received parts wait until the player is in their level's warehouse, and while the player already holds two of
-that kind (the inventory limit; see the to-do in `AP_DESIGN.md`).
+## Archipelago inventory
+
+Received parts are not put into the game by themselves: they wait in the Archipelago inventory, outside the
+game's inventory lists, so chimps cannot take them and the two-of-a-kind limit never loses one. In the
+assembly room, a click on the Pieces box opens a dialog in the game's style (`inventory.c`, drawn with
+`ui.c`) listing every received part that is not in the game yet:
+
+- This level's parts first (they can be picked), then other levels' parts, greyed, as
+  `Aircraft 2: small fuselage ...` (a part only works in its own level). Six rows; Up/Down move, PgUp/PgDn/Home/End
+  and the Up/Down buttons scroll, Enter or a click picks, Esc or Close closes. Names come from the game's own
+  part tables (resource `0x2F5 + v`, entry `+0x16` = the name's text resource).
+- Picking a part checks the game's limit (two parts of a kind, `R053F_0216` on the player's list as the pickup
+  does). When full: "No room on the conveyor -- recycle one of them to make space", and nothing else happens.
+  Otherwise the part is given (`api->give_part`, PARTS NEEDED counts down), leaves the list and the dialog stays
+  open for more picks.
+- On closing, the conveyor is updated in place (sprites loaded, the room's lay-out run again, the loop's own
+  belt copy updated: RE_NOTES §4.14) and the level is saved. A moved part is an ordinary part: floor or recycle
+  bin, never back into the Archipelago inventory.
+- How the click is seen: the box is a mouse region in the room's own list with click code `0xF00`; the room's
+  loop leaves unknown codes below `0xFA0` alone and keeps the last one in `[bp-0x22]`, which the mod reads at the
+  next loop head (site `assembly_tick`).
 
 ## Level picker
 
@@ -78,7 +98,7 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 | `checks.txt` | mod (appends) | one location id per line; `goal` when the game is complete |
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
 | `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
-| `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` (received items in the game), `received` |
+| `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory) |
 | `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), granted items |
 | `levels/<v>.bin` | mod | the saved warehouse of level `v` |
 | `seed.txt` | client | the seed/slot and in-game player this game folder belongs to |
@@ -154,4 +174,9 @@ Not yet tested live: a real race end (needs a built vehicle headless) and the go
 - No in-game text for found items yet (the box just disappears); needs the item-label work.
 - A player who enters a later level first starts it with the bananas of the level header (0 for a new player
   past level 1; the game sets 10 only on level 1).
-- Inventory-full prompt / Archipelago inventory; chimps-carrying-checks display.
+- Chimps-carrying-checks display.
+- A received part whose own box is still unopened: after the part is moved into the inventory, a chimp opening
+  that box would add the part to the chimp's list while it is still in the player's (the game assumes a part
+  is in one place). Possible fixes: send that box's check when its part is moved (the box is in the level the
+  player is in, so it is in logic), or keep the box out of the chimps' reach. A part a chimp already carries is
+  taken out of the chimp's list when it is moved (`R0834_0990`).

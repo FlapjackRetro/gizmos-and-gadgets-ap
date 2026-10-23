@@ -7,4 +7,6 @@ void hud_init(const GGApi *api);
 void hud_tick(int count);
 /* The screen was replaced (e.g. a new room): draw again next time. */
 void hud_forget(void);
+/* Where the Pieces box is on screen; 0 if it is not drawn (not built). */
+int hud_box_rect(int *x, int *y, int *w, int *h);
 #endif
