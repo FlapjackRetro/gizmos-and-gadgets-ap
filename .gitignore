@@ -12,3 +12,4 @@ __pycache__/
 MEMDUMP.TXT
 memdump.txt
 build-mod/
+dist/

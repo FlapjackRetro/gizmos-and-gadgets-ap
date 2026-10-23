@@ -1,0 +1,40 @@
+from test.bases import WorldTestBase
+
+from .. import BASE, GAME, LOCATION_IDS, PARTS, PART_NAMES, race_location, thresholds
+
+
+class GizmosTestBase(WorldTestBase):
+    game = GAME
+
+
+class TestDefault(GizmosTestBase):
+    def test_counts(self) -> None:
+        locs = self.multiworld.get_locations(self.player)
+        real = [loc for loc in locs if loc.address is not None]
+        self.assertEqual(len(real), 532 + 15)
+
+    def test_ids_match_mod(self) -> None:
+        # docs/MOD.md: box of part p in level v = base + 0x1000 + v*0x40 + p; race = base + v
+        self.assertEqual(LOCATION_IDS[race_location(5)], BASE + 5)
+        self.assertEqual(LOCATION_IDS[f"{PART_NAMES[5][4]} (box)"], 0x47471144)
+
+    def test_first_race_needs_parts(self) -> None:
+        self.assertFalse(self.can_reach_location(race_location(0)))
+        thr = thresholds(0)
+        best = {}
+        for pid, g, t, cosmetic, _n in PARTS[0]:
+            if not cosmetic and t >= thr[g]:
+                best.setdefault(g, PART_NAMES[0][pid])
+        self.collect_by_name(list(best.values()))
+        self.assertTrue(self.can_reach_location(race_location(0)))
+
+    def test_level_two_locked_until_race(self) -> None:
+        self.assertFalse(self.can_reach_region("Automotive Level 2"))
+
+
+class TestDoors(GizmosTestBase):
+    options = {"door_checks": True}
+
+    def test_counts(self) -> None:
+        real = [loc for loc in self.multiworld.get_locations(self.player) if loc.address is not None]
+        self.assertEqual(len(real), 532 + 15 + 653)

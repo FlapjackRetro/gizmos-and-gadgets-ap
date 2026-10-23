@@ -2,8 +2,8 @@
 
 An [Archipelago](https://github.com/ArchipelagoMW/Archipelago) randomizer for *Super Solvers: Gizmos & Gadgets!* (The Learning Company, DOS, v1.0).
 
-**Status:** early development. The game side is a mod for the native recompilation; the Archipelago client and
-apworld are next. Nothing playable yet.
+**Status:** early development. The game side is a mod for the native recompilation; the apworld and client send
+and receive checks end to end (tested on a local server). Not yet playtested.
 
 **Target:** the native recompilation of the game, `gizmos-and-gadgets-recomp` (FlapjackRetro), which loads mods.
 The earlier DOSBox-X route (EXE patcher, emulator memory polling) is kept for reference only.
@@ -12,12 +12,18 @@ The earlier DOSBox-X route (EXE patcher, emulator memory polling) is kept for re
 `mod/ap_mod.c`: build against the recomp's `include/gg_mod.h` and drop `ap_mod.dll` / `ap_mod.so` into
 `<game dir>/mods/`. Build steps, files, location/item ids and test results: [`docs/MOD.md`](docs/MOD.md).
 
+## The apworld and client
+`python tools/build_apworld.py` → `dist/gizmos_and_gadgets.apworld` for Archipelago's `custom_worlds/`. World, client
+commands and tests: [`docs/CLIENT.md`](docs/CLIENT.md).
+
 ## Patching (legacy, DOSBox-X)
 `python tools/patcher.py path/to/ssg.exe` writes `SSG_AP.EXE` next to it (original untouched). `--list` shows
 the patches; each one verifies the original bytes first.
 
 ## Contents
 - `mod/ap_mod.c`, `mod/CMakeLists.txt`: the Archipelago mod for the recomp; `mod/tests/test_driver.c`: headless test helper.
+- `apworld/gizmos_and_gadgets/`: the Archipelago world and client; `tools/make_apworld_data.py` (data from `data/`), `tools/build_apworld.py` (packaging).
+- `docs/CLIENT.md`: the apworld and client — install, logic, commands, tests.
 - `docs/MOD.md`: the mod — build, behaviour, client files, ids, verification.
 - `docs/RE_NOTES.md`: executable layout, `PLAYERS.DAT` save format, in-memory player record, hook points (race win confirmed).
 - `docs/AP_DESIGN.md`: draft locations, items, progression, multi-level access plan and client architecture.
