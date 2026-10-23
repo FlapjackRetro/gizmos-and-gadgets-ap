@@ -58,54 +58,35 @@ rewriting game code**:
 3. Alternative if (2) proves fragile: patch the building-entry code to show a level picker. More work,
    since that code is likely in an overlay.
 
-## Level select & "open world" (planned)
-Vanilla allows **one active level per building** (3 at a time), which would starve early spheres: few
-locations reachable, and a building is stuck until its race is won. So:
-
-- **Level-select dialog** inserted on the building select screen: after the player clicks a building, a dialog
-  asks which of its 5 levels to load (only unlocked levels selectable). This replaces the client-command idea above.
-- **YAML option `level_access`:**
-  - `open_world` — all 15 levels selectable from the start; no level-unlock items in the pool.
-  - `progressive` — `Progressive <Building> Level` items unlock levels (vanilla-like, but decoupled from race wins).
-- Mechanics already known (RE_NOTES §3–4):
-  - Selecting level *L* of building *b*: the enter-building routine `R02E0_0820` (state 3) derives level and vehicle
-    from `DS:4596[b]` alone. **Preferred: patch `0x83D` to read a separate picker variable**, because `4596[b]` also
-    drives the parked-vehicle display in the Technology Center (= races won) and the finished-building logic; the part table then comes from
-    resource `0x2F5 + vehicle`.
-  - The save record holds **one warehouse snapshot per building** (block at rec+0x27E+b*0x6BA, flag `459C[b]`).
-    Revisiting a different level of the same building means swapping that block: store the other levels'
-    snapshots outside the record (client side, or an extra file), restore on select; flag 0 → fresh level.
-  - Race win must no longer advance the building (`inc [bx+4596]` at file 0x45B7 → NOP).
-- Building click handler found: `R02E0_0148` (state 2); picker hooks in at `02E0:0463` after `[4592]` is set,
-  and the vanilla "building finished" refusal (`[4596+2b]==4`) must be removed (RE_NOTES §4.4).
-- **Picker UI decision: pager** (2026-10-19). One dialog per building showing "Level N of 5" + the vehicle
-  title (from the blueprint layout resource for that vehicle), with Previous / Next / Enter / Cancel.
-  Built on the game's dialog runner `O0E83_08EE` (RE_NOTES §4.5), modelled on the help-page pager
-  `O0E83_0907`. Existing dialogs show ≤ 2 buttons, so the safe first version is **[Next] [Enter]** buttons +
-  **PgUp/PgDn** hotkeys (already in the hotkey table) for previous/next and **Esc** to cancel; a 4-button row is
-  a stretch goal pending analysis of the layout core `O0E83_0655`. Locked levels (progressive mode) are skipped
-  or shown greyed with a "locked" line.
-- Dialog system mapped (RE_NOTES §4.5); next: how `O0E83_0655` lays out buttons, and injecting the picker call at `02E0:0463`.
+## Level select & "open world" (implemented, docs/MOD.md)
+- After clicking a building at the Technology Center, a dialog in the game's style offers `Level 1 - <vehicle>` …
+  `Level 5 - <vehicle>` and `Return to Technology Center`; arrow keys and the mouse select, locked levels are
+  greyed out. YAML `level_access`: `open` (all levels) or `race_progression` (next level after the previous race).
+- A level is generated once and saved at once; afterwards it is always restored (one saved warehouse per level,
+  kept by the mod in `ap/levels/`; PLAYERS.DAT itself only holds one per building).
+- The client checks the game is running with the mod (heartbeat) and that the in-game player matches the seed.
 
 ## Client architecture
-- Python AP client (CommonClient-based) + a DOSBox memory interface:
-  - Windows: attach to `dosbox-x.exe` (dev target; other flavors later) with pymem, find emulated RAM, scan for the Borland
-    signature → DS base. Read/write words at DS+offset.
-  - Poll at ~5–10 Hz: building, level indices, races-won, box/door state, inventory.
-- Patcher: apply byte patches to a copy of `ssg.exe` (a `.apgg` patch or simple byte list).
+**Target: the native recompilation** (`gizmos-and-gadgets-recomp`), not DOSBox. The game side is a recomp mod
+(`mod/ap_mod.c`, see `docs/MOD.md`) that hooks the game's events directly: building click, level enter/ready,
+box open, puzzle result, door open, race end, plus safe points to grant items with the game's own routines.
+- Mod ↔ client: files in `<game dir>/ap/` (`checks.txt`, `received.txt`, `config.txt`); a localhost socket can
+  replace them later without changing the ids.
+- Python AP client (CommonClient-based): forwards checks, appends received items, writes level unlocks/selection.
 - Save handling: one AP seed ↔ one player slot in PLAYERS.DAT; client verifies the player name matches the slot.
+- **Legacy:** the DOSBox-X route (`tools/patcher.py`, `docs/DOSBOX_X_DEV.md`, memory polling) is kept for
+  reference; the RE notes and hook addresses it produced are what the recomp's mod API is built on.
 
 ## Future items
-### In-game Archipelago item labels
-Swap part names shown in-game for Archipelago item labels (e.g. "Bob's Progressive Wings"), so a box shows what
-it actually sends/holds. What we know:
-- Part names are type-`S` string resources (ids from `0x278`), referenced by part-table entry `+0x16`.
-- At load time `R053F_0002` loads each name into its own far block and stores the pointer at entry `+0x86`;
-  the pickup message reads it from there (`R0A04_076B`).
-- Options: (a) the client writes replacement text into those blocks at runtime (simplest; length-limited to the
-  original allocation unless we reallocate), (b) patch the `S` resources in a copy of `gizmo000.dat`
-  (needs an archive rewriter), (c) point `+0x86` at a client-managed buffer.
-- TBD: find other places text is drawn (blueprint screen labels, part inventory screen) and their length limits.
+### In-game Archipelago item labels (done 2026-10-23)
+Opening a check box shows what it held, in the HUD line where the game shows a part's name after a pickup:
+`5 Bananas`, `fat envelope` (this game's part, now in the Archipelago inventory) or `Shield for Quester`.
+- The client scouts all of the slot's locations on connecting (`LocationScouts`, no hints) and writes
+  `ap/labels.txt` (`<location id>=<text>`): plain ASCII, words over 18 characters cut, at most 56 characters (the
+  HUD line wraps at spaces, 3 lines of about 19 characters); own parts without the level prefix and `#n`.
+- The mod points the HUD's name pointer (`DS:879A`, refresh bit 0x10 in `DS:132C`, as `R0A04_0754` does) at its
+  own copy of the text. Without a label (client not connected yet): "Archipelago item".
+- Not done: labels for race locations (the podium), received items ("from <player>").
 
 ### Box pickups as Archipelago checks
 Opening a box that holds an Archipelago check must **show the item's text** (the AP item name, from the label
@@ -125,19 +106,13 @@ Where this hooks in (`R08F5_0002`, see RE_NOTES §4.3):
 **Decided — other players' items:** a box holding another game's item simply disappears from G&G when it is
 opened (the check is sent, the item text is shown, nothing enters the inventory).
 
-### To-do: Cyberchimps carry checks around
-Chimps pick up parts all the time (`O0E0D_0000` takes parts from boxes; `R0622_0F4E` drops a part into a box in
-a random room), so in a chimp-enabled game a check is not fixed to one box: it can move between rooms or be
-held by a chimp. Consequences and plan:
-- A hint can only point to a **building and level**; the player may have to search that whole level, chimps
-  included.
-- Needs a way to show that a chimp is holding a check. Likely a mod in the **assembly area**: an interaction that
-  lists how many checks the chimps of that level are holding, and of what type (own-game part vs. other player's
-  item).
-- Still to decide: whether chimps may pick up AP checks at all (an option could exclude them), and how a chimp
-  carrying a check is drawn or reported in the warehouse.
+### Cyberchimps carry checks around (done)
+Chimps open boxes, so in a chimp-enabled game a check is not fixed to one box: a chimp may carry it until hit with
+a banana. A hint can only point to a building and level. Implemented (MOD.md, "Cyberchimps and check boxes"): a
+chimp carries the check, not the part; it drops carried checks first; the assembly room's Cyberchimp sprite tells
+how many checks the level's chimps carry; the YAML option `cyberchimps` can turn chimps off.
 
-### To-do: limited player inventory vs. received items
+### Limited player inventory vs. received items (done: the Archipelago inventory)
 The vanilla inventory holds only **two items per part type**, so items received from the multiworld can arrive
 when that slot is full. The player must never lose access to a received check. Options:
 1. **Accept-or-recycle prompt (EXE-side):**
@@ -147,8 +122,96 @@ when that slot is full. The player must never lose access to a received check. O
       the new part and recycle one they are holding, or recycle the part just received.
 2. **Inventory managed outside the vanilla system:** a dialog that holds received parts and can send them to the
    conveyor (assembly) or recycle them to the warehouse.
-- Open: what "recycle to the warehouse" means for a received AP item (back into a box so it can be picked up
-  again, vs. kept by the client), so a recycled item is never lost for good.
+- **Decided — chimp theft:** chimps steal only from the vanilla player inventory (on collision, unless asleep
+  from a banana), as in vanilla; parts laid on the assembly-room floor stay immune. Parts in the static Archipelago
+  inventory can never be taken by chimps. So that inventory must live outside the game's actor inventory lists
+  (which chimps steal from) until the player moves a part into the vanilla inventory.
+- **Done 2026-10-23 (option 2, `mod/inventory.c`):** received parts stay in the Archipelago inventory (no more
+  automatic grants in the warehouse; bananas still arrive by themselves). Clicking the Pieces box in the
+  assembly room opens a dialog in the game's style listing every received part not in the game yet: this
+  level's parts can be picked, other levels' are greyed with their level in front. Six rows, scrolled with
+  Up/Down/PgUp/PgDn/Home/End, the Up and Down buttons, or the mouse. Picking a part checks the game's own limit
+  (two of a kind): when full, a message says to recycle a part first and nothing else happens; otherwise the part
+  goes into the vanilla inventory (counts for PARTS NEEDED) and leaves the list. The dialog stays open for more
+  picks until Close / Esc. The conveyor is updated in place when the dialog closes (no room reload; see
+  RE_NOTES §4.14) and the level is saved. A moved part is the player's like any other: it can be laid on the
+  floor or recycled, and chimps can steal it, but it never goes back to the Archipelago inventory.
+- **Decided:** no recycle action in the dialog: every part goes Archipelago inventory -> conveyor -> the vanilla
+  recycle bin.
+- **Decided 2026-10-23 — chimps and check boxes:** a chimp that opens a check box carries the *check*, not the
+  part (the part record is only the box's stand-in and may be the player's real part by then). Hit with a
+  banana, it drops carried checks first, then real parts it stole -- a player who left a moved part on the
+  conveyor instead of the floor has to hit the chimp more than once to get it back. Done in the mod with two
+  recomp hook sites (MOD.md, "Cyberchimps and check boxes").
+- Recycling (the vanilla bin) marks the part `+0x36 |= 0x4000` and puts it in a box in a random room with the
+  recycled sprite; the mod treats every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled
+  parts can only exist after the player obtained the part, so they are never locations.
+
+### Assembly-room sprite for the Archipelago inventory (done)
+Add a representative sprite (an object the player can click) in the assembly room that opens the static
+Archipelago inventory dialog for management: move a stored part into the vanilla inventory, or recycle it (see
+"limited player inventory"). The static inventory itself stays out of the chimps' reach.
+- Graphic: reuse the **"Pieces" box with its counter** from the door puzzle "Put the puzzle pieces together to
+  make a machine"; the counter shows how many parts the Archipelago inventory holds. Located 2026-10-23: it is
+  part of that puzzle's background, resource `0x2084` (320×155, palette `0x2085` over `0x1094`), box (lid
+  included) 66×36 at (15, 94); surround index 198 (green), shadow index 211. Counter centre (25, 26.5) in the
+  sprite, measured from an in-game screenshot. `tools/pieces_box.py GAMEDIR OUTDIR --preview N` cuts it out of the
+  player's own files (PNG + JSON with the palette indices); like other game art it is not committed.
+- **Done 2026-10-23 (`mod/hud.c`):** drawn in the unused bottom-left of the assembly room HUD (x 0–217, y 167–199,
+  33 rows): rows 12–14 of the box (plain texture) dropped to fit, colours remapped to assembly-room indices that
+  have the same colour in all three buildings (greys exact, browns to the grey of equal brightness), the counter
+  drawn with the puzzle's own digit sprites (`0x204F`), at (4, 167). Shows the received parts of the current
+  level that are not in the game yet. Also drawn on the blueprint screen (same loop, same free corner).
+- **Done:** clicking it opens the inventory dialog (above). The chimps sprite is to its right.
+
+### Assembly-room sprite for checks held by chimps (done)
+Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the
+level's chimps are currently holding. The part
+table's owner field (`+0x0C`: n = actor n) tells which parts a chimp holds (`docs/MOD.md`).
+- Graphic (chosen 2026-10-23): a Cyberchimp, container `0x103B` frame 1 (31×31, facing front; `0x103B` and
+  `0x103F` are the chimps' animation sets, palette `0x100A` = the warehouse's). **Done (`mod/hud.c`):** drawn on the
+  assembly room HUD to the right of the Pieces box (x 76, bottom row 198), colours remapped to assembly-room
+  indices keeping the hue (bright green face, red body).
+- **Done 2026-10-23 (`mod/inventory.c`, `chimp_dialog`):** clicking it opens "Cyberchimps": how many Archipelago
+  checks this level's chimps carry (the mod's carried-check list), how many of the player's own parts they have
+  (part owner = an actor; stolen or recycled parts, never checks), and "Hit one with a banana to make it drop."
+  **Decided:** it does not say what the carried checks hold.
+
+### Chimps setting from the YAML (done 2026-10-23)
+When a new player file is started, the game asks whether to play with or without chimps (dialog 0x1067, "With
+Chimps" / "Without Chimps", `O0E83_0C5E`, called from `O0E2D` 0x1307; the answer is stored at `DS:4578`, player
+record +0x16, 1 = with). Now: apworld option `cyberchimps` (default on) -> slot data -> the client's `config.txt`
+(`chimps=1/0`) -> the mod skips the question (site `chimps_prompt`, recomp PR #2) and shows a message with the
+setting instead; it also sets `DS:4578` on every level entry. Without chimps, the Cyberchimp on the assembly room
+HUD is drawn in grayscale (each index to the assembly-room grey of the same brightness) and is not clickable.
+Verified headless for both settings (message, `[4578]`, chimps in the warehouse or none, grey sprite).
+
+### To-do: Microsoft Defender SmartScreen warning
+Windows shows "Windows protected your PC … Unknown publisher" when starting `gizmos.exe` (the recomp build).
+See what can be done. Options to evaluate (not yet checked):
+- SmartScreen judges files that carry the "downloaded from the internet" mark (Mark of the Web) and are unsigned
+  or have no reputation yet. Find out why a locally built `gizmos.exe` gets it (e.g. the install script copying
+  a downloaded file, or the folder it was unpacked from), and whether the install script can avoid it.
+- Code signing for released binaries: a certificate from a code-signing service (paid, or a free programme for
+  open-source projects), set up in the release build. Reputation still builds up over time per certificate.
+- Until then: document "More info → Run anyway" in the setup guide.
+This concerns the recomp's `gizmos.exe` (and `ap_mod.dll` once distributed), so the work may belong in the recomp
+repository.
+
+### Re-entering won levels, without re-racing (done 2026-10-23)
+Won levels stay enterable for their remaining checks, but their race is locked out:
+1. On the podium after a win: **Rerun Race** is refused (message); **Next Level** goes to this building's next
+   level when the seed has opened it, else to the Technology Center (message); **Tech Center** and **Exit** as in
+   the game (recomp site `podium_choice`, PR #3).
+2. The win counts towards the goal: YAML option `races_required` (1-15, default 15) different races.
+3. The won level keeps the warehouse copied at race start (vehicle built, floor parts) and is restored on re-entry.
+4. In a won level the race door never opens, even when the vehicle is completed again: the slot counter `[4584]`
+   is kept 0x100 above the real count (no door, no race, no +100 bonus, no "finished building" hint), and the
+   door region gets its own code: clicking it says the race was won already.
+5. The vehicle can still be taken apart and its parts recycled; the warehouse stays open.
+Verified headless with a forced win (test driver `TEST_COMPLETE` + `TEST_WIN`): race run and won, check and goal
+(`races_required=1`) sent, Rerun refused, Next Level open → loads level 2, not open → Technology Center, the won
+level restored with its door shut and the door click answered by the message.
 
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.

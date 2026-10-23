@@ -384,3 +384,89 @@ of a building share a room layout, with different box counts). Box contents: `R0
 maps values >= part count to 1000 (empty), so every part is in exactly one box. Doors: 32-byte room objects,
 state 7 locked / 9 open, listed once per side. Totals: **622 boxes (532 parts + 90 empty), 653 puzzle doors**,
 plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door, all 16x20).
+
+## 4.12 Dialog internals (for the level picker) [traced 2026-10-22, used live on the recomp]
+- Runner core `O0E83_0655` (near, `ret 0x36`): saves font (`O0E13_0256(0)` returns the old one), `[21A/21C]`,
+  `[96]` (zeroed), cursor mode `R07AB_07DD(1)`, `[865A/865C]` (zeroed), `R0CDD_05DB()`; draws via `O0E83_0389`
+  (layout `O0E83_0000`: **one row** of equal-width buttons, width = longest label + 0x14, gap 10); `R07AB_04BD()`
+  starts a fresh mouse-region list, `0x5D7` registers each button `R07AB_0294(far btn)` (`retf 4`, list head
+  `DS:A32`, next at `+0x0C`); `R098D_00BF()` flushes input; loop `R098D_0106()`; exit in reverse
+  (`R0399_01F1` restores the saved background, `R07AB_0314` unregisters, `R07AB_04E8`, `R07AB_07DD(old)`).
+- Keys (table at `O0E83:08DA`): `0x0D` press focused, `0x1B` cancel (if struct flag), `0x14B` Left = previous,
+  `0x14D` Right = next (wrapping). Up/Down (`0x148`/`0x150`) are not in the game's table.
+- `R098D_0106` events: keys as codes (`0x14x` for extended keys); mouse via the record at `DS:A10`
+  (`[A1E]=1` press) and `DS:A20`, matched against regions by `R07AB_0507(x, y, list)` (rect at `+2..+8`, type
+  `+0 = 0`, priority `+0x0A`); result = region code (`+0x10`/`+0x12`) | `0x4000` (button down over it) |
+  `0x8000` (hovering), or the plain code for a finished click. The runner moves the focus on `|0x4000`/`|0x8000`
+  and presses on the plain code.
+- Button struct (0x1C, array at `DS:BBBC`): `+2` x, `+4` y, `+6` w, `+8` h, `+0x0A` priority 5, `+0x0C` next
+  region, `+0x10`/`+0x12` code, `+0x16` far label, `+0x1A` enabled (0 = grey border).
+- Primitives (cdecl unless noted): `R0399_0100(x,y,w,h)` fill in `[1F4]` colour, `R0399_0072(x,y,len)` hline,
+  `R0399_00B3(x,y,len)` vline, `R0473_010D(x,y,w,h)` frame, `R0399_0146(x,y,w,h)` XOR fill (focus),
+  `R0399_0194(x,y,w,h,far buf)` save / `R0399_01F1(x,y,far buf)` restore screen, `R0581_052A()` flush,
+  `R052C_0072(ticks)` wait; text `O0E13_029C(x,y,far s)`, width `O0E1D_0056(far s)`, height `O0E13_0418`,
+  text colour `O0E13_0243(c)` (font `+0x0A`, `DS:1F6C`), font `O0E13_0256(n)`.
+- Flattened overlay segments on the recomp (`work/ssg_flat.map`): O0E13 = C096, O0E18 = C0DA, O0E1D = C109,
+  O0E28 = C191, O0E83 = D4D6, O0E88 = D5B4.
+- Vehicle names: first `S` element of the blueprint layouts 0x002C+l, 0x00FB+l, 0x0269+l (e.g. "BLIMP").
+
+## 4.13 Saving and the warehouse block [traced 2026-10-22]
+- `O0E18_01EA` = save: if `[94]` (warehouse changed): `[459C+2b] = 1`, block b (`DS:47E0 + b*0x6BA`) ← header
+  `DS:457C` (20 bytes), part states (`R053F_0385`), doors+boxes (`R0622_0FB3`), inventory (`R0834_0B5E`),
+  `[94] = 0`; then the whole record (`DS:4562`, 0x16BD bytes) is written to PLAYERS.DAT at `0x8A0 + [4576]*0x16BD`.
+  Called on leaving the warehouse (`R02E0_012F`), on leaving for a race (`R02E0` 0x9F8: `[BE]` set → saved,
+  dirty, save), and from the menus.
+- A won race clears `[459C+2b]` (the next entry generates the next level).
+- Mouse/keyboard event queue: 16 × 16 bytes at `DS:8556`, head `[1312]`, tail `[1310]`.
+
+## 4.14 Assembly room conveyor and input [traced 2026-10-23, used live on the recomp]
+- Inventory list: far ptr `DS:7AFC` (count `DS:7AFA`, actor 0 = `DS:7A8A`, `+0x72`), walked with `R09C0_000F`
+  (first) / `R09C0_002E` (next); the items are the part table entries themselves. `R0834_08D7(actor, part)` adds
+  (fails at two of a kind, `R053F_0216(list, kind = R053F_015D(part), far *partner)`), the second of a pair gets
+  `+0x1C` = its partner and the partner `+0x1C` = this | 0x8000 (`-1` = alone). `R0834_0990(actor, part, any)`
+  removes (`any` = 0: only if that actor owns it).
+- Lay-out `O0E30_028F(di, x0)` (far): per item, `+0x8A = 0`, `+0x5E` sprite record; `di` = 1 also loads the
+  sprite (`R05DF_00A1(+0x12)` → `+0x68`, cached and reference-counted at `DS:6640 + 8 i`) and makes mouse regions
+  for items with `+0x36 & 0x8000` (so only once per room); `R05DF_0414(+0x5E)` copies the size. Loose items
+  (`+0x1C & 0x8000`) take belt slots centred at x0, x0 − 0x64, …, y = 0x71 − h, `+0x36 &= ~1`, `[A0C8]++`; a
+  pair's second item sits on its partner (y = 0x4D − h, `+0x36 |= 1`). Set-up calls it as `(1, 0xA0)`, then
+  `R0A04_0B69(1)`, `0x804` (draw the belt, clip x 0x5D–0xE2), `0x70A`.
+- Loop `O0E30_0C89`: `si` = belt position, `[bp-0x72]` = up to 24 loose items (`0xBB2`), `[bp-0xE]` = last
+  position, `[bp-4]` / `[bp-8]` = the middle item and its partner (`0xC25`), `[bp-0x22]` = this pass's input
+  code. `[A080] = 1` redraws the belt (then `0xAB3` remakes the middle item's mouse region `DS:21A2`). Scrolling
+  (Left/Right, `0x880` / `0x986`, `[A086]` = ±1 while moving) shifts every item's `+0x60` by 0x64 in steps of 4.
+  Dragging: `[22A4] != -1`, item `[A07C]`. Codes not in the table at `cs:13AB` go to `0x1330`: ≥ 0xFA0 = drag part
+  `code − 0xFA0` (the floor parts' regions), anything else is ignored.
+- Mouse (`R07A0_0004`, the INT 33h handler): button down → record `DS:A10` = 1 (x `A1A`, y `A1C`, `A1E` = 1);
+  button up → `DS:A20` = 2 (x `A2A`, y `A2C`), `A10` = 0. `R098D_0106` matches them against the region list
+  `DS:A32` (next at `+0x0C`; `R07AB_0507`): the hover/down record gives the region's `+0x10` code (| 0x4000 when
+  just pressed, | 0x8000 otherwise; 0 = nothing), the click record its `+0x12` code. Codes 0x1388–0x13EC and a few
+  keys are handled inside `R098D_0106`. `R07AB_04BD` pushes the list (stack `DS:7A4E`, depth `DS:A50`) and starts
+  an empty one, `R07AB_04E8` pops it, `R07AB_0465` empties it.
+- `R0536_0007` (farmalloc) first runs the heap check: a corrupted heap exits the game with code 2. The loader's
+  scratch block (`DS:6574`, 0xFFFF bytes) does not start at offset 0, so a save into it at a large offset must use
+  a normalised pointer or it wraps around the segment onto the heap.
+
+## 4.15 Cyberchimps and boxes [traced 2026-10-23, used live on the recomp]
+- `O0E0D_0000(far actor)` (flat `C000:0000`, called through the actor's script slot): box =
+  `R0622_1265(actor+0x1A room, actor+0x40 object)`; taken (`+8` = 1) → leave; contents (`+0x1E`) = 1000 → remove
+  it and make an empty box in a random room (`R0622_0F4E(1000)`); else only if `R053F_02BB(actor+0x42)` (parts
+  that actor owns) = 0: `R0834_08D7(actor, part)` and remove the box (`R0622_0D8F(room, box)`). So a chimp carries
+  one part at most.
+- `O0E0D_00A1(actor)` (script command, `R0834` 0x492): part = `O0E20_0101(actor list, actor, 0)`; if any:
+  `R0834_0990(actor, part, 1)` and `R0622_0DF0(actor+0x1A, actor+0x14, actor+0x1C, part, 0)` (box at its feet).
+- `R0622_0DF0(room, x, y, contents, flag)`: sprite 0x332 (0x343 in rooms with flag 1), +1 when the part has
+  `+0x36 & 0x4000`; does not touch the part record. Appends the object to the room (`+0x9E` count).
+
+## 4.16 Race door, podium [traced 2026-10-23, used live on the recomp]
+- Assembly room: `[4584]` = vehicle slots filled (`inc` at 0x126D when a part is placed, `dec` at 0x647), compared
+  with the part header `+6` (slot count). Door `O0E30_00A6(anim)`: `[A0D0]` = door shown open (0 at set-up,
+  0x1ABD); opens (sprite 0x26) when complete, closes (0x25) when not. Filling the last slot with `[4586]` = 0 sets
+  it and gives +100 (`R02E0_0ACE(100, 0)`); while `[4586]` the loop shows hint 0x1053 ("finished building ...
+  click on the doorway"). Door region `DS:223C` (296,107 24×56) code 0x3F0 → 0x12FA: complete → `[BE]` = 1,
+  `[A0CA]` = 8 (to the race), else hint 0x1054. Fresh level (R02E0 0x93F): `[4586]` = `[4584]` = 0.
+- Podium (main state 12, `O0E36_0573`, flat `C54B`): regions `DS:22FE` (5 × 0x16): 0x7D0 Rerun Race (5,82) →
+  state 11 with `[455E]` = 1; 0x7D1 Next Level (76,56) → state 4, only while `[A0D4]` (won, `[4596+2b]` < 4 and
+  `[5C0E]` != 15); 0x7D2 (140,56) → state 5, only while `[A0D2]` (lost); 0x7D3 Technology Center (204,56) → state
+  3; 0x7D4 (281,62) menu. Leaving by 7D1/7D3 after a win (`[4560]` = 0) clears `[459C+2b]` and saves.
+  Next Level then reaches `R02E0_0820` (level enter) with the game's level = races won in the building.
