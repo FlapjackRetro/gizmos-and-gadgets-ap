@@ -147,9 +147,14 @@ Archipelago inventory dialog for management: move a stored part into the vanilla
   part of that puzzle's background, resource `0x2084` (320×155, palette `0x2085` over `0x1094`), box (lid
   included) 66×36 at (15, 94); surround index 198 (green), shadow index 211. Counter centre (25, 26.5) in the
   sprite, measured from an in-game screenshot. `tools/pieces_box.py GAMEDIR OUTDIR --preview N` cuts it out of the
-  player's own files (PNG + JSON with the palette indices); like other game art it is not committed. Still to do:
-  colours in the assembly room's palette (the indices are the puzzle's), the game's digit font for the counter,
-  where in the assembly room it goes, and clicking it.
+  player's own files (PNG + JSON with the palette indices); like other game art it is not committed.
+- **Done 2026-10-23 (`mod/hud.c`):** drawn in the unused bottom-left of the assembly room HUD (x 0–217, y 167–199,
+  33 rows): rows 12–14 of the box (plain texture) dropped to fit, colours remapped to assembly-room indices that
+  have the same colour in all three buildings (greys exact, browns to the grey of equal brightness), the counter
+  drawn with the puzzle's own digit sprites (`0x204F`), at (4, 167). Shows the received parts of the current
+  level that are not in the game yet. Also drawn on the blueprint screen (same loop, same free corner).
+- Still to do: clicking it (open the inventory dialog); optionally the lid animation from `0x2087` (3 frames) on
+  click; the chimps sprite goes to its right (x ≈ 75–217).
 
 ### To-do: assembly-room sprite for checks held by chimps
 Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the

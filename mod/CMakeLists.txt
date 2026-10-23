@@ -7,7 +7,7 @@ set(GG_RECOMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../gizmos-and-gadgets-recomp" 
 if(NOT EXISTS "${GG_RECOMP_DIR}/include/gg_mod.h")
   message(FATAL_ERROR "gg_mod.h not found: set GG_RECOMP_DIR to a gizmos-and-gadgets-recomp checkout")
 endif()
-add_library(ap_mod MODULE ap_mod.c picker.c)
+add_library(ap_mod MODULE ap_mod.c picker.c hud.c)
 set_target_properties(ap_mod PROPERTIES PREFIX "" C_STANDARD 99)
 target_include_directories(ap_mod PRIVATE "${GG_RECOMP_DIR}/include")
 if(NOT MSVC)

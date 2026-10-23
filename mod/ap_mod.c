@@ -23,6 +23,7 @@
 #include <string.h>
 #include "gg_mod.h"
 #include "picker.h"
+#include "hud.h"
 #ifdef _WIN32
 #  include <direct.h>
 #  define MKDIR(p) _mkdir(p)
@@ -437,10 +438,23 @@ static int on_race_start(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+/* Received parts of the current level not in the game yet (waiting: inventory full) -- what the Archipelago
+ * inventory will hold. Shown on the Pieces box. */
+static int waiting_parts(void)
+{
+    int v = cur_vehicle(), n = 0;
+    for (int i = 0; i < rx_n; i++) {
+        int iv, part;
+        if (!rx_done[i] && is_part_item(rx_item[i], &iv, &part) && iv == v) n++;
+    }
+    return n;
+}
+
 static int on_assembly_tick(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     mark_obtained();
+    hud_tick(waiting_parts());
     return GG_CONTINUE;
 }
 
@@ -592,6 +606,7 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     poll_received();
     if (cfg.title_logo) title_logo();
     picker_init(api);
+    hud_init(api);
     api->on_event(GG_EV_BUILDING_CLICK, on_building_click, NULL);
     if (!api->on_site(api->site_addr("building_selected"), on_building_selected, NULL))
         api->log("ap: building_selected site missing: no level picker");
