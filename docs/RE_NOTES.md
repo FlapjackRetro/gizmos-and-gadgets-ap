@@ -446,3 +446,14 @@ plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door
 - `R0536_0007` (farmalloc) first runs the heap check: a corrupted heap exits the game with code 2. The loader's
   scratch block (`DS:6574`, 0xFFFF bytes) does not start at offset 0, so a save into it at a large offset must use
   a normalised pointer or it wraps around the segment onto the heap.
+
+## 4.15 Cyberchimps and boxes [traced 2026-10-23, used live on the recomp]
+- `O0E0D_0000(far actor)` (flat `C000:0000`, called through the actor's script slot): box =
+  `R0622_1265(actor+0x1A room, actor+0x40 object)`; taken (`+8` = 1) → leave; contents (`+0x1E`) = 1000 → remove
+  it and make an empty box in a random room (`R0622_0F4E(1000)`); else only if `R053F_02BB(actor+0x42)` (parts
+  that actor owns) = 0: `R0834_08D7(actor, part)` and remove the box (`R0622_0D8F(room, box)`). So a chimp carries
+  one part at most.
+- `O0E0D_00A1(actor)` (script command, `R0834` 0x492): part = `O0E20_0101(actor list, actor, 0)`; if any:
+  `R0834_0990(actor, part, 1)` and `R0622_0DF0(actor+0x1A, actor+0x14, actor+0x1C, part, 0)` (box at its feet).
+- `R0622_0DF0(room, x, y, contents, flag)`: sprite 0x332 (0x343 in rooms with flag 1), +1 when the part has
+  `+0x36 & 0x4000`; does not touch the part record. Appends the object to the room (`+0x9E` count).

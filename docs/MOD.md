@@ -51,6 +51,8 @@ assembly room, a click on the Pieces box opens a dialog in the game's style (`in
 - On closing, the conveyor is updated in place (sprites loaded, the room's lay-out run again, the loop's own
   belt copy updated: RE_NOTES §4.14) and the level is saved. A moved part is an ordinary part: floor or recycle
   bin, never back into the Archipelago inventory.
+- A part a Cyberchimp carries as a real record (only possible without the chimp hook sites) is taken out of the
+  chimp's list before it is given (`R0834_0990`).
 - How the click is seen: the box is a mouse region in the room's own list with click code `0xF00`; the room's
   loop leaves unknown codes below `0xFA0` alone and keeps the last one in `[bp-0x22]`, which the mod reads at the
   next loop head (site `assembly_tick`).
@@ -70,6 +72,23 @@ the instruction, so the select loop continues as if nothing was clicked. The gam
 as is (one row of buttons; its structs are passed by value, beyond `call_far`'s 8 words), so `mod/picker.c`
 repeats its steps with the game's own primitives (RE_NOTES §4.12): same box, buttons, focus, press animation,
 mouse regions and input loop.
+
+## Cyberchimps and check boxes
+
+A box holds a part *number*; each level's part table has one record per part, and inventories are lists of
+those records. The record of an unopened check box's part is only a stand-in for the box's location: the
+player may already hold the real part, received through the Archipelago inventory. Opening a box by the
+player is intercepted (box events above); a chimp opening one is intercepted too, so the stand-in never moves:
+
+| Site | Mod |
+|---|---|
+| `chimp_box_open` (`O0E0D_0000`, after `R053F_02BB` = parts the chimp holds) | check box (normal sprite): the mod removes the box, notes "chimp n carries the check of part p" and the chimp's real inventory stays as it was. A chimp carrying a check counts as holding something (vanilla chimps carry one part at most), so it takes no more boxes. Recycled boxes and empty boxes stay vanilla |
+| `chimp_drop` (`O0E0D_00A1`, the part a banana-hit chimp drops) | carried checks drop **first**, one per hit, as a check box at the chimp's feet (normal sprite, even if the player holds the real part); then the chimp's real parts, as vanilla. Opening that box sends the check |
+
+Carried checks are saved in `state.txt` (`chimp=v,actor,part`) and the game is saved at the next safe point, so
+the warehouse and the list stay together; a fresh level starts with none. Verified headless: a game chimp
+took a check box in normal play (the part record stayed), and a scripted chimp took one, dropped it after a
+banana, and the player's opening sent the check (`TEST_CHIMP`).
 
 ## One saved warehouse per level
 
@@ -99,7 +118,7 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
 | `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
 | `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory) |
-| `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), granted items |
+| `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), items in the game, checks carried by chimps |
 | `levels/<v>.bin` | mod | the saved warehouse of level `v` |
 | `seed.txt` | client | the seed/slot and in-game player this game folder belongs to |
 
@@ -175,8 +194,6 @@ Not yet tested live: a real race end (needs a built vehicle headless) and the go
 - A player who enters a later level first starts it with the bananas of the level header (0 for a new player
   past level 1; the game sets 10 only on level 1).
 - Chimps-carrying-checks display.
-- A received part whose own box is still unopened: after the part is moved into the inventory, a chimp opening
-  that box would add the part to the chimp's list while it is still in the player's (the game assumes a part
-  is in one place). Possible fixes: send that box's check when its part is moved (the box is in the level the
-  player is in, so it is in logic), or keep the box out of the chimps' reach. A part a chimp already carries is
-  taken out of the chimp's list when it is moved (`R0834_0990`).
+- Chimp check carrying needs the recomp's hook sites `chimp_box_open` / `chimp_drop` (recomp PR #1); with an older
+  recomp the mod logs it and chimps take check boxes as in vanilla (the stand-in record can then end up in two
+  lists, see below).

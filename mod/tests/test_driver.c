@@ -11,6 +11,9 @@
  * TEST_SAVE=1         after opening the box, save the game the way leaving the warehouse does (DS:94 = 1,
  *                     O0E18_01EA)
  * TEST_GIVE_ASM=t:p   at assembly-room pass t, give part p (api->give_part), to see what the room does
+ * TEST_CHIMP=t:n:obj  at warehouse tick t, chimp actor n opens box obj of the player's room (O0E0D_0000, flat
+ *                     C000:0000, with the actor's room/object set); 40 ticks later it is hit by a banana
+ *                     (O0E0D_00A1(n)); 40 ticks after that the player opens the room's last box (the dropped one).
  * TEST_PASS_PUZZLES=1 every door puzzle counts as solved (so Go Back opens the door).
  */
 #include <stdlib.h>
@@ -65,6 +68,46 @@ static int on_tick_dump(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+static int chimp_t = -1, chimp_n = 1, chimp_obj = 0;
+static uint16_t r16(uint32_t a) { const uint8_t *m = api->mem(); return (uint16_t)(m[a] | m[a + 1] << 8); }
+static void w16(uint32_t a, uint16_t v) { uint8_t *m = api->mem(); m[a] = (uint8_t)v; m[a + 1] = (uint8_t)(v >> 8); }
+static int room_boxes(void)
+{
+    uint16_t room = api->ds_read16(GG_DS_PLAYER_ROOM);
+    uint32_t hdr = (uint32_t)api->ds_read16(0x7A06 + 4 * room) * 16u + api->ds_read16(0x7A04 + 4 * room);
+    return (int16_t)r16(hdr + 0x9E);
+}
+static int on_tick_chimp(void *u, GGEvent *e)
+{
+    (void)u; (void)e;
+    static int t;
+    if (chimp_t < 0) return GG_CONTINUE;
+    ++t;
+    uint16_t ds = (uint16_t)(api->ds_base() / 16);
+    uint32_t actor = api->ds_base() + 0x7A8A + (uint32_t)chimp_n * 0xA0;
+    if (t == chimp_t) {
+        uint16_t room = api->ds_read16(GG_DS_PLAYER_ROOM);
+        api->log("test: chimp %d (room %d, holds %d) opens box %d in room %d; boxes %d", chimp_n,
+                 (int16_t)r16(actor + 0x1A), (int16_t)r16(actor + 0x70), chimp_obj, room, room_boxes());
+        w16(actor + 0x1A, room); w16(actor + 0x40, (uint16_t)chimp_obj);
+        uint16_t a[2] = { (uint16_t)(0x7A8A + chimp_n * 0xA0), ds };
+        api->call_far(0xC000, 0x0000, 2, a);
+        api->log("test: after: chimp holds %d, boxes %d", (int16_t)r16(actor + 0x70), room_boxes());
+    } else if (t == chimp_t + 40) {
+        uint16_t a[1] = { (uint16_t)chimp_n };
+        api->call_far(0xC000, 0x00A1, 1, a);
+        api->log("test: banana: chimp holds %d, boxes %d", (int16_t)r16(actor + 0x70), room_boxes());
+    } else if (t == chimp_t + 80) {
+        int last = room_boxes() - 1;
+        api->ds_write16(0x7ACA, (uint16_t)last);
+        uint16_t args[2] = { 0x7A8A, ds };
+        api->log("test: player opens box %d", last);
+        api->call_far(0x08F5, 0x0002, 2, args);
+        api->log("test: boxes %d", room_boxes());
+    }
+    return GG_CONTINUE;
+}
+
 static int give_at = -1, give_part_id = -1;
 static int on_asm(void *u, GGEvent *e)
 {
@@ -97,6 +140,9 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     s = getenv("TEST_GIVE_ASM");
     if (s) { give_at = atoi(s); const char *c = strchr(s, ':'); give_part_id = c ? atoi(c + 1) : 0; }
     api->on_event(GG_EV_ASSEMBLY_TICK, on_asm, NULL);
+    s = getenv("TEST_CHIMP");
+    if (s) { chimp_t = atoi(s); const char *c1 = strchr(s, ':'); if (c1) { chimp_n = atoi(c1 + 1); c1 = strchr(c1 + 1, ':'); if (c1) chimp_obj = atoi(c1 + 1); } }
+    api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_chimp, NULL);
     s = getenv("TEST_PASS_PUZZLES"); pass = s && *s == '1';
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick, NULL);
     api->on_event(GG_EV_PUZZLE_RESULT, on_puzzle, NULL);

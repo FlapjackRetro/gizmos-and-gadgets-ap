@@ -61,6 +61,11 @@ static struct {
     int goal_sent;
 } st;
 
+/* checks carried by Cyberchimps (virtual: the chimp's real inventory is not touched; see on_chimp_box_open) */
+#define MAX_CARRIED 256
+static struct { int v, actor, part; } carried[MAX_CARRIED];
+static int ncarried;
+
 /* received items and whether each was put into the game already */
 static unsigned rx_item[MAX_RECEIVED];
 static unsigned char rx_done[MAX_RECEIVED];
@@ -129,6 +134,7 @@ static void save_state(void)
     fprintf(f, "won=%d\n", st.won);
     fprintf(f, "goal_sent=%d\n", st.goal_sent);
     for (int i = 0; i < rx_n; i++) if (rx_done[i]) fprintf(f, "done=%d\n", i);
+    for (int i = 0; i < ncarried; i++) fprintf(f, "chimp=%d,%d,%d\n", carried[i].v, carried[i].actor, carried[i].part);
     fclose(f);
 }
 
@@ -141,11 +147,14 @@ static void load_state(void)
     FILE *f = fopen(p, "r");
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
-        int b, v;
+        int b, v, lv;
         if (sscanf(line, "wh_level.%d=%d", &b, &v) == 2 && b >= 0 && b < 3) st.wh_level[b] = v;
         else if (sscanf(line, "goal_sent=%d", &v) == 1) st.goal_sent = v;
         else if (sscanf(line, "won=%d", &v) == 1) st.won = v;
         else if (sscanf(line, "done=%d", &v) == 1 && v >= 0 && v < MAX_RECEIVED) rx_done[v] = 1;
+        else if (sscanf(line, "chimp=%d,%d,%d", &b, &v, &lv) == 3 && ncarried < MAX_CARRIED) {
+            carried[ncarried].v = b; carried[ncarried].actor = v; carried[ncarried].part = lv; ncarried++;
+        }
     }
     fclose(f);
 }
@@ -374,6 +383,8 @@ static int on_level_enter(void *u, GGEvent *e)
             int iv, part;
             if (rx_done[i] && is_part_item(rx_item[i], &iv, &part) && iv == entering) rx_done[i] = 0;
         }
+        for (int i = 0; i < ncarried; i++)                    /* nor do its chimps carry anything yet */
+            if (carried[i].v == entering) carried[i--] = carried[--ncarried];
     }
     /* st.wh_level[b] changes only once the game has saved this level into the block (on_level_ready):
      * it must always describe what PLAYERS.DAT holds, or a later capture would file one level's
@@ -519,6 +530,93 @@ static int on_box_open(void *u, GGEvent *e)
     return GG_SUPPRESS;                                      /* the box goes; the item comes from the server */
 }
 
+/* ---- Cyberchimps and check boxes ------------------------------------------------------------------
+ * A box holds a part number, and the part table has one record per part: the record of an unopened check
+ * box's part is only a stand-in for the box's location. The player's box opening is intercepted
+ * (on_box_open); a chimp opening a box is intercepted here, so the stand-in record never moves into a
+ * chimp's inventory (it may be in the player's, given through the Archipelago inventory):
+ *   site chimp_box_open, O0E0D_0000(far actor) at `or ax, ax` after ax = R053F_02BB(actor) = parts the
+ *   chimp holds (a chimp only takes a box while holding nothing). [bp-4] = the box (R0622_1265(actor+0x1A
+ *   room, actor+0x40 object)), box +0x1E = its part, +0x1A sprite; actor +0x42 = actor number.
+ *   For a check box: the mod removes the box (R0622_0D8F(room, box), as the game does), notes that this
+ *   chimp carries the box's check, and makes the routine leave (ZF = 0: `jnz` to the exit). A chimp that
+ *   carries a check counts as holding something, as in vanilla.
+ *   site chimp_drop, O0E0D_00A1(actor) at `or ax, [bp-6]` after dx:ax = O0E20_0101(list, actor, 0) = the
+ *   part the chimp drops when a banana hits it (0 = none). [bp-4] = the actor (DS:7A8A + 0xA0 n).
+ *   Carried checks drop first, one per hit: the mod makes the box at the chimp's feet as the routine
+ *   would (R0622_0DF0(room, +0x14, +0x1C, part, 0)) with the normal sprite, and leaves (ZF = 1).
+ * Both changes are saved at once (state.txt + the game's save at the next safe point). */
+static int chimp_save_pending;
+
+static void chimp_save(void *u)
+{
+    (void)u;
+    chimp_save_pending = 0;
+    if (in_level >= 0 && in_level == cur_vehicle()) save_level();
+}
+
+static void chimp_changed(void)
+{
+    save_state();
+    if (!chimp_save_pending) { chimp_save_pending = 1; api->defer(chimp_save, NULL); }
+}
+
+static int carried_by(int v, int actor)
+{
+    int n = 0;
+    for (int i = 0; i < ncarried; i++) n += carried[i].v == v && carried[i].actor == actor;
+    return n;
+}
+
+static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
+{
+    (void)u; (void)addr;
+    int v = cur_vehicle();
+    if (r->ax != 0 || v < 0 || !cfg.box_checks) return 0;        /* holds a part: vanilla leaves the box */
+    uint32_t frame = (uint32_t)r->ss * 16u;
+    uint32_t actor_far = (uint32_t)rd16(frame + (uint16_t)(r->bp + 8)) << 16 | rd16(frame + (uint16_t)(r->bp + 6));
+    uint32_t box_far = (uint32_t)rd16(frame + (uint16_t)(r->bp - 2)) << 16 | rd16(frame + (uint16_t)(r->bp - 4));
+    uint32_t actor = (actor_far >> 16) * 16u + (actor_far & 0xFFFF), box = (box_far >> 16) * 16u + (box_far & 0xFFFF);
+    int n = (int16_t)rd16(actor + 0x42);
+    if (carried_by(v, n)) { r->flags &= (uint16_t)~GG_FLAG_ZF; return 1; }   /* already carries a check */
+    int part = (int16_t)rd16(box + 0x1E);
+    uint16_t sprite = rd16(box + 0x1A);
+    if (part < 0 || part >= 0x40 || sprite == 0x333 || sprite == 0x344) return 0;   /* recycled: a real part */
+    if (ncarried >= MAX_CARRIED) return 0;
+    uint16_t a[3] = { rd16(actor + 0x1A), (uint16_t)box_far, (uint16_t)(box_far >> 16) };
+    api->call_far(0x0622, 0x0D8F, 3, a);                     /* the box goes, as when the chimp opens it */
+    carried[ncarried].v = v; carried[ncarried].actor = n; carried[ncarried].part = part; ncarried++;
+    api->log("ap: chimp %d took the check box of part %d (level %d)", n, part, v);
+    chimp_changed();
+    r->flags &= (uint16_t)~GG_FLAG_ZF;                       /* skip `or ax, ax`; jnz -> exit */
+    return 1;
+}
+
+static int on_chimp_drop(void *u, uint32_t addr, GGRegs *r)
+{
+    (void)u; (void)addr;
+    int v = cur_vehicle(), n = (int16_t)r->si, k = -1;
+    for (int i = ncarried - 1; i >= 0 && k < 0; i--) if (carried[i].v == v && carried[i].actor == n) k = i;
+    if (k < 0) return 0;                                     /* nothing virtual: the game drops a real part */
+    uint32_t frame = (uint32_t)r->ss * 16u;
+    uint32_t actor = (uint32_t)rd16(frame + (uint16_t)(r->bp - 2)) * 16u + rd16(frame + (uint16_t)(r->bp - 4));
+    int part = carried[k].part;
+    /* the box takes the recycled sprite when the part record has bit 0x4000 (the player may hold the
+     * real part by now): clear it while the box is made, so it is a check box again */
+    uint32_t e = (uint32_t)api->ds_read16(0x663E) * 16u + api->ds_read16(0x663C) + (uint32_t)part * 0x8Eu;
+    uint8_t *m = api->mem();
+    uint8_t keep = m[e + 0x37];
+    m[e + 0x37] &= (uint8_t)~0x40;
+    uint16_t a[5] = { rd16(actor + 0x1A), rd16(actor + 0x14), rd16(actor + 0x1C), (uint16_t)part, 0 };
+    api->call_far(0x0622, 0x0DF0, 5, a);
+    m[e + 0x37] = keep;
+    carried[k] = carried[--ncarried];
+    api->log("ap: chimp %d dropped the check box of part %d (level %d)", n, part, v);
+    chimp_changed();
+    r->flags |= GG_FLAG_ZF;                                  /* skip `or ax, [bp-6]`; jz -> exit */
+    return 1;
+}
+
 static int on_door_open(void *u, GGEvent *e)
 {
     (void)u;
@@ -643,6 +741,9 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
     api->on_event(GG_EV_WAREHOUSE_TICK, on_warehouse_tick, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_assembly_tick, NULL);
+    if (!api->on_site(api->site_addr("chimp_box_open"), on_chimp_box_open, NULL) ||
+        !api->on_site(api->site_addr("chimp_drop"), on_chimp_drop, NULL))
+        api->log("ap: chimp sites missing (recomp too old): chimps take check boxes as in vanilla");
     if (!api->on_site(api->site_addr("assembly_tick"), on_assembly_site, NULL))
         api->log("ap: assembly_tick site missing: no Archipelago inventory");
     api->on_event(GG_EV_BOX_OPEN, on_box_open, NULL);

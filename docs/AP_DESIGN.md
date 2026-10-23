@@ -143,10 +143,12 @@ when that slot is full. The player must never lose access to a received check. O
   picks until Close / Esc. The conveyor is updated in place when the dialog closes (no room reload; see
   RE_NOTES §4.14) and the level is saved. A moved part is the player's like any other: it can be laid on the
   floor or recycled, and chimps can steal it, but it never goes back to the Archipelago inventory.
-- Still open: a "recycle" action in the dialog itself (not needed so far: the vanilla bin covers moved parts);
-  a received part whose own box is still unopened -- if a chimp opens that box after the part was moved, the
-  game would put the part into the chimp's list while it is still in the player's (see MOD.md, known
-  limitations). A part a chimp already carries is taken out of the chimp's list when it is moved.
+- Still open: a "recycle" action in the dialog itself (not needed so far: the vanilla bin covers moved parts).
+- **Decided 2026-10-23 — chimps and check boxes:** a chimp that opens a check box carries the *check*, not the
+  part (the part record is only the box's stand-in and may be the player's real part by then). Hit with a
+  banana, it drops carried checks first, then real parts it stole -- a player who left a moved part on the
+  conveyor instead of the floor has to hit the chimp more than once to get it back. Done in the mod with two
+  recomp hook sites (MOD.md, "Cyberchimps and check boxes").
 - Recycling from the Archipelago inventory must use the game's own recycle mechanism (part `+0x36 |= 0x4000`,
   then `R0622_0F4E(part)`): the part lands in a box in a random room with the recycled sprite, and the mod treats
   every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled parts can only exist after the
