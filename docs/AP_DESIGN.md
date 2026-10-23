@@ -150,6 +150,9 @@ when that slot is full. The player must never lose access to a received check. O
       the new part and recycle one they are holding, or recycle the part just received.
 2. **Inventory managed outside the vanilla system:** a dialog that holds received parts and can send them to the
    conveyor (assembly) or recycle them to the warehouse.
+- Chimps steal from the player's vanilla inventory on collision (unless asleep from a banana), except parts laid
+  on the assembly-room floor. Parts kept in a separate Archipelago inventory would be out of their reach too; decide
+  whether that is wanted (it removes a vanilla risk) or whether that inventory should count as "held".
 - Recycling from the Archipelago inventory must use the game's own recycle mechanism (part `+0x36 |= 0x4000`,
   then `R0622_0F4E(part)`): the part lands in a box in a random room with the recycled sprite, and the mod treats
   every recycled box as a vanilla pickup, never a check (docs/MOD.md). Recycled parts can only exist after the

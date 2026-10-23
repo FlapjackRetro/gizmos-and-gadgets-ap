@@ -6,13 +6,15 @@
  * TEST_RECYCLE=part   with TEST_OPEN_BOX: just before opening, mark `part` recycled (+0x36 |= 0x4000) and
  *                     drop it as a new box at the player's feet (R0622_0DF0, as a chimp drop does);
  *                     that new box (the room's last) is the one opened.
+ * TEST_DROP=part      the same, but without marking it: drop `part` as a box as a chimp would (to test that
+ *                     ap_mod marked a part the player obtained).
  * TEST_PASS_PUZZLES=1 every door puzzle counts as solved (so Go Back opens the door).
  */
 #include <stdlib.h>
 #include "gg_mod.h"
 
 static const GGApi *api;
-static int open_at, box_obj, recycle = -1, pass, ticks;
+static int open_at, box_obj, recycle = -1, mark = 1, pass, ticks;
 
 static int on_tick(void *u, GGEvent *e)
 {
@@ -23,14 +25,14 @@ static int on_tick(void *u, GGEvent *e)
         if (recycle >= 0) {
             const uint8_t *m = api->mem();
             uint32_t tab = (uint32_t)api->ds_read16(0x663E) * 16u + api->ds_read16(0x663C) + (uint32_t)recycle * 0x8E;
-            uint16_t f = (uint16_t)(m[tab + 0x36] | m[tab + 0x37] << 8) | 0x4000;
+            uint16_t f = (uint16_t)(m[tab + 0x36] | m[tab + 0x37] << 8) | (mark ? 0x4000 : 0);
             api->mem()[tab + 0x36] = (uint8_t)f; api->mem()[tab + 0x37] = (uint8_t)(f >> 8);
             uint16_t room = api->ds_read16(GG_DS_PLAYER_ROOM);
             uint16_t a[5] = { room, api->ds_read16(0x7A8A + 0x14), api->ds_read16(0x7A8A + 0x1C), (uint16_t)recycle, 0 };
             api->call_far(0x0622, 0x0DF0, 5, a);
             uint32_t hdr = (uint32_t)api->ds_read16(0x7A06 + 4 * room) * 16u + api->ds_read16(0x7A04 + 4 * room);
             box_obj = (m[hdr + 0x9E] | m[hdr + 0x9F] << 8) - 1;
-            api->log("test: recycled part %d dropped as box %d", recycle, box_obj);
+            api->log("test: part %d dropped as box %d (%s)", recycle, box_obj, mark ? "marked recycled" : "unmarked, as a chimp drop");
         }
         api->ds_write16(0x7ACA, (uint16_t)box_obj);
         api->log("test: opening box %d in room %d", box_obj, api->ds_read16(GG_DS_PLAYER_ROOM));
@@ -71,6 +73,7 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     const char *s = getenv("TEST_OPEN_BOX"); open_at = s ? atoi(s) : 0;
     s = getenv("TEST_BOX_OBJ"); box_obj = s ? atoi(s) : 0;
     s = getenv("TEST_RECYCLE"); recycle = s ? atoi(s) : -1;
+    s = getenv("TEST_DROP"); if (s) { recycle = atoi(s); mark = 0; }
     s = getenv("TEST_DUMP_OWNERS"); dump_at = s ? atoi(s) : 0;
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_dump, NULL);
     s = getenv("TEST_PASS_PUZZLES"); pass = s && *s == '1';

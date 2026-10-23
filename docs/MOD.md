@@ -22,7 +22,7 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Level about to load | loads `level.<building>` from the config if set (else the game's choice, capped at level 5, which fixes the "Level-6 Blimp" overflow); a saved warehouse is only restored if it belongs to that level, otherwise a fresh one is built |
 | Box opened, holding a part | sends the box's location; the box disappears and the game gives nothing (the item comes back from the server, also for our own items) |
 | Box opened, empty | vanilla (+5 bananas), not a check |
-| Box opened, holding a part the player recycled (box sprite `0x333`/`0x344`) | vanilla pickup, not a check |
+| Box opened, holding a part the player recycled or once held (box sprite `0x333`/`0x344`) | vanilla pickup, not a check |
 | Door opened (puzzle solved) | sends the door's location |
 | Race won | sends the race location; `goal` once the game's total-races counter reaches 15 |
 | In the warehouse | grants received items, one about every 1.5 s: parts of the current level via the game's own pickup routine (name shown, PARTS NEEDED counts down), bananas anywhere |
@@ -80,10 +80,17 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
     player holds two of that kind, since nothing goes into the inventory. Recycled boxes keep the vanilla refusal.
   - **Part owner** (part table `+0x0C`): -1 = in a box, 0 = the player, n = actor n (chimps). E.g. a chimp may
     already hold a part when the level starts. This is how the mod can count checks held by chimps.
-  - **Unidentified:** `R08F5_0180` (a player-actor script command, slot `+0x6A`) moves a random part from another
-    actor's inventory straight into the player's; with two of that kind already held, one of the player's goes
-    into a box in a random room (`R0622_0F4E`, not marked recycled). It is *not* the banana path (that drops a
-    box). Find out when it runs; if it can move a not-yet-checked part to the player, it needs a hook.
+  - **Chimp steals from the player** (confirmed in play; `R08F5_0180`, a player-actor script command, slot
+    `+0x6A`): colliding with a chimp that is not asleep moves a random part from the player's inventory to the
+    chimp's; if the chimp already holds two of that kind, one of the chimp's goes into a box in a random room
+    (`R0622_0F4E`). Parts the player has laid on the assembly-room floor are immune. A stolen part can come back
+    later as a chimp-drop box, so **parts the player obtained are never checks again**: the mod sets the game's
+    recycled bit on every part the player holds (`mark_obtained`, each warehouse/assembly pass and right after a
+    grant), so any box the game makes for it later gets the recycled sprite and is a vanilla pickup. The part's
+    original, unopened box was made earlier with the normal sprite and stays its location. The bit only changes the
+    box sprite and skips the +20 score on picking the part up again; inventory moves keep it (`R0834_08D7`).
+    Verified headless: a received part dropped as a box → vanilla, no check; a never-obtained part dropped the same
+    way → its check.
 - **Doors**: both sides of a door share a key (lower room, higher room, pair number `link >> 6`); the rank is the
   key's position among the level's puzzle doors (kind `+0x16 == 8`), sorted. Computed by the mod from the rooms in
   memory, and the same as `tools/warehouse.py`'s static count, so the apworld only needs the counts per level.

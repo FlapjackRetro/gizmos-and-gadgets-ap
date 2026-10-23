@@ -171,6 +171,27 @@ static int cur_vehicle(void)
     return b >= 0 && b < 3 && l >= 0 && l < 5 ? b * 5 + l : -1;
 }
 
+/* Mark every part the player holds as "obtained" with the game's own recycled bit (part +0x36 |= 0x4000).
+ * Any box the game makes for such a part later -- recycling, or a chimp that took it from the player
+ * (R08F5_0180 on collision) dropping it after a banana -- gets the recycled sprite, and on_box_open
+ * hands it back as a vanilla pickup. The part's original box was made earlier with the normal sprite,
+ * so it stays a location. The game keeps the bit when parts move between inventories (R0834_08D7) and
+ * only uses it for the box sprite and to skip the +20 score on picking a part up again.
+ * Part table: header far ptr DS:6638 (+2 = count), entries far ptr DS:663C, 0x8E bytes, +0x0C owner
+ * (-1 in a box, 0 the player, n actor n). */
+static void mark_obtained(void)
+{
+    uint32_t ds = api->ds_base();
+    if (!rd16(ds + 0x663E)) return;                          /* no part table loaded */
+    int n = (int16_t)rd16(far_at(ds + 0x6638) + 2);
+    uint32_t tab = far_at(ds + 0x663C);
+    uint8_t *m = api->mem();
+    for (int p = 0; p < n && p < 0x40; p++) {
+        uint32_t e = tab + (uint32_t)p * 0x8Eu;
+        if ((int16_t)rd16(e + 0x0C) == 0 && !(m[e + 0x37] & 0x40)) m[e + 0x37] |= 0x40;
+    }
+}
+
 /* A door's rank among the level's puzzle doors. Rooms: far pointers at DS:7A04 (count DS:08C4).
  * Room +0x02 object count, +0x7E far pointer to 32-byte objects. A door object has state (+0x10)
  * 7..11, link (+0x12: low nibble = room on the other side, >>6 = pair number shared by both sides)
@@ -238,6 +259,7 @@ static void grant_pending(void)
                 api->log("ap: part %d (level %d) waits: inventory full for that kind", part, iv);
                 continue;
             }
+            mark_obtained();
             rx_done[i] = 1; save_state();
             api->log("ap: received part %d of level %d%s", part, iv, r ? " (needed)" : "");
             return;
@@ -284,9 +306,17 @@ static int on_level_ready(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+static int on_assembly_tick(void *u, GGEvent *e)
+{
+    (void)u; (void)e;
+    mark_obtained();
+    return GG_CONTINUE;
+}
+
 static int on_warehouse_tick(void *u, GGEvent *e)
 {
     (void)u; (void)e;
+    mark_obtained();
     if (frames - last_grant_frame >= 90) {                   /* ~1.5 s between items */
         last_grant_frame = frames;
         grant_pending();
@@ -300,9 +330,10 @@ static int on_box_open(void *u, GGEvent *e)
     int v = cur_vehicle();
     if (!cfg.box_checks || v < 0 || e->contents == GG_BOX_EMPTY || e->contents < 0 || e->contents >= 0x40)
         return GG_CONTINUE;                                  /* empty boxes keep their bananas */
-    /* A box made for a recycled part is the player's own part coming back, not a location: let the
-     * game hand it over as usual. Recycling (HUD recycle bin R0A04_0A82, the assembly room, or the
-     * Archipelago inventory later) sets part +0x36 bit 0x4000, and every routine that creates a box
+    /* A box made for a part the player already obtained is the player's own part coming back, not a
+     * location: let the game hand it over as usual. Recycling (HUD recycle bin R0A04_0A82, the
+     * assembly room, or the Archipelago inventory later) sets part +0x36 bit 0x4000, mark_obtained()
+     * sets it on every part the player holds, and every routine that creates a box
      * (R0622_0A76, R0622_0DF0) then gives it sprite 0x333 / 0x344 instead of 0x332 / 0x343. The
      * mark is checked on the box, not the part: the part's own original box (its location) may still
      * be unopened if the player recycled a received copy of it. Box = R0622_1265(room, object). */
@@ -372,6 +403,7 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_LEVEL_ENTER, on_level_enter, NULL);
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
     api->on_event(GG_EV_WAREHOUSE_TICK, on_warehouse_tick, NULL);
+    api->on_event(GG_EV_ASSEMBLY_TICK, on_assembly_tick, NULL);
     api->on_event(GG_EV_BOX_OPEN, on_box_open, NULL);
     api->on_event(GG_EV_DOOR_OPEN, on_door_open, NULL);
     api->on_event(GG_EV_RACE_END, on_race_end, NULL);
