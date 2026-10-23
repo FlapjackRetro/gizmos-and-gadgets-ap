@@ -143,9 +143,13 @@ Add a representative sprite (an object the player can click) in the assembly roo
 Archipelago inventory dialog for management: move a stored part into the vanilla inventory, or recycle it (see
 "limited player inventory"). The static inventory itself stays out of the chimps' reach.
 - Graphic: reuse the **"Pieces" box with its counter** from the door puzzle "Put the puzzle pieces together to
-  make a machine" (a white cardboard box labelled "Pieces" with a number below; the counter can show how many
-  parts the Archipelago inventory holds). Resource not located yet: it is not a separate sprite of ~60–85 × 35–60
-  px (searched 2026-10-23), so it is likely part of that puzzle's background or a larger sprite in its container.
+  make a machine"; the counter shows how many parts the Archipelago inventory holds. Located 2026-10-23: it is
+  part of that puzzle's background, resource `0x2084` (320×155, palette `0x2085` over `0x1094`), box (lid
+  included) 66×36 at (15, 94); surround index 198 (green), shadow index 211. Counter centre (25, 26.5) in the
+  sprite, measured from an in-game screenshot. `tools/pieces_box.py GAMEDIR OUTDIR --preview N` cuts it out of the
+  player's own files (PNG + JSON with the palette indices); like other game art it is not committed. Still to do:
+  colours in the assembly room's palette (the indices are the puzzle's), the game's digit font for the counter,
+  where in the assembly room it goes, and clicking it.
 
 ### To-do: assembly-room sprite for checks held by chimps
 Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the

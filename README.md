@@ -41,6 +41,7 @@ the patches; each one verifies the original bytes first.
 - `tools/part_names.py`: lists all part names from `gizmo000.dat` (output in `data/part_names.tsv`).
 - `tools/players_dat.py`: dump players/progress from a `PLAYERS.DAT`.
 - `tools/lpx.py` / `tools/title_logo.py`: LPX sprite codec; builds `GIZMOAP1.DAT` with the Archipelago logo on the title screen.
+- `tools/pieces_box.py`: cuts the door puzzle's "Pieces" box out of the game files (future Archipelago inventory sprite).
 - `tools/warehouse.py`: static box/door counts per level → `data/warehouse_counts.tsv`.
 - `tools/disasm.py`: symbolized disassembly of `ssg.exe`, including VROOMM overlays (needs `ndisasm`).
 
