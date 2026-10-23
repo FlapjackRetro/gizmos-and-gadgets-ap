@@ -4,12 +4,17 @@
  * Built against the recomp's include/gg_mod.h (API version 1) and loaded from <game dir>/mods/.
  * It turns the game's events into Archipelago location checks, grants received items, and
  * lifts the "one level per building" rule. It talks to the Archipelago client through plain
- * files in <game dir>/ap/ (see docs/MOD.md):
+ * files in <game dir>/ap/ (see docs/MOD.md). Each seed and slot has its own folder, ap/<seed>_<team>_<slot>/;
+ * ap/current.txt (client) names the one the client is connected to:
  *
- *   ap/checks.txt    (mod appends)    one location id per line; "goal" when all 15 races are won
- *   ap/received.txt  (client writes)  one item id per line, in the order the server sent them
- *   ap/config.txt    (client/user)    key=value settings, re-read on every level entry
- *   ap/state.txt     (mod)            what the mod must remember between sessions
+ *   ap/current.txt         (client writes)  the folder of the connected seed/slot
+ *   ap/game.txt            (mod)            heartbeat for the client
+ *   ap/players.txt         (mod)            "<in-game player>=<folder>": which player plays which seed
+ *   ap/<s>/checks.txt      (mod appends)    one location id per line; "goal" once enough races are won
+ *   ap/<s>/received.txt    (client writes)  one item id per line, in the order the server sent them
+ *   ap/<s>/config.txt      (client)         key=value settings, re-read on every level entry
+ *   ap/<s>/state.txt       (mod)            what the mod must remember between sessions
+ *   ap/<s>/levels/<v>.bin  (mod)            each level's saved warehouse
  *
  * Ids (docs/MOD.md):  base 0x47470000 (1195835392)
  *   race won       base + 0x0000 + v                 v = building*5 + level (0..14)
@@ -64,6 +69,7 @@ static struct {
     int wh_level[3];         /* level whose warehouse the building's block in the player record holds, -1 none */
     int won;                 /* bit v: the race of level v was won (-1 = not known yet: take the game's counters) */
     int goal_sent;
+    char player[17];         /* the in-game player that plays this seed (bound when first entering a building) */
 } st;
 
 /* checks carried by Cyberchimps (virtual: the chimp's real inventory is not touched; see on_chimp_box_open) */
@@ -77,7 +83,9 @@ static unsigned char rx_done[MAX_RECEIVED];
 static int rx_n;
 static long rx_size;         /* bytes of received.txt already read */
 
-static char dir_ap[1024];
+static char dir_root[1024];  /* <game dir>/ap */
+static char dir_ap[1200];    /* this seed/slot's folder; "" = no client connection yet: the mod stays out */
+static char session[128];    /* its name (ap/current.txt) */
 static int picked[3] = { -1, -1, -1 };   /* level chosen in the picker, for the next LEVEL_ENTER */
 static int last_grant_frame;
 static int in_level = -1;    /* vehicle index of the warehouse that is set up, -1 none */
@@ -85,12 +93,13 @@ static int in_level = -1;    /* vehicle index of the warehouse that is set up, -
 /* ---- files -------------------------------------------------------------------------------- */
 static void path(char *out, size_t n, const char *name)
 {
+    if (!*dir_ap) { out[0] = 0; return; }                    /* no seed folder: nothing to read or write */
     snprintf(out, n, "%s/%s", dir_ap, name);
 }
 
 static void send_line(const char *line)
 {
-    char p[1100];
+    char p[1300];
     path(p, sizeof p, "checks.txt");
     FILE *f = fopen(p, "a");
     if (!f) { api->log("ap: cannot write %s", p); return; }
@@ -106,7 +115,8 @@ static int frames;
 
 static void load_labels(void)
 {
-    char p[1100], line[256];
+    char p[1300], line[256];
+    if (!*dir_ap) return;
     snprintf(p, sizeof p, "%s/labels.txt", dir_ap);
     FILE *f = fopen(p, "r");
     if (!f) return;
@@ -145,7 +155,7 @@ static void send_check(unsigned id, const char *what)
 
 static void load_config(void)
 {
-    char p[1100], line[256];
+    char p[1300], line[256];
     cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 0; cfg.title_logo = 1; cfg.chimps = -1;
     cfg.races_required = 15;
     for (int b = 0; b < 3; b++) for (int l = 0; l < 5; l++) cfg.avail[b][l] = -1;
@@ -171,13 +181,14 @@ static void load_config(void)
 
 static void save_state(void)
 {
-    char p[1100];
+    char p[1300];
     path(p, sizeof p, "state.txt");
     FILE *f = fopen(p, "w");
     if (!f) return;
     for (int b = 0; b < 3; b++) fprintf(f, "wh_level.%d=%d\n", b, st.wh_level[b]);
     fprintf(f, "won=%d\n", st.won);
     fprintf(f, "goal_sent=%d\n", st.goal_sent);
+    if (st.player[0]) fprintf(f, "player=%s\n", st.player);
     for (int i = 0; i < rx_n; i++) if (rx_done[i]) fprintf(f, "done=%d\n", i);
     for (int i = 0; i < ncarried; i++) fprintf(f, "chimp=%d,%d,%d\n", carried[i].v, carried[i].actor, carried[i].part);
     fclose(f);
@@ -185,7 +196,7 @@ static void save_state(void)
 
 static void load_state(void)
 {
-    char p[1100], line[128];
+    char p[1300], line[128];
     st.wh_level[0] = st.wh_level[1] = st.wh_level[2] = -1;
     st.won = -1;
     path(p, sizeof p, "state.txt");
@@ -195,6 +206,10 @@ static void load_state(void)
         int b, v, lv;
         if (sscanf(line, "wh_level.%d=%d", &b, &v) == 2 && b >= 0 && b < 3) st.wh_level[b] = v;
         else if (sscanf(line, "goal_sent=%d", &v) == 1) st.goal_sent = v;
+        else if (!strncmp(line, "player=", 7)) {
+            snprintf(st.player, sizeof st.player, "%.16s", line + 7);
+            st.player[strcspn(st.player, "\r\n")] = 0;
+        }
         else if (sscanf(line, "won=%d", &v) == 1) st.won = v;
         else if (sscanf(line, "done=%d", &v) == 1 && v >= 0 && v < MAX_RECEIVED) rx_done[v] = 1;
         else if (sscanf(line, "chimp=%d,%d,%d", &b, &v, &lv) == 3 && ncarried < MAX_CARRIED) {
@@ -207,7 +222,7 @@ static void load_state(void)
 /* New lines in received.txt (the client only ever appends). */
 static void poll_received(void)
 {
-    char p[1100], line[64];
+    char p[1300], line[64];
     path(p, sizeof p, "received.txt");
     FILE *f = fopen(p, "r");
     if (!f) return;
@@ -344,9 +359,117 @@ static int ap_inventory(InvItem *out, int max)
 }
 
 /* ---- events ------------------------------------------------------------------------------- */
+/* ---- one folder per seed/slot ---------------------------------------------------------------------------
+ * The client writes ap/current.txt when it connects. The mod follows it at startup, while no seed is set yet,
+ * and at the Technology Center (a building click) -- never inside a level, whose warehouse belongs to a seed.
+ * A seed is played by one in-game player, and a player plays one seed (ap/players.txt): entering a building with
+ * another player is refused with a message, so an old player file can't pick up a new seed by accident. */
+static int read_current(char *out, size_t n)
+{
+    char p[1300], line[160];
+    snprintf(p, sizeof p, "%s/current.txt", dir_root);
+    FILE *f = fopen(p, "r");
+    if (!f) return 0;
+    int ok = fgets(line, sizeof line, f) != NULL;
+    fclose(f);
+    if (!ok) return 0;
+    size_t k = 0;
+    for (const char *s = line; *s && *s != '\r' && *s != '\n' && k + 1 < n; s++)
+        if ((*s >= 'A' && *s <= 'Z') || (*s >= 'a' && *s <= 'z') || (*s >= '0' && *s <= '9') || *s == '_' || *s == '-')
+            out[k++] = *s;
+    out[k] = 0;
+    return k > 0;
+}
+
+static void use_session(const char *name)
+{
+    snprintf(session, sizeof session, "%s", name);
+    snprintf(dir_ap, sizeof dir_ap, "%s/%s", dir_root, name);
+    MKDIR(dir_ap);
+    memset(&st, 0, sizeof st);
+    memset(rx_done, 0, sizeof rx_done);
+    rx_n = 0; rx_size = 0; nlabels = 0; labels_frame = -1000; ncarried = 0;
+    picked[0] = picked[1] = picked[2] = -1;
+    load_config();
+    load_state();
+    poll_received();
+    api->log("ap: seed folder ap/%s (%d item(s) received so far%s%s)", name, rx_n,
+             st.player[0] ? ", player " : ", no player yet", st.player);
+}
+
+static int follow_current(void)
+{
+    char name[128];
+    if (!read_current(name, sizeof name) || !strcmp(name, session)) return 0;
+    use_session(name);
+    return 1;
+}
+
+static void signed_in(char *name, size_t n)
+{
+    const uint8_t *m = api->mem() + api->ds_base() + GG_DS_PLAYER_NAME;
+    size_t i = 0;
+    for (; i < 16 && i + 1 < n && m[i] >= 32 && m[i] < 127; i++) name[i] = (char)m[i];
+    name[i] = 0;
+}
+
+/* ap/players.txt: the folder the player plays, "" if none */
+static void player_session(const char *player, char *out, size_t n)
+{
+    char p[1300], line[200];
+    out[0] = 0;
+    snprintf(p, sizeof p, "%s/players.txt", dir_root);
+    FILE *f = fopen(p, "r");
+    if (!f) return;
+    size_t len = strlen(player);
+    while (fgets(line, sizeof line, f))
+        if (!strncmp(line, player, len) && line[len] == '=') {
+            snprintf(out, n, "%s", line + len + 1);
+            out[strcspn(out, "\r\n")] = 0;
+        }
+    fclose(f);
+}
+
+static void ui_say2(const char *title, const char *a, const char *b, const char *c);
+
+/* 1 = this player may play this seed (binding a new pair), 0 = refused (a message was shown) */
+static int check_player(void)
+{
+    char name[17], other[160];
+    signed_in(name, sizeof name);
+    if (!name[0]) return 1;
+    if (st.player[0]) {
+        if (!strcmp(st.player, name)) return 1;
+        char l1[64];
+        snprintf(l1, sizeof l1, "This seed is played as '%s'.", st.player);
+        ui_say2("Archipelago", l1, "Sign in as that player to go on,", "or connect the client to your seed.");
+        api->log("ap: refused: '%s' signed in, this seed is played as '%s'", name, st.player);
+        return 0;
+    }
+    player_session(name, other, sizeof other);
+    if (other[0] && strcmp(other, session)) {
+        char l1[64];
+        snprintf(l1, sizeof l1, "'%s' already plays another seed.", name);
+        ui_say2("New seed", l1, "Create a new player for this seed:", "Sign In, then New Player.");
+        api->log("ap: refused: '%s' plays seed folder %s, not %s", name, other, session);
+        return 0;
+    }
+    snprintf(st.player, sizeof st.player, "%s", name);
+    save_state();
+    char p[1300];
+    snprintf(p, sizeof p, "%s/players.txt", dir_root);
+    FILE *f = fopen(p, "a");
+    if (f) { fprintf(f, "%s=%s\n", name, session); fclose(f); }
+    api->log("ap: player '%s' now plays seed folder %s", name, session);
+    return 1;
+}
+
 static int on_building_click(void *u, GGEvent *e)
 {
     (void)u; (void)e;
+    in_level = -1;                                           /* at the Technology Center */
+    follow_current();                                        /* the client may have connected to another seed */
+    if (!*dir_ap) return GG_CONTINUE;
     return cfg.open_world ? GG_ALLOW : GG_CONTINUE;
 }
 
@@ -365,7 +488,7 @@ static void level_path(char *out, size_t n, int v) { snprintf(out, n, "%s/levels
 
 static void capture(int b, int lv)
 {
-    char p[1100];
+    char p[1300];
     if (lv < 0 || !api->ds_read16((uint16_t)SAVED(b))) return;
     snprintf(p, sizeof p, "%s/levels", dir_ap);
     MKDIR(p);
@@ -378,7 +501,7 @@ static void capture(int b, int lv)
 
 static int install(int b, int lv)
 {
-    char p[1100];
+    char p[1300];
     uint8_t buf[BLOCK_SIZE];
     level_path(p, sizeof p, b * 5 + lv);
     FILE *f = fopen(p, "rb");
@@ -416,6 +539,7 @@ static int entering = -1;      /* vehicle index being entered: saved and recorde
 
 static int on_level_enter(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u;
     load_config();
     int b = e->building;
@@ -461,6 +585,7 @@ static void open_levels(int b, int open[5])
  * ax != 0 -> [4578] = 1). With the YAML's setting known, tell the player instead of asking and skip the call. */
 static int on_chimps_prompt(void *u, uint32_t addr, GGRegs *r)
 {
+    if (!*dir_ap) return 0;
     (void)u; (void)addr;
     load_config();
     if (cfg.chimps < 0 || !ui_ready()) return 0;               /* no client yet: the game asks */
@@ -482,8 +607,10 @@ static int on_chimps_prompt(void *u, uint32_t addr, GGRegs *r)
 static int on_building_selected(void *u, uint32_t addr, GGRegs *r)
 {
     (void)u; (void)addr; (void)r;
+    if (!*dir_ap) return 0;
     int b = (int16_t)api->ds_read16(GG_DS_BUILDING);
     if (b < 0 || b > 2) return 0;
+    if (!check_player()) return 1;                           /* stay at the Technology Center */
     load_config();
     int open[5];
     open_levels(b, open);
@@ -527,6 +654,16 @@ static void race_door_region(int v)
     if (have == 0x3F0 || have == DOOR_CODE) api->ds_write16(DS_RACE_DOOR + 0x12, want);
 }
 
+static void ui_say2(const char *title, const char *a, const char *b, const char *c)
+{
+    if (!ui_ready()) return;
+    const char *l[3] = { a, b, c };
+    UiSession s;
+    ui_begin(&s);
+    ui_message(title, l, 3, 0);
+    ui_end(&s);
+}
+
 static void say(const char *title, const char *a, const char *b)
 {
     if (!ui_ready()) return;
@@ -542,6 +679,7 @@ static void say(const char *title, const char *a, const char *b)
  * picker's rule), else to the Technology Center (7D3). After a loss everything stays as in the game. */
 static int on_podium(void *u, uint32_t addr, GGRegs *r)
 {
+    if (!*dir_ap) return 0;
     (void)u; (void)addr;
     if (api->ds_read16(0x4560) != 0) return 0;                /* lost */
     int b = (int16_t)api->ds_read16(GG_DS_BUILDING), lv = (int16_t)api->ds_read16(GG_DS_LEVEL);
@@ -569,6 +707,7 @@ static int on_podium(void *u, uint32_t addr, GGRegs *r)
 
 static int on_level_ready(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u; (void)e;
     in_level = cur_vehicle();
     lock_race(in_level);                                     /* before the assembly room draws its door */
@@ -587,6 +726,7 @@ static int on_level_ready(void *u, GGEvent *e)
 
 static int on_race_start(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u;
     /* the game saved the warehouse on the way out (R02E0 0x9F8); a won race discards the block, so copy it */
     if (e->building >= 0 && e->building < 3) capture(e->building, st.wh_level[e->building]);
@@ -606,6 +746,7 @@ static int waiting_parts(void)
 
 static int on_assembly_tick(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u; (void)e;
     mark_obtained();
     hud_tick(waiting_parts(), api->ds_read16(GG_DS_CHIMPS) != 0);
@@ -630,6 +771,7 @@ static void deposited(int rx)
  * registers are the loop's, which the conveyor update needs (inventory.c). */
 static int on_assembly_site(void *u, uint32_t addr, GGRegs *r)
 {
+    if (!*dir_ap) return 0;
     (void)u; (void)addr;
     int v = cur_vehicle();
     if (v < 0 || in_level != v) return 0;
@@ -652,6 +794,7 @@ static int on_assembly_site(void *u, uint32_t addr, GGRegs *r)
 
 static int on_warehouse_tick(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u; (void)e;
     mark_obtained();
     if (frames - last_grant_frame >= 90) {                   /* ~1.5 s between items */
@@ -663,6 +806,7 @@ static int on_warehouse_tick(void *u, GGEvent *e)
 
 static int on_box_open(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u;
     int v = cur_vehicle();
     if (!cfg.box_checks || v < 0 || e->contents == GG_BOX_EMPTY || e->contents < 0 || e->contents >= 0x40)
@@ -720,6 +864,7 @@ static void chimp_changed(void)
 
 static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
 {
+    if (!*dir_ap) return 0;
     (void)u; (void)addr;
     int v = cur_vehicle();
     if (r->ax != 0 || v < 0 || !cfg.box_checks) return 0;        /* holds a part: vanilla leaves the box */
@@ -745,6 +890,7 @@ static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
 
 static int on_chimp_drop(void *u, uint32_t addr, GGRegs *r)
 {
+    if (!*dir_ap) return 0;
     (void)u; (void)addr;
     int v = cur_vehicle(), n = (int16_t)r->si, k = -1;
     for (int i = ncarried - 1; i >= 0 && k < 0; i--) if (carried[i].v == v && carried[i].actor == n) k = i;
@@ -770,6 +916,7 @@ static int on_chimp_drop(void *u, uint32_t addr, GGRegs *r)
 
 static int on_door_open(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u;
     int v = cur_vehicle();
     if (!cfg.door_checks || v < 0) return GG_CONTINUE;
@@ -783,6 +930,7 @@ static int on_door_open(void *u, GGEvent *e)
 
 static int on_race_end(void *u, GGEvent *e)
 {
+    if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u;
     if (!e->won || e->aborted) return GG_CONTINUE;
     int b = e->building, v = b * 5 + e->level;
@@ -813,21 +961,21 @@ static int on_race_end(void *u, GGEvent *e)
  * where they are and how many received items are in the game. Rewritten whole (temp file + rename). */
 static void heartbeat(void)
 {
-    char p[1100], tmp[1110], name[17];
+    char p[1300], tmp[1310], name[17];
     const uint8_t *m = api->mem() + api->ds_base() + GG_DS_PLAYER_NAME;
     int i = 0;
     for (; i < 16 && m[i] >= 32 && m[i] < 127; i++) name[i] = (char)m[i];
     name[i] = 0;
     static InvItem inv[MAX_RECEIVED];
-    int waiting = ap_inventory(inv, MAX_RECEIVED);
-    path(p, sizeof p, "game.txt");
+    int waiting = *dir_ap ? ap_inventory(inv, MAX_RECEIVED) : 0;
+    snprintf(p, sizeof p, "%s/game.txt", dir_root);
     snprintf(tmp, sizeof tmp, "%s.tmp", p);
     FILE *f = fopen(tmp, "w");
     if (!f) return;
-    fprintf(f, "mod=1\nframe=%d\nplayer=%s\nbuilding=%d\nlevel=%d\nin_level=%d\nitems=%d\nreceived=%d\n"
-            "ap_inventory=%d\n",
+    fprintf(f, "mod=2\nframe=%d\nplayer=%s\nbuilding=%d\nlevel=%d\nin_level=%d\nitems=%d\nreceived=%d\n"
+            "ap_inventory=%d\nsession=%s\n",
             frames, name, (int16_t)api->ds_read16(GG_DS_BUILDING), (int16_t)api->ds_read16(GG_DS_LEVEL),
-            in_level >= 0, rx_n, rx_n, waiting);
+            in_level >= 0, rx_n, rx_n, waiting, session);
     fclose(f);
     remove(p);                                               /* Windows rename does not replace */
     rename(tmp, p);
@@ -844,7 +992,8 @@ static int on_frame(void *u, GGEvent *e)
 {
     (void)u; (void)e;
     frames++;
-    if (frames % 30 == 0) {
+    if (frames % 30 == 0 && !*dir_ap) follow_current();      /* the client connected: memory writes only */
+    if (frames % 30 == 0 && *dir_ap) {
         poll_received();
         if (!st.goal_sent && st.won >= 0 && popcount15(st.won) >= cfg.races_required) {
             st.goal_sent = 1; save_state();
@@ -863,7 +1012,7 @@ static int on_frame(void *u, GGEvent *e)
 static void title_logo(void)
 {
     static const char orig[] = "gizmo001.dat", repl[] = "gizmoap1.dat";
-    char p[1100];
+    char p[1300];
     FILE *f = NULL;
     snprintf(p, sizeof p, "%s/GIZMOAP1.DAT", api->game_dir());
     if (!(f = fopen(p, "rb"))) {
@@ -882,11 +1031,12 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
 {
     if (a->version < 1) return 1;
     api = a;
-    snprintf(dir_ap, sizeof dir_ap, "%s/ap", api->game_dir());
-    MKDIR(dir_ap);                                           /* fine if it exists */
-    load_config();
-    load_state();
-    poll_received();
+    snprintf(dir_root, sizeof dir_root, "%s/ap", api->game_dir());
+    MKDIR(dir_root);                                         /* fine if it exists */
+    dir_ap[0] = 0;
+    load_config();                                           /* defaults until a seed folder is known */
+    if (!follow_current())
+        api->log("ap: no seed yet (connect the Gizmos and Gadgets Client): the game runs as it is until then");
     if (cfg.title_logo) title_logo();
     picker_init(api);
     hud_init(api);
@@ -913,6 +1063,6 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     api->on_event(GG_EV_RACE_START, on_race_start, NULL);
     api->on_event(GG_EV_RACE_END, on_race_end, NULL);
     api->on_event(GG_EV_FRAME, on_frame, NULL);
-    api->log("ap: Archipelago mod ready (%s, %d item(s) received so far)", dir_ap, rx_n);
+    api->log("ap: Archipelago mod ready (%s)", *dir_ap ? dir_ap : dir_root);
     return 0;
 }

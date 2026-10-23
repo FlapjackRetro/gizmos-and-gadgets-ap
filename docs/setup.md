@@ -29,9 +29,10 @@ This guide covers installing the Gizmos & Gadgets randomizer and its APWorld for
 The *game folder* is the folder that holds `ssg.exe` and `gizmo000.dat` … `gizmo004.dat`, e.g.
 `C:\DOS\Gizmos`. The game keeps its saved players (`PLAYERS.DAT`) there too.
 
-**Use a separate game folder for each Archipelago seed.** The randomizer keeps its own files in an `ap` folder inside
-the game folder, and the client refuses a folder that already belongs to another seed. Copying the whole folder is
-the easiest way to start a new seed.
+One game folder can hold any number of seeds. The randomizer keeps each seed's files in its own folder,
+`ap\<seed>_<team>_<slot>\`, created the first time the client connects to that seed. **Each seed needs its own
+player in the game:** the game refuses to enter a building with a player that already plays another seed, so an
+old player can't pick up a new seed by accident.
 
 ## 2. Build the game (`gizmos.exe`)
 
@@ -108,12 +109,14 @@ Restart the Archipelago Launcher afterwards so it picks up the new world.
    ```
    Do this before you create the player in the game: the game reads your settings (Cyberchimps) from the folder.
 3. Connect to the server: type the address (e.g. `/connect archipelago.gg:38281`) or use the box at the top, and
-   enter your slot name. The client binds the game folder to this seed and slot.
+   enter your slot name. For a seed it hasn't seen in this game folder, the client says **New seed** and makes its
+   folder; for one you played before, **Continuing this seed**.
 4. Start `gizmos.exe`. The client says **Game connected** once the game is running with the mod; `/game` shows the
    game's status at any time and `/levels` which levels are open.
-5. In the game, create a **new player** for this seed (the client remembers which player plays it and warns if you
-   sign in as someone else). Instead of the game's "With Chimps / Without Chimps" question you see your
-   `cyberchimps` setting.
+5. In the game, create a **new player** for a new seed (Sign In, then New Player); to continue a seed, sign in as
+   its player. The first player to enter a building plays that seed from then on; entering with a different
+   player, or with one that plays another seed, is refused with a message. Instead of the game's "With Chimps /
+   Without Chimps" question you see your `cyberchimps` setting.
 
 Keep the client running while you play: it sends your checks and passes your items to the game.
 
@@ -170,14 +173,18 @@ Your `gizmo001.dat` is left untouched. Start the game: the console says `ap: tit
   started that folder's `gizmos.exe`.
 - **The console says a hook site is missing** ("site missing (recomp too old)"). Your `gizmos.exe` was built from an
   older recompilation; download it again and rebuild (step 2).
-- **The client says the game folder belongs to another seed.** Use a new game folder for each seed (step 1).
+- **"… already plays another seed" when clicking a building.** Create a new player for this seed (Sign In, New
+  Player), or connect the client to the seed that player plays.
+- **The client warns that the game is still on another seed.** The game switches to the connected seed at the
+  Technology Center: click a building.
 - **"Game not responding" in the client.** The game was closed, or the mod isn't loaded.
 - For a bug report, include the game's console output and the client's log.
 
 ## Uninstalling
 
-Delete `mods\ap_mod.dll` from the game folder to play the normal game again. The `ap` folder holds the randomizer's
-state for that seed; delete it (and that player from the game's sign-in list) to start over in the same folder.
+Delete `mods\ap_mod.dll` from the game folder to play the normal game again. Each `ap\<seed>_<team>_<slot>`
+folder holds one seed's progress; delete it (and that seed's player from the game's sign-in list, and its line in
+`ap\players.txt`) to forget that seed.
 
 ---
 

@@ -1,12 +1,17 @@
 """Gizmos and Gadgets client: bridges the recomp's Archipelago mod and the Archipelago server.
 
 The mod (mod/ap_mod.c) and this client share files in <game folder>/ap/ (docs/MOD.md):
-  checks.txt    mod appends location ids ("goal" once races_required races are won)  -> LocationChecks / goal
-  received.txt  client writes item ids in the server's order            <- ReceivedItems
-  config.txt    client writes settings and which levels are open
-  labels.txt    client writes what each of this slot's locations holds (shown in the game when a box opens)
-  game.txt      mod rewrites about once a second: the game is running (player, place, items applied)
-  seed.txt      client: which seed, slot and in-game player this game folder belongs to
+Each seed and slot gets its own folder, ap/<seed>_<team>_<slot>/, created on the first connection; the client
+writes its name to ap/current.txt, which the mod follows (at startup and at the Technology Center):
+  current.txt   client: the folder of the connected seed/slot
+  game.txt      mod rewrites about once a second: the game is running (player, place, items, folder)
+  players.txt   mod: which in-game player plays which seed (one each; the game refuses a mismatch)
+  <s>/checks.txt    mod appends location ids ("goal" once races_required races are won) -> LocationChecks / goal
+  <s>/received.txt  client writes item ids in the server's order                         <- ReceivedItems
+  <s>/config.txt    client writes settings and which levels are open
+  <s>/labels.txt    client writes what each of this slot's locations holds (shown when a box opens)
+  <s>/seed.txt      client: which seed and slot the folder is for
+  <s>/state.txt, <s>/levels/  mod: progress and each level's saved warehouse
 
 Run: from the Launcher ("Gizmos and Gadgets Client"), or
   python -m worlds.gizmosandgadgets.client --gamedir <game folder> [--connect host:port] [--name slot]
@@ -61,6 +66,7 @@ class GizmosContext(CommonContext):
     def __init__(self, server_address: Optional[str], password: Optional[str], game_dir: Optional[str]):
         super().__init__(server_address, password)
         self.game_dir: Optional[str] = None
+        self.session: Optional[str] = None   # ap/<session>/ of the connected seed/slot
         self.checks_read = 0                 # bytes of checks.txt already forwarded
         self.goal_sent = False
         self.written_items: List[int] = []   # what received.txt holds
@@ -73,8 +79,12 @@ class GizmosContext(CommonContext):
             self.set_game_dir(game_dir)
 
     # ---- files -------------------------------------------------------------------------------
-    def ap_path(self, name: str) -> str:
+    def root_path(self, name: str) -> str:
         return os.path.join(self.game_dir, "ap", name)
+
+    def ap_path(self, name: str) -> str:
+        """A file of the connected seed/slot's folder."""
+        return os.path.join(self.game_dir, "ap", self.session or "_none", name)
 
     def set_game_dir(self, path: str) -> None:
         path = os.path.abspath(os.path.expanduser(path))
@@ -90,9 +100,8 @@ class GizmosContext(CommonContext):
         os.makedirs(os.path.join(path, "ap"), exist_ok=True)
         if not os.path.isdir(os.path.join(path, "mods")):
             logger.warning("No mods/ folder there: copy ap_mod.dll / ap_mod.so into <game folder>/mods/.")
-        self.checks_read = 0
-        self.written_items = self._read_received()
-        self.written_config = ""
+        self.session = None
+        self.seed_ok = False
         if self.slot is not None and self.server_seed_name:  # already connected: set the folder up now
             self.attach_game_folder()
 
@@ -103,11 +112,12 @@ class GizmosContext(CommonContext):
         except (OSError, ValueError):
             return []
 
-    def _replace(self, name: str, text: str) -> None:
-        tmp = self.ap_path(name + ".tmp")
+    def _replace(self, name: str, text: str, root: bool = False) -> None:
+        dst = self.root_path(name) if root else self.ap_path(name)
+        tmp = dst + ".tmp"
         with open(tmp, "w") as f:
             f.write(text)
-        os.replace(tmp, self.ap_path(name))
+        os.replace(tmp, dst)
 
     def write_config(self) -> None:
         if not (self.game_dir and self.seed_ok):
@@ -157,42 +167,49 @@ class GizmosContext(CommonContext):
         lines = [f"{loc}={self.label(item)}" for loc, item in sorted(self.locations_info.items())]
         self._replace("labels.txt", "\n".join(lines) + "\n")
 
-    def read_seed_file(self) -> Dict[str, str]:
-        out: Dict[str, str] = {}
-        try:
-            with open(self.ap_path("seed.txt")) as f:
-                for line in f:
-                    k, _, v = line.strip().partition("=")
-                    if v:
-                        out[k] = v
-        except OSError:
-            pass
-        return out
+    def session_name(self) -> str:
+        safe = lambda s: re.sub(r"[^A-Za-z0-9_-]", "-", str(s))
+        return f"{safe(self.server_seed_name)}_{self.team}_{self.slot}"
 
-    def bind_seed(self) -> bool:
-        """A game folder belongs to one seed and slot: its ap/ files would mix otherwise."""
+    def open_session(self) -> bool:
+        """The connected seed/slot's own folder, ap/<seed>_<team>_<slot>/: created on the first connection, so
+        a new seed never mixes with an earlier one in the same game folder. Returns True for a new seed."""
+        self.session = self.session_name()
+        folder = self.root_path(self.session)
+        new = not os.path.isdir(folder)
+        os.makedirs(folder, exist_ok=True)
         tag = f"{self.server_seed_name} {self.team} {self.slot}"
-        info = self.read_seed_file()
-        if info.get("seed") and info["seed"] != tag:
-            logger.error(f"This game folder belongs to another seed ({info['seed']}). Use a separate game folder "
-                         f"per seed, or delete its ap/ folder (and that player in PLAYERS.DAT) to start over.")
-            return False
-        if not info.get("seed"):
-            # The game may have run before the client ever connected (state.txt, unsent checks.txt: they belong
-            # to this seed). Items from a seed nobody recorded would not: refuse those.
-            if self._read_received():
-                logger.error("ap/received.txt holds items but no seed is recorded: delete the ap/ folder first.")
-                return False
-            self._replace("seed.txt", f"seed={tag}\n")
-            logger.info("This game folder is now bound to this seed.")
-        return True
+        if new:
+            self.migrate_flat_layout(tag)
+        if not os.path.exists(self.ap_path("seed.txt")):
+            self._replace("seed.txt", f"seed={tag}\nslot_name={self.auth or ''}\n")
+        self._replace("current.txt", self.session + "\n", root=True)
+        self.checks_read = 0             # re-sending old checks is harmless; the server keeps each once
+        self.written_items = self._read_received()
+        self.written_config = ""
+        return new and not os.path.exists(self.ap_path("state.txt"))
+
+    def migrate_flat_layout(self, tag: str) -> None:
+        """Before 0.5.0 a game folder held one seed, directly in ap/: move it into its seed's folder."""
+        try:
+            with open(self.root_path("seed.txt")) as f:
+                old = dict(line.strip().partition("=")[::2] for line in f if "=" in line)
+        except OSError:
+            return
+        if old.get("seed") != tag:
+            return
+        for name in ("checks.txt", "received.txt", "state.txt", "config.txt", "labels.txt", "seed.txt", "levels"):
+            src = self.root_path(name)
+            if os.path.exists(src):
+                os.replace(src, self.ap_path(name))
+        logger.info(f"Moved this seed's files from ap/ into ap/{self.session}/.")
 
     # ---- the game ------------------------------------------------------------------------------
     def poll_game(self) -> None:
         """game.txt: key=value lines the mod rewrites about once a second while the game runs."""
         try:
-            age = time.time() - os.path.getmtime(self.ap_path("game.txt"))
-            with open(self.ap_path("game.txt")) as f:
+            age = time.time() - os.path.getmtime(self.root_path("game.txt"))
+            with open(self.root_path("game.txt")) as f:
                 text = f.read()
         except OSError:
             age, text = GAME_TIMEOUT + 1, ""
@@ -208,20 +225,31 @@ class GizmosContext(CommonContext):
             logger.warning("Game not responding (closed, or the mod is not loaded).")
         if alive and (player_changed or not was_alive):
             self.check_player()
+        session_changed = info.get("session") != getattr(self, "_seen_session", None)
+        self._seen_session = info.get("session")
+        if alive and self.session and session_changed and info.get("session") != self.session:
+            logger.warning("The game is still on " + (f"another seed's folder (ap/{info['session']})" if info.get("session")
+                           else "no seed") + ": it switches at the Technology Center (click a building).")
 
     def check_player(self) -> None:
-        """Remember which in-game player plays this seed, and warn when a different one is signed in."""
+        """The mod binds a seed to the in-game player that first enters a building with it, and refuses others;
+        here only a hint in the log."""
         player = self.game_info.get("player", "")
         if not (player and self.seed_ok):
             return
-        info = self.read_seed_file()
-        if not info.get("player"):
-            with open(self.ap_path("seed.txt"), "a") as f:
-                f.write(f"player={player}\n")
-            logger.info(f"In-game player '{player}' recorded for this seed.")
-        elif info["player"] != player:
-            logger.warning(f"This seed is played as '{info['player']}', but '{player}' is signed in. Sign in as "
-                           f"'{info['player']}' to continue this seed.")
+        bound = ""
+        try:
+            with open(self.ap_path("state.txt")) as f:
+                for line in f:
+                    if line.startswith("player="):
+                        bound = line[7:].strip()
+        except OSError:
+            pass
+        if bound and bound != player:
+            logger.warning(f"This seed is played as '{bound}', but '{player}' is signed in. Sign in as '{bound}'.")
+        elif not bound:
+            logger.info(f"'{player}' is signed in. A seed needs a player of its own: if '{player}' played another "
+                        f"seed, create a new player in the game for this one.")
 
     def game_text(self) -> str:
         if not self.game_dir:
@@ -280,9 +308,16 @@ class GizmosContext(CommonContext):
     def attach_game_folder(self) -> None:
         """Connected to a slot, with a game folder: bind it and give the game its settings, items and labels.
         Runs on connecting, and again when the folder is set (or changed) while connected."""
-        self.seed_ok = bool(self.game_dir) and self.slot is not None and self.bind_seed()
-        if not self.seed_ok:
+        if not (self.game_dir and self.slot is not None):
+            self.seed_ok = False
             return
+        new = self.open_session()
+        self.seed_ok = True
+        if new:
+            logger.info(f"New seed for this game folder: its files are in ap/{self.session}/. In the game, create a "
+                        f"new player (Sign In, New Player) for it.")
+        else:
+            logger.info(f"Continuing this seed (ap/{self.session}/).")
         self.write_config()
         self.write_received()
         logger.info(self.levels_text())
