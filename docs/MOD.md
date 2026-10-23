@@ -31,13 +31,23 @@ Received parts wait until the player is in their level's warehouse. A part waits
 two of that kind (the inventory limit; see the to-do in `AP_DESIGN.md`). When a level's warehouse is generated
 fresh, the parts already received for it are granted again.
 
+## Title-screen logo
+
+`python tools/title_logo.py <game dir> assets/archipelago_logo.png` writes `GIZMOAP1.DAT` (a copy of
+`gizmo001.dat` with the Archipelago logo in the title sprite; the original is untouched) into the game folder.
+At startup the mod finds it and points the game's archive-1 name (`DS:057E`, "gizmo001.dat") at it: the
+recomp has loaded the game image before mods start and opens the archives later, so this is a memory write, not
+an EXE patch. Without the file (or with `title_logo=0`) the game uses `gizmo001.dat` as usual. Verified on
+the recomp, headless: the logo fades in with the main title. The logo is © the Archipelago project, CC BY-NC
+4.0 (see `COPYING.md`), so `GIZMOAP1.DAT` is too.
+
 ## Files (`<game dir>/ap/`)
 
 | File | Written by | Content |
 |---|---|---|
 | `checks.txt` | mod (appends) | one location id per line; `goal` when the game is complete |
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
-| `config.txt` | client / user | `key=value`: `open_world`, `box_checks`, `door_checks` (1/0, default 1), `level.0` / `level.1` / `level.2` (0-based level to load for Automotive / Aircraft / Alt-Energy, -1 = game's choice). Re-read on every level entry |
+| `config.txt` | client / user | `key=value`: `open_world`, `box_checks`, `door_checks`, `title_logo` (1/0, default 1; `title_logo` is read at startup), `level.0` / `level.1` / `level.2` (0-based level to load for Automotive / Aircraft / Alt-Energy, -1 = game's choice). Re-read on every level entry |
 | `state.txt` | mod | which level each building's saved warehouse belongs to, which received items are already in the game |
 
 The Python client (to do) connects to the Archipelago server, forwards `checks.txt` lines as `LocationChecks`,

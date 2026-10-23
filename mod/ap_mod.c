@@ -46,6 +46,7 @@ static struct {
     int open_world;          /* enter any building, even with all 5 races won */
     int box_checks;          /* part boxes are checks: the part goes to the multiworld */
     int door_checks;
+    int title_logo;          /* use GIZMOAP1.DAT (Archipelago logo on the title screen) if present */
     int level[3];            /* level to load per building (0-based), -1 = the game's choice */
 } cfg;
 
@@ -92,7 +93,7 @@ static void send_check(unsigned id, const char *what)
 static void load_config(void)
 {
     char p[1100], line[256];
-    cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 1;
+    cfg.open_world = 1; cfg.box_checks = 1; cfg.door_checks = 1; cfg.title_logo = 1;
     cfg.level[0] = cfg.level[1] = cfg.level[2] = -1;
     path(p, sizeof p, "config.txt");
     FILE *f = fopen(p, "r");
@@ -103,6 +104,7 @@ static void load_config(void)
         if (!strcmp(key, "open_world")) cfg.open_world = v;
         else if (!strcmp(key, "box_checks")) cfg.box_checks = v;
         else if (!strcmp(key, "door_checks")) cfg.door_checks = v;
+        else if (!strcmp(key, "title_logo")) cfg.title_logo = v;
         else if (!strncmp(key, "level.", 6)) {
             int b = atoi(key + 6);
             if (b >= 0 && b < 3) cfg.level[b] = v < 0 ? -1 : (v > 4 ? 4 : v);
@@ -390,6 +392,28 @@ static int on_frame(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+/* Title-screen Archipelago logo: tools/title_logo.py builds GIZMOAP1.DAT, a copy of gizmo001.dat
+ * whose title sprite has the logo in it. If that file is in the game folder, point the game's archive
+ * 1 name (DS:057E, "gizmo001.dat", in the table at DS:0550) at it. The image is already loaded when
+ * mods start and the archives are opened later, so this is a plain memory write. */
+static void title_logo(void)
+{
+    static const char orig[] = "gizmo001.dat", repl[] = "gizmoap1.dat";
+    char p[1100];
+    FILE *f = NULL;
+    snprintf(p, sizeof p, "%s/GIZMOAP1.DAT", api->game_dir());
+    if (!(f = fopen(p, "rb"))) {
+        snprintf(p, sizeof p, "%s/gizmoap1.dat", api->game_dir());
+        f = fopen(p, "rb");
+    }
+    if (!f) { api->log("ap: no GIZMOAP1.DAT in the game folder: title logo off"); return; }
+    fclose(f);
+    uint8_t *m = api->mem() + api->ds_base() + 0x057E;
+    if (memcmp(m, orig, 12) != 0) { api->log("ap: archive name not where expected: title logo off"); return; }
+    memcpy(m, repl, 12);
+    api->log("ap: title logo on (archive 1 = GIZMOAP1.DAT)");
+}
+
 GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
 {
     if (a->version < 1) return 1;
@@ -399,6 +423,7 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     load_config();
     load_state();
     poll_received();
+    if (cfg.title_logo) title_logo();
     api->on_event(GG_EV_BUILDING_CLICK, on_building_click, NULL);
     api->on_event(GG_EV_LEVEL_ENTER, on_level_enter, NULL);
     api->on_event(GG_EV_LEVEL_READY, on_level_ready, NULL);
