@@ -9,4 +9,5 @@ void hud_tick(int count);
 void hud_forget(void);
 /* Where the Pieces box is on screen; 0 if it is not drawn (not built). */
 int hud_box_rect(int *x, int *y, int *w, int *h);
+int hud_chimp_rect(int *x, int *y, int *w, int *h);
 #endif

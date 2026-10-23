@@ -179,13 +179,21 @@ table's owner field (`+0x0C`: n = actor n) tells which parts a chimp holds (`doc
 - Graphic (chosen 2026-10-23): a Cyberchimp, container `0x103B` frame 1 (31×31, facing front; `0x103B` and
   `0x103F` are the chimps' animation sets, palette `0x100A` = the warehouse's). **Done (`mod/hud.c`):** drawn on the
   assembly room HUD to the right of the Pieces box (x 76, bottom row 198), colours remapped to assembly-room
-  indices keeping the hue (bright green face, red body). Still to do: clicking it (the informational dialog).
+  indices keeping the hue (bright green face, red body).
+- **Done 2026-10-23 (`mod/inventory.c`, `chimp_dialog`):** clicking it opens "Cyberchimps": how many Archipelago
+  checks this level's chimps carry (the mod's carried-check list), how many of the player's own parts they have
+  (part owner = an actor; stolen or recycled parts, never checks), and "Hit one with a banana to make it drop."
+  Not shown: what the carried checks hold (this game's parts vs. other players' items) -- that needs location
+  scouting through the client.
 
 ### To-do: chimps setting from the YAML
 When a new player file is started, the game asks whether to play with or without chimps (dialog 0x1067, "With
 Chimps" / "Without Chimps"). Replace that choice with an informational pop-up that states the setting read from the
 player's YAML (slot data, passed to the mod through the client's `config.txt`), and apply that setting. Needs: a
 `chimps` option in the apworld, and finding where the game stores the choice.
+- When the YAML says to play **without chimps**, the chimps sprite on the assembly room HUD is drawn **in grayscale**
+  (each index remapped to the assembly-room grey of the same brightness, as the Pieces box's browns are) and is
+  **not clickable** (no mouse region, so no informational pop-up).
 
 ### To-do: Microsoft Defender SmartScreen warning
 Windows shows "Windows protected your PC … Unknown publisher" when starting `gizmos.exe` (the recomp build).

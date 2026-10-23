@@ -452,33 +452,75 @@ static int run_dialog(GGRegs *rg, void (*cb)(int))
     return ngiven;
 }
 
+/* ---- the Cyberchimps dialog -------------------------------------------------------------------------- */
+/* How many checks this level's chimps carry (ap_mod: chimp_box_open), and how many of the player's own parts
+ * (part table owner +0x0C = an actor > 0: stolen on collision, or a recycled box a chimp opened). Those are
+ * never checks: every recycled or stolen part has been the player's already. */
+static void chimp_dialog(int checks)
+{
+    int own = 0, count = (int16_t)rd16(flat(ds_far(0x6638)) + 2);
+    for (int p = 0; p < count && p < 64; p++) if ((int16_t)rd16(flat(part_entry(p)) + 0x0C) > 0) own++;
+    char a[64], b[64];
+    const char *l[4];
+    int n = 0;
+    if (checks) {
+        snprintf(a, sizeof a, "%d Archipelago check%s.", checks, checks == 1 ? "" : "s");
+        l[n++] = "The Cyberchimps in this level carry";
+        l[n++] = a;
+    } else {
+        l[n++] = "The Cyberchimps in this level carry";
+        l[n++] = "no Archipelago checks.";
+    }
+    if (own) {
+        snprintf(b, sizeof b, "They also have %d of your parts.", own);
+        if (own == 1) snprintf(b, sizeof b, "They also have 1 of your parts.");
+        l[n++] = b;
+    }
+    if (checks || own) l[n++] = "Hit one with a banana to make it drop.";
+    UiSession ses;
+    ui_begin(&ses);
+    ui_message("Cyberchimps", l, n, 0);
+    ui_end(&ses);
+    api->log("ap: chimps dialog (%d check(s), %d own part(s))", checks, own);
+}
+
 /* ---- the loop head ---------------------------------------------------------------------------------- */
-/* The Pieces box is a mouse region in the room's own list (DS:A32), like the room's buttons: press code 0
+/* The Pieces box and the Cyberchimp are mouse regions in the room's own list (DS:A32), like the room's buttons: press code 0
  * (nothing on hover or button down, as the room's part regions do), click code BOX_CODE. The loop keeps the
  * last event in [bp-0x22] and sends codes it does not know to 0x1330, which ignores codes below 0xFA0
  * (0xFA0 + n drags part n); so at the next loop head [bp-0x22] = BOX_CODE means the box was clicked. The
  * region is added again whenever it is not in the list (a new room starts a new list). */
-#define BOX_CODE   0x0F00
-#define BOX_REGION (UI_REGIONS - 2)
+#define BOX_CODE     0x0F00
+#define CHIMP_CODE   0x0F01
+#define BOX_REGION   (UI_REGIONS - 2)
+#define CHIMP_REGION (UI_REGIONS - 3)
 
-static int clicked_box(GGRegs *r)
+/* 0 = nothing, 1 = the Pieces box was clicked, 2 = the Cyberchimp */
+static int clicked(GGRegs *r)
 {
     int x, y, w, h;
-    if (!hud_box_rect(&x, &y, &w, &h) || !ui_ready()) return 0;
-    if (!ui_region_listed(BOX_REGION)) {
+    if (!ui_ready()) return 0;
+    if (hud_box_rect(&x, &y, &w, &h) && !ui_region_listed(BOX_REGION)) {
         UiBtn b = { x, y, w, h, 1, 0, BOX_CODE };
         ui_region2(BOX_REGION, &b, 0, BOX_CODE, 1);
     }
+    if (hud_chimp_rect(&x, &y, &w, &h) && !ui_region_listed(CHIMP_REGION)) {
+        UiBtn b = { x, y, w, h, 1, 0, CHIMP_CODE };
+        ui_region2(CHIMP_REGION, &b, 0, CHIMP_CODE, 1);
+    }
     uint32_t code_at = (uint32_t)r->ss * 16u + (uint16_t)(r->bp - 0x22);
-    if (rd16(code_at) != BOX_CODE) return 0;
+    uint16_t code = rd16(code_at);
+    if (code != BOX_CODE && code != CHIMP_CODE) return 0;
     wr16(code_at, 0);
     if (api->ds_read16(0x22A4) != 0xFFFF || api->ds_read16(0xA086) != 0) return 0;   /* dragging / belt moving */
-    return 1;
+    return code == BOX_CODE ? 1 : 2;
 }
 
-int inventory_site(GGRegs *r, InvItem *items, int n, int cur_v, void (*deposit_cb)(int rx))
+int inventory_site(GGRegs *r, InvItem *items, int n, int cur_v, int chimp_checks, void (*deposit_cb)(int rx))
 {
-    if (!clicked_box(r)) return 0;
+    int what = clicked(r);
+    if (what == 2) { chimp_dialog(chimp_checks); return 0; }
+    if (what != 1) return 0;
     nent = 0;
     for (int i = 0; i < n && nent < MAX_ITEMS; i++) {
         ent[nent].it = items[i];

@@ -472,6 +472,13 @@ static int on_assembly_tick(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+static int carried_in(int v)
+{
+    int n = 0;
+    for (int i = 0; i < ncarried; i++) n += carried[i].v == v;
+    return n;
+}
+
 static void deposited(int rx)
 {
     if (rx >= 0 && rx < rx_n) rx_done[rx] = 1;
@@ -487,7 +494,7 @@ static int on_assembly_site(void *u, uint32_t addr, GGRegs *r)
     if (v < 0 || in_level != v) return 0;
     static InvItem items[MAX_RECEIVED];
     int n = ap_inventory(items, MAX_RECEIVED);
-    if (inventory_site(r, items, n, v, deposited) > 0) {
+    if (inventory_site(r, items, n, v, carried_in(v), deposited) > 0) {
         mark_obtained();
         save_level();                                        /* moved parts are never lost to quitting */
         hud_forget();

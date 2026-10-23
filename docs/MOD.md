@@ -31,6 +31,7 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | In the warehouse / assembly room | grants received bananas (+5 each), one about every 1.5 s. Received parts go to the Archipelago inventory |
 | Assembly room / blueprint | draws in the bottom-left of the HUD: the "Pieces" box with the number of received parts of this level in the Archipelago inventory, and a Cyberchimp (future: checks held by chimps). `hud.c`; built at run time from the game's own door-puzzle background `0x2084`, digits `0x204F` and chimp frame `0x103B`/1, colours remapped to the assembly room's |
 | Pieces box clicked (assembly room) | the **Archipelago inventory** dialog (below) |
+| Cyberchimp clicked (assembly room) | "Cyberchimps": the checks this level's chimps carry, and how many of the player's own parts they have (never checks) |
 | About once a second | writes `ap/game.txt` (heartbeat for the client) |
 
 ## Archipelago inventory
