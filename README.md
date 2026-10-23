@@ -71,7 +71,7 @@ The release checklist is in the [Setup Guide](docs/setup.md#for-maintainers-buil
 - `tools/warehouse.py`: static box/door counts per level.
 - `tools/make_apworld_data.py`, `tools/build_apworld.py`: the APWorld's data file and packaging.
 - `tools/lpx.py`, `tools/title_logo.py`, `tools/pieces_box.py`: the game's sprite format; the optional title-screen
-  logo (`GIZMOAP1.DAT`); the Pieces box sprite.
+  logo (`GIZMOAP1.DAT`; on Windows `tools/title-logo.bat` does it all); the Pieces box sprite.
 - `tools/players_dat.py`: dump players and progress from a `PLAYERS.DAT`.
 - `tools/disasm.py`, `tools/dbgaddr.py`, `tools/memdiff.py`: disassembly and debugging aids.
 - `tools/patcher.py`, `docs/DOSBOX_X_DEV.md`, `docs/KNOWN_ISSUES.md`: the earlier DOSBox-X approach (EXE patches,

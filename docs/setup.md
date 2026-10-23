@@ -147,15 +147,20 @@ Keep the client running while you play: it sends your checks and passes your ite
 
 ### Optional: the Archipelago logo on the title screen
 
-With Python 3 and Pillow (`pip install pillow`) and a copy of this repository, you can put the Archipelago logo on
-the title screen:
+The mod can show the Archipelago logo on the title screen. It needs `GIZMOAP1.DAT`, a copy of your `gizmo001.dat`
+with the logo drawn in, which you build from your own game files (it can't be downloaded, since it contains game
+data). You need Python 3.8 or newer (for example from the Microsoft Store) and a
+copy of this repository (**Code → Download ZIP** on GitHub).
 
-```
-python tools/title_logo.py C:\DOS\Gizmos assets/archipelago_logo.png
-```
+- **Windows:** double-click **`tools\title-logo.bat`** and pick your game folder. It installs the Pillow image
+  library if it's missing and writes `GIZMOAP1.DAT` into the game folder (`title-logo.bat -GameDir C:\DOS\Gizmos`
+  skips the folder dialog).
+- **Any system:** `pip install pillow`, then
+  `python tools/title_logo.py <game folder> assets/archipelago_logo.png`.
 
-This writes `GIZMOAP1.DAT` into the game folder (your `gizmo001.dat` is left untouched); the mod uses it when it is
-there. The logo is © the Archipelago project, CC BY-NC 4.0 (see [COPYING.md](../COPYING.md)).
+Your `gizmo001.dat` is left untouched. Start the game: the console says `ap: title logo on`. Delete
+`GIZMOAP1.DAT` to turn the logo off. The logo is © the Archipelago project, CC BY-NC 4.0 (see
+[COPYING.md](../COPYING.md)), so `GIZMOAP1.DAT` is for non-commercial use too.
 
 ## Troubleshooting
 
