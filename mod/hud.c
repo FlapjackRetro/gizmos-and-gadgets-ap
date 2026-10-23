@@ -207,7 +207,7 @@ static void draw_box(int count)
     int total = -1;
     for (int i = 0; i < len; i++) total += dig_w[s[i] - '0'] + 1;
     int x = box.x + (int)(25.0 - total / 2.0 + 0.5);              /* counter centre (25, 23.5) */
-    int y = box.y + 21;                                           /* 23.5 - 2.5: digits are 5 rows */
+    int y = box.y + 23;                                           /* 2 below the measured centre: clear of "Pieces" */
     for (int i = 0; i < len; i++) {
         int k = s[i] - '0';
         call(0x0399, 0x02EE, 5, 0, dig_off[k], dig_seg, (uint16_t)y, (uint16_t)x);
