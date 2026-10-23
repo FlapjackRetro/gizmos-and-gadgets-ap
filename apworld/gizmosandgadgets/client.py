@@ -238,6 +238,8 @@ class GizmosContext(CommonContext):
         if self.slot_data.get("level_access") == "open":
             return True
         lv = v % 5
+        if self.slot_data.get("level_access") == "item_progression":
+            return lv == 0 or any(item.item == BASE + 0x0E00 + v for item in self.items_received)
         won = lambda x: (BASE + x) in self.checked_locations
         return lv == 0 or won(v - 1) or won(v)
 
@@ -274,6 +276,7 @@ class GizmosContext(CommonContext):
             self.write_labels()
         elif cmd == "ReceivedItems":
             self.write_received()
+            self.write_config()          # an Access item opens a level
         elif cmd == "RoomUpdate" and "checked_locations" in args:
             self.write_config()          # a race won opens the next level
 

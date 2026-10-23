@@ -17,6 +17,7 @@
  *   puzzle door    base + 0x2000 + v*0x40 + rank     rank of the door in the level (see door_rank)
  *   item: part     base + 0x1000 + v*0x40 + part     (same numbers as the box locations)
  *   item: bananas  base + 0x0F00                      +5 bananas
+ *   item: access   base + 0x0E00 + v                  opens level v (item_progression; the client writes avail)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 #define LOC_BOX(v, p)      (AP_BASE + 0x1000u + (unsigned)(v) * 0x40u + (unsigned)(p))
 #define LOC_DOOR(v, r)     (AP_BASE + 0x2000u + (unsigned)(v) * 0x40u + (unsigned)(r))
 #define ITEM_BANANAS       (AP_BASE + 0x0F00u)
+#define ITEM_ACCESS(v)     (AP_BASE + 0x0E00u + (unsigned)(v))   /* level_access: item_progression */
 
 #define MAX_RECEIVED 4096
 #define GG_DS_CHIMPS 0x4578   /* player record +0x16: 1 = with Cyberchimps (set by the new-player question) */
@@ -318,6 +320,11 @@ static void grant_pending(void)
             return;
         }
         if (is_part_item(id, &iv, &part)) continue;          /* the Archipelago inventory */
+        if (id >= ITEM_ACCESS(0) && id < ITEM_ACCESS(15)) {  /* opens a level: the client's avail.<b> */
+            rx_done[i] = 1; save_state();
+            api->log("ap: received access to level %u", id - ITEM_ACCESS(0));
+            continue;
+        }
         rx_done[i] = 1;                                      /* unknown item: skip it */
         api->log("ap: unknown item %u ignored", id);
     }

@@ -66,6 +66,17 @@ def thresholds(v: int) -> Dict[int, int]:
 
 
 ITEM_IDS: Dict[str, int] = {BANANAS: BASE + 0x0F00}
+
+
+def access_item(v: int) -> str:
+    """level_access: item_progression -- the item that opens level v (levels 2-5 of each building)."""
+    return f"{level_name(v)} Access"
+
+
+ACCESS_ITEMS = [access_item(v) for v in range(15) if v % 5]
+for _v in range(15):
+    if _v % 5:
+        ITEM_IDS[access_item(_v)] = BASE + 0x0E00 + _v
 LOCATION_IDS: Dict[str, int] = {}
 for _v in range(15):
     LOCATION_IDS[race_location(_v)] = BASE + _v
@@ -77,10 +88,13 @@ for _v in range(15):
 class LevelAccess(Choice):
     """Which levels can be entered (the level picker after clicking a building).
     race_progression: a building's next level opens when you win its race, as in the game; won levels stay open.
-    open: every level of every building can be entered from the start."""
+    open: every level of every building can be entered from the start.
+    item_progression: level 1 of each building is open; the other 12 levels open when you find their
+    "<Building> Level <n> Access" item, in any order."""
     display_name = "Level Access"
     option_race_progression = 0
     option_open = 1
+    option_item_progression = 2
     default = 0
 
 
@@ -140,6 +154,8 @@ class GizmosWorld(World):
     origin_region_name = "Technology Center"
 
     def create_item(self, name: str) -> GizmosItem:
+        if name in ACCESS_ITEMS:
+            return GizmosItem(name, ItemClassification.progression, ITEM_IDS[name], self.player)
         if name == BANANAS:
             cls = ItemClassification.filler
         else:
@@ -183,6 +199,9 @@ class GizmosWorld(World):
                 # race_progression: a building's next level opens when the previous level's race is won
                 if prev is center or self.options.level_access == LevelAccess.option_open:
                     center.connect(region, f"Enter {level_name(v)}")
+                elif self.options.level_access == LevelAccess.option_item_progression:
+                    center.connect(region, f"Enter {level_name(v)}",
+                                   lambda state, a=access_item(v): state.has(a, self.player))
                 else:
                     prev_won = f"{level_name(v - 1)} Won"
                     prev.connect(region, f"Enter {level_name(v)}",
@@ -201,6 +220,8 @@ class GizmosWorld(World):
     def create_items(self) -> None:
         pool = [self.create_item(name) for level in PART_NAMES.values() for name in level.values()]
         n_locations = len(self.multiworld.get_unfilled_locations(self.player))
+        if self.options.level_access == LevelAccess.option_item_progression:
+            pool += [self.create_item(name) for name in ACCESS_ITEMS]
         pool += [self.create_item(BANANAS) for _ in range(n_locations - len(pool))]
         self.multiworld.itempool += pool
 

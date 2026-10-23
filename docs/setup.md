@@ -92,7 +92,7 @@ Restart the Archipelago Launcher afterwards so it picks up the new world.
 
    | Option | Default | What it does |
    |---|---|---|
-   | `level_access` | `race_progression` | `race_progression`: a building's next level opens when you win the race of the level before it (as in the game; won levels stay open). `open`: all 15 levels can be entered from the start |
+   | `level_access` | `race_progression` | `race_progression`: a building's next level opens when you win the race of the level before it (as in the game; won levels stay open). `open`: all 15 levels can be entered from the start. `item_progression`: level 1 of each building is open; each other level opens when you receive its *Level Access* item (e.g. `Aircraft Level 3 Access`) |
    | `cyberchimps` | on | Play with Cyberchimps in the warehouse. They open boxes and carry off what they find, Archipelago checks too, and steal parts from you. Off: no chimps |
    | `races_required` | 15 | How many different races you must win to finish. Any races count, in any building |
 
@@ -139,7 +139,7 @@ Keep the client running while you play: it sends your checks and passes your ite
   not from the assembly floor or the Pieces box. The Cyberchimp next to the Pieces box tells you how many checks
   this level's chimps carry. Without chimps it is grey.
 - **Races.** Building the vehicle and winning the race is a check, and opens the building's next level (with
-  `race_progression`). On the podium, **Next Level** goes to that level if it is open, otherwise to the Technology
+  `race_progression`; with `item_progression` levels open only with their Access items). On the podium, **Next Level** goes to that level if it is open, otherwise to the Technology
   Center. A race you have won can't be raced again: *Rerun Race* is refused, and when you go back into a won level
   for its remaining checks, its race door stays shut even with the vehicle complete. You can still take the
   vehicle apart.

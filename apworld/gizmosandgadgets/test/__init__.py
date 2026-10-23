@@ -54,3 +54,19 @@ class TestFewRaces(GizmosTestBase):
         self.assertTrue(self.multiworld.completion_condition[self.player](state))
         self.assertEqual(self.world.fill_slot_data()["races_required"], 3)
         self.assertFalse(self.world.fill_slot_data()["cyberchimps"])
+
+
+class TestItemProgression(GizmosTestBase):
+    options = {"level_access": "item_progression"}
+
+    def test_level_two_needs_its_item(self) -> None:
+        from .. import ACCESS_ITEMS, access_item
+        self.assertEqual(len(ACCESS_ITEMS), 12)
+        pool = [item.name for item in self.multiworld.itempool if item.player == self.player]
+        for name in ACCESS_ITEMS:
+            self.assertEqual(pool.count(name), 1)
+        self.assertTrue(self.can_reach_region("Aircraft Level 1"))
+        self.assertFalse(self.can_reach_region("Aircraft Level 3"))
+        self.collect_by_name(access_item(7))
+        self.assertTrue(self.can_reach_region("Aircraft Level 3"))      # no race or level 2 needed
+        self.assertFalse(self.can_reach_region("Aircraft Level 2"))

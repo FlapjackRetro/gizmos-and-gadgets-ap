@@ -150,6 +150,7 @@ Base `0x47470000` (1195835392). `v` = building × 5 + level (0–14).
 | Puzzle door (not used for now) | base + `0x2000` + v × `0x40` + rank | 653 |
 | Item: part | base + `0x1000` + v × `0x40` + part | 532 |
 | Item: +5 bananas | base + `0x0F00` | filler |
+| Item: level access (`level_access: item_progression`) | base + `0x0E00` + v | 12 (levels 2–5 of each building) |
 
 - **Boxes** are identified by the part inside, not by position: box placement is random per fresh warehouse, but
   every part of a level is in exactly one box (RE_NOTES §4.11), so a location travels with its part. The 90 empty

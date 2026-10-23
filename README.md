@@ -18,11 +18,12 @@ races against Morty into Archipelago checks.
 
 - **Locations:** every part box (532) and every race (15). A box is a check: opening it sends its location and
   shows what it held. Empty boxes still give bananas.
-- **Items:** the 532 parts (each works only in its own level, as in the game) and bananas as filler. Received
+- **Items:** the 532 parts (each works only in its own level, as in the game), 12 Level Access items with
+  `item_progression`, and bananas as filler. Received
   parts wait in the **Archipelago inventory** (the Pieces box in the assembly room) until you move them onto the
   conveyor, so the game's two-of-a-kind limit never loses one.
-- **Levels:** a level picker after clicking a building; `level_access` opens levels race by race (as in the game)
-  or all at once. Each level keeps its own warehouse. Won levels can be revisited for their remaining checks, but
+- **Levels:** a level picker after clicking a building; `level_access` opens levels race by race (as in the game),
+  all at once, or with Level Access items. Each level keeps its own warehouse. Won levels can be revisited for their remaining checks, but
   their race is locked.
 - **Cyberchimps** (optional): a chimp that opens a check box carries the check until hit with a banana.
 - **Logic:** a race is in logic once you hold parts that are guaranteed to beat Morty's build. The thresholds come
