@@ -11,7 +11,7 @@ python tools/build_apworld.py            # -> dist/gizmosandgadgets.apworld
 Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.8 or newer. The data in
 `apworld/gizmosandgadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
-## The world (v0.4.1)
+## The world (v0.5.0)
 
 | | |
 |---|---|
@@ -43,9 +43,11 @@ Launcher → **Gizmos and Gadgets Client**, or
   the picker offers), updated when a race location is checked.
 - **Game connection:** watches `ap/game.txt` (the mod rewrites it every second): logs "Game connected" with the
   signed-in player, place and how many received items are in the game, and "Game not responding" when it stops.
-- Binds the game folder to one seed and slot (`ap/seed.txt`), and records the in-game player that plays it; another
-  seed in the same folder is refused, and a different signed-in player gets a warning. This is what makes picking
-  up a half-played seed safe: same folder, same player, and the client says when something does not match.
+- One folder per seed and slot, `ap/<seed>_<team>_<slot>/`, made on the first connection to it ("New seed …
+  create a new player"; "Continuing this seed" afterwards); its name goes to `ap/current.txt`, which the mod
+  follows. A folder from before 0.5.0 (one seed directly in `ap/`) is moved into its seed's folder. The mod binds
+  each seed to one in-game player and each player to one seed (`ap/players.txt`) and refuses a mismatch; the
+  client logs a hint, and warns while the game is still on another seed's folder.
 - Remembers the last game folder (`gizmos_and_gadgets_gamedir.txt` in Archipelago's user folder).
 - Commands: `/gamedir <path>`, `/game` (game status), `/levels` (open levels).
 

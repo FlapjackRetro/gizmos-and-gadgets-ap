@@ -128,16 +128,25 @@ the recomp, headless: the logo fades in with the main title. The logo is © the 
 
 ## Files (`<game dir>/ap/`)
 
+Each seed and slot has its own folder, `ap/<seed>_<team>_<slot>/` (the client makes it on the first connection).
+The mod follows `ap/current.txt`: at startup, while it has no seed yet (memory writes only until then: without a
+seed the game runs unmodified), and at every building click at the Technology Center, never inside a level. A
+seed is bound to the first in-game player that enters a building with it (`state.txt` `player=`, and
+`ap/players.txt` `<player>=<folder>`); entering a building with another player, or with a player of another seed,
+is refused with a message (site `building_selected`), so an old player never picks up a new seed's warehouses.
+
 | File | Written by | Content |
 |---|---|---|
+| `current.txt` (in `ap/`) | client | the folder of the connected seed/slot |
+| `game.txt` (in `ap/`) | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory), `session` (the folder in use) |
+| `players.txt` (in `ap/`) | mod | `<in-game player>=<folder>`, one line per seed's player |
 | `checks.txt` | mod (appends) | one location id per line; `goal` when the game is complete |
 | `received.txt` | client (appends) | one item id per line, in the order the server sent them (item index = line number) |
 | `config.txt` | client | `key=value`: `open_world`, `box_checks`, `title_logo` (1/0, default 1; `title_logo` read at startup), `door_checks` (default 0), `chimps` (1/0, from the YAML; absent = the game asks), `races_required` (goal, default 15), `avail.0`/`avail.1`/`avail.2` = five `0`/`1` (levels open in the picker). Re-read on every building click and level entry |
-| `game.txt` | mod (every ~1 s) | `mod`, `frame`, `player`, `building`, `level`, `in_level`, `items` / `received` (received items the mod has read), `ap_inventory` (parts waiting in the Archipelago inventory) |
-| `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), items in the game, checks carried by chimps |
+| `state.txt` | mod | level held by each building's block in `PLAYERS.DAT`, races won (bit per level), items in the game, checks carried by chimps, the seed's player |
 | `levels/<v>.bin` | mod | the saved warehouse of level `v` |
 | `labels.txt` | client | `<location id>=<text>`: what each location of this slot holds, shown when its box opens |
-| `seed.txt` | client | the seed/slot and in-game player this game folder belongs to |
+| `seed.txt` | client | the seed/slot this folder is for |
 
 ## Ids
 
