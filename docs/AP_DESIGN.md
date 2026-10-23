@@ -142,6 +142,10 @@ when that slot is full. The player must never lose access to a received check. O
 Add a representative sprite (an object the player can click) in the assembly room that opens the static
 Archipelago inventory dialog for management: move a stored part into the vanilla inventory, or recycle it (see
 "limited player inventory"). The static inventory itself stays out of the chimps' reach.
+- Graphic: reuse the **"Pieces" box with its counter** from the door puzzle "Put the puzzle pieces together to
+  make a machine" (a white cardboard box labelled "Pieces" with a number below; the counter can show how many
+  parts the Archipelago inventory holds). Resource not located yet: it is not a separate sprite of ~60–85 × 35–60
+  px (searched 2026-10-23), so it is likely part of that puzzle's background or a larger sprite in its container.
 
 ### To-do: assembly-room sprite for checks held by chimps
 Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the
