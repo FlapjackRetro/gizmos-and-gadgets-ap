@@ -19,6 +19,7 @@ from typing import Dict, List, Optional
 
 import Utils
 from CommonClient import ClientCommandProcessor, CommonContext, get_base_parser, gui_enabled, logger, server_loop
+from MultiServer import mark_raw
 from NetUtils import ClientStatus
 
 from . import BASE, BUILDINGS, GAME, level_name
@@ -31,8 +32,10 @@ GAME_TIMEOUT = 5.0          # seconds without a game.txt update before the game 
 class GizmosCommandProcessor(ClientCommandProcessor):
     ctx: "GizmosContext"
 
+    @mark_raw
     def _cmd_gamedir(self, path: str = "") -> bool:
         """Show or set the game folder (the one with gizmo000.dat and mods/)."""
+        path = path.strip().strip('"')         # raw text: Windows backslashes and spaces kept
         if path:
             self.ctx.set_game_dir(path)
         self.output(f"Game folder: {self.ctx.game_dir or '(not set)'}")
@@ -90,6 +93,8 @@ class GizmosContext(CommonContext):
         self.checks_read = 0
         self.written_items = self._read_received()
         self.written_config = ""
+        if self.slot is not None and self.server_seed_name:  # already connected: set the folder up now
+            self.attach_game_folder()
 
     def _read_received(self) -> List[int]:
         try:
@@ -173,10 +178,11 @@ class GizmosContext(CommonContext):
                          f"per seed, or delete its ap/ folder (and that player in PLAYERS.DAT) to start over.")
             return False
         if not info.get("seed"):
-            for name in ("checks.txt", "received.txt", "state.txt"):
-                if os.path.exists(self.ap_path(name)):
-                    logger.error(f"ap/{name} exists but no seed is recorded: delete the ap/ folder first.")
-                    return False
+            # The game may have run before the client ever connected (state.txt, unsent checks.txt: they belong
+            # to this seed). Items from a seed nobody recorded would not: refuse those.
+            if self._read_received():
+                logger.error("ap/received.txt holds items but no seed is recorded: delete the ap/ folder first.")
+                return False
             self._replace("seed.txt", f"seed={tag}\n")
             logger.info("This game folder is now bound to this seed.")
         return True
@@ -255,23 +261,14 @@ class GizmosContext(CommonContext):
         if password_requested and not self.password:
             await super().server_auth(password_requested)
         if not self.game_dir:
-            logger.error("Set the game folder first: /gamedir <path>")
-            return
+            logger.warning("No game folder yet: set it with /gamedir <path> (the game gets its settings then).")
         await self.get_username()
         await self.send_connect()
 
     def on_package(self, cmd: str, args: dict):
         if cmd == "Connected":
             self.slot_data = args.get("slot_data") or {}
-            self.seed_ok = bool(self.game_dir) and self.bind_seed()
-            if self.seed_ok:
-                self.write_config()
-                self.write_received()
-                logger.info(self.levels_text())
-                if self.game_alive:
-                    self.check_player()
-                asyncio.create_task(self.send_msgs([{"cmd": "LocationScouts", "create_as_hint": 0,
-                                                      "locations": sorted(self.server_locations)}]))
+            self.attach_game_folder()
         elif cmd == "LocationInfo":
             self.write_labels()
         elif cmd == "ReceivedItems":
@@ -279,6 +276,20 @@ class GizmosContext(CommonContext):
             self.write_config()          # an Access item opens a level
         elif cmd == "RoomUpdate" and "checked_locations" in args:
             self.write_config()          # a race won opens the next level
+
+    def attach_game_folder(self) -> None:
+        """Connected to a slot, with a game folder: bind it and give the game its settings, items and labels.
+        Runs on connecting, and again when the folder is set (or changed) while connected."""
+        self.seed_ok = bool(self.game_dir) and self.slot is not None and self.bind_seed()
+        if not self.seed_ok:
+            return
+        self.write_config()
+        self.write_received()
+        logger.info(self.levels_text())
+        if self.game_alive:
+            self.check_player()
+        asyncio.create_task(self.send_msgs([{"cmd": "LocationScouts", "create_as_hint": 0,
+                                              "locations": sorted(self.server_locations)}]))
 
     async def disconnect(self, allow_autoreconnect: bool = False):
         self.seed_ok = False

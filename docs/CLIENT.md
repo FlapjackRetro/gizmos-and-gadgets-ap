@@ -11,7 +11,7 @@ python tools/build_apworld.py            # -> dist/gizmosandgadgets.apworld
 Copy the `.apworld` into Archipelago's `custom_worlds/` folder (or double-click it). Players: see [setup.md](setup.md). Requires Archipelago 0.6.8 or newer. The data in
 `apworld/gizmosandgadgets/data.py` is generated from `data/*.tsv` by `tools/make_apworld_data.py`.
 
-## The world (v0.4.0)
+## The world (v0.4.1)
 
 | | |
 |---|---|

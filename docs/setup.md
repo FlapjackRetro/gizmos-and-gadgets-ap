@@ -106,6 +106,7 @@ Restart the Archipelago Launcher afterwards so it picks up the new world.
    ```
    /gamedir C:\DOS\Gizmos
    ```
+   Do this before you create the player in the game: the game reads your settings (Cyberchimps) from the folder.
 3. Connect to the server: type the address (e.g. `/connect archipelago.gg:38281`) or use the box at the top, and
    enter your slot name. The client binds the game folder to this seed and slot.
 4. Start `gizmos.exe`. The client says **Game connected** once the game is running with the mod; `/game` shows the
