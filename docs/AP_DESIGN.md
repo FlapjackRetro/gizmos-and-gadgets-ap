@@ -179,6 +179,30 @@ See what can be done. Options to evaluate (not yet checked):
 This concerns the recomp's `gizmos.exe` (and `ap_mod.dll` once distributed), so the work may belong in the recomp
 repository.
 
+### To-do: re-entering won levels, without re-racing
+Levels whose vehicle was built, raced and won must stay enterable (for their remaining checks), but the race must
+be locked out afterwards, so a replay cannot cause unwanted game states. What should happen:
+1. The player wins the race and is put on the podium. The options are **Next Level** (vanilla: the next level of
+   the same building; for AP, if that level is not open, go to the Technology Center instead), **Tech Center**
+   (vanilla) and **Exit** (vanilla).
+2. The race counts as won, towards the number of races needed to finish the game. That number should become a
+   YAML setting (goal conditions are not designed yet: today the goal is all 15 races).
+3. The game is saved, keeping the parts obtained so far, the vehicle that was built and won, and the parts laid on
+   the assembly room floor (the winning build is locked in).
+4. Mod: the assembly room's race door (to the RACE-TRACK) is shown closed and the player can no longer race in
+   that level.
+5. The player may still take the race vehicle apart and recycle its parts.
+6. The warehouse stays open, so the player can go on with that level's checks.
+Notes for the implementation:
+- Today a won race clears the building's saved-warehouse flag (`[459C+2b]`), so the next entry generates the next
+  level; the mod already keeps each level's warehouse in `ap/levels/` and copies it at race start. The copy must be
+  taken after the win instead (point 3: the vehicle and floor parts after the race), and restored on re-entry.
+- The podium/results screens are main states 11–14 (`O0E36`, RE_NOTES §4.4); "Next Level" has to consult the
+  level availability (`avail.<b>`) like the picker.
+- The race already won is known to the mod (`won` in `state.txt`); the race door / race start must be blocked for
+  those levels (find the door's hotspot in the assembly room and the race-start path `R02E0_0564`).
+- Goal option, e.g. `races_required` (1–15), with the client sending the goal when that many distinct races are won.
+
 ### Archipelago-themed decal
 Replace one decal with an Archipelago-themed one.
 - Decals are group `0x0C` (cosmetic). Each entry has sprite resource ids at `+0x12`/`+0x14` (e.g. `0x00B6`/
