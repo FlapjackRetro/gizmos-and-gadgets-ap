@@ -29,7 +29,7 @@ The mod must be 64-bit like the game (see the recomp's MODDING.md for MinGW/MSVC
 | Race started | keeps a copy of the level's warehouse (a won race discards it) |
 | Race won | sends the race location; keeps the game's race counters right for any order; `goal` once all 15 levels are won |
 | In the warehouse | grants received items, one about every 1.5 s: parts of the current level via the game's own pickup routine (name shown, PARTS NEEDED counts down), bananas anywhere; saves after each part |
-| Assembly room / blueprint | draws the "Pieces" box in the bottom-left of the HUD with the number of received parts of this level still waiting (`hud.c`; built at run time from the game's own door-puzzle background `0x2084` and digits `0x204F`) |
+| Assembly room / blueprint | draws in the bottom-left of the HUD: the "Pieces" box with the number of received parts of this level still waiting, and a Cyberchimp (future: checks held by chimps). `hud.c`; built at run time from the game's own door-puzzle background `0x2084`, digits `0x204F` and chimp frame `0x103B`/1, colours remapped to the assembly room's |
 | About once a second | writes `ap/game.txt` (heartbeat for the client) |
 
 Received parts wait until the player is in their level's warehouse, and while the player already holds two of

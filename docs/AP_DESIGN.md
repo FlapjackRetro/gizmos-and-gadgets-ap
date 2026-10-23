@@ -154,12 +154,16 @@ Archipelago inventory dialog for management: move a stored part into the vanilla
   drawn with the puzzle's own digit sprites (`0x204F`), at (4, 167). Shows the received parts of the current
   level that are not in the game yet. Also drawn on the blueprint screen (same loop, same free corner).
 - Still to do: clicking it (open the inventory dialog); optionally the lid animation from `0x2087` (3 frames) on
-  click; the chimps sprite goes to its right (x ≈ 75–217).
+  click; the chimps sprite is to its right.
 
 ### To-do: assembly-room sprite for checks held by chimps
 Add a second representative sprite in the assembly room that opens an informational dialog: how many checks the
 level's chimps are currently holding, and of what type (this game's parts vs. other players' items). The part
 table's owner field (`+0x0C`: n = actor n) tells which parts a chimp holds (`docs/MOD.md`).
+- Graphic (chosen 2026-10-23): a Cyberchimp, container `0x103B` frame 1 (31×31, facing front; `0x103B` and
+  `0x103F` are the chimps' animation sets, palette `0x100A` = the warehouse's). **Done (`mod/hud.c`):** drawn on the
+  assembly room HUD to the right of the Pieces box (x 76, bottom row 198), colours remapped to assembly-room
+  indices keeping the hue (bright green face, red body). Still to do: clicking it (the informational dialog).
 
 ### To-do: chimps setting from the YAML
 When a new player file is started, the game asks whether to play with or without chimps (dialog 0x1067, "With
