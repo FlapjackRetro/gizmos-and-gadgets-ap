@@ -141,8 +141,11 @@ Keep the client running while you play: it sends your checks and passes your ite
   again like in the game (it is not a check).
 - **Cyberchimps.** A chimp that opens a box with a check carries the check off; hit it with a banana and it drops a
   box with that check (checks first, then any parts it stole from you). Chimps can still steal parts from you, but
-  not from the assembly floor or the Pieces box. The Cyberchimp next to the Pieces box tells you how many checks
-  this level's chimps carry. Without chimps it is grey.
+  not from the assembly floor or the Pieces box. A chimp carries at most two things (checks and parts together);
+  a full chimp steals nothing and leaves boxes alone. The Cyberchimp next to the Pieces box tells you how many
+  checks this level's chimps carry. Without chimps it is grey.
+- **Bananas** are one count for the whole seed: what you collect or receive in one level can be thrown in any
+  other. A new seed starts with 10.
 - **Races.** Building the vehicle and winning the race is a check, and opens the building's next level (with
   `race_progression`; with `item_progression` levels open only with their Access items). On the podium, **Next Level** goes to that level if it is open, otherwise to the Technology
   Center. A race you have won can't be raced again: *Rerun Race* is refused, and when you go back into a won level

@@ -205,6 +205,14 @@ with ball bearings"), as if the player had picked the part up. Hide both: closin
 as it was before it opened. Seen in play 2026-10-23 (Alternative Energy level 3). Possibly caused by the HUD
 item-name pointer (DS:879A/879C, refresh bit 0x10 in DS:132C) being set when the part is put on the belt.
 
+### Chimp haul cap and shared bananas (done 2026-10-26)
+- **Decided:** a chimp holds at most **two** things, carried checks and real parts together. A full chimp steals
+  nothing from the player (recomp site `chimp_steal`, `R08F5_0180`), and a part box it opens goes to a random room
+  instead (as the game does with an empty box), so it doesn't pick at the box forever.
+- **Decided:** bananas are one count for the whole seed, kept by the mod (the game saves them with each
+  warehouse, so per-level saves gave each level its own count). A new seed starts with 10.
+- **Decided:** no safety net for bananas running short (missed throws): a player out of bananas has to find more.
+
 ### Re-entering won levels, without re-racing (done 2026-10-23)
 Won levels stay enterable for their remaining checks, but their race is locked out:
 1. On the podium after a win: **Rerun Race** is refused (message); **Next Level** goes to this building's next

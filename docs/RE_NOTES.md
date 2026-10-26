@@ -455,6 +455,13 @@ plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door
   one part at most.
 - `O0E0D_00A1(actor)` (script command, `R0834` 0x492): part = `O0E20_0101(actor list, actor, 0)`; if any:
   `R0834_0990(actor, part, 1)` and `R0622_0DF0(actor+0x1A, actor+0x14, actor+0x1C, part, 0)` (box at its feet).
+- `R08F5_0180(far player actor)` (flat `08F5:0180`) = a chimp touching the player: `di` = player `+0x6E` (the
+  chimp's actor number), `[7AC8]` = 0x96 (cooldown); if the player holds parts (`+0x70` count, `+0x72` list), a
+  random one = `O0E20_0101(list, 0, rand)`; at 0x1E6 `or ax, [bp-6]` (hook site `chimp_steal`, flat `09136`);
+  `R0834_0990(0, part, 1)` takes it from the player and `R0834_08D7(chimp, part)` gives it to the chimp, which can
+  hold several this way. `R0622_0F4E(contents)` = a new box with `contents` in a random room.
+- Bananas: `[457E]` = `rec+0x1C`, inside the 20 bytes copied to/from block `+0` (§4.6), so they are saved with
+  each building's warehouse; a fresh level 1 sets 10, other fresh levels keep the current count.
 - `R0622_0DF0(room, x, y, contents, flag)`: sprite 0x332 (0x343 in rooms with flag 1), +1 when the part has
   `+0x36 & 0x4000`; does not touch the part record. Appends the object to the room (`+0x9E` count).
 
