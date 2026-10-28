@@ -179,6 +179,9 @@ static int on_tick_full(void *u, GGEvent *e)
         api->log("test: chimp %d touched the player: player holds %d, chimp holds %d", n,
                  (int16_t)r16(player + 0x70), (int16_t)r16(actor + 0x70));
     }
+    return GG_CONTINUE;
+}
+
 static int races_b = -1, races_n;
 static int on_frame_races(void *u, GGEvent *e)
 {
