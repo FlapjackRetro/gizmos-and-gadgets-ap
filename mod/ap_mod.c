@@ -994,6 +994,24 @@ static int on_chimp_steal(void *u, uint32_t addr, GGRegs *r)
     return 1;
 }
 
+/* Site parking_lot_vehicle (R02E0 0x23D, the Technology Center): for each building si the game draws vehicles
+ * si*5 .. si*5 + [4596+2si], one per race won, with k = [bp-4] counting from 0 and di = the vehicle (its sprite,
+ * its parking spot, its colour [5C10+di]). The mod keeps [4596+2b] = the building's wins - 1, so with levels won
+ * out of order the game would draw the first levels' vehicles: point di at the building's k-th won level. */
+static int on_parking_lot(void *u, uint32_t addr, GGRegs *r)
+{
+    if (!*dir_ap) return 0;
+    (void)u; (void)addr;
+    int b = (int16_t)r->si;
+    if (b < 0 || b > 2) return 0;
+    uint32_t frame = (uint32_t)r->ss * 16u;
+    int k = (int16_t)rd16(frame + (uint16_t)(r->bp - 4));
+    int won = won_mask();
+    for (int l = 0; l < 5; l++)
+        if (won >> (b * 5 + l) & 1 && k-- == 0) { r->di = (uint16_t)(b * 5 + l); break; }
+    return 0;
+}
+
 static int on_door_open(void *u, GGEvent *e)
 {
     if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
@@ -1138,6 +1156,8 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
         api->log("ap: chimp sites missing (recomp too old): chimps take check boxes as in vanilla");
     if (!api->on_site(api->site_addr("chimp_steal"), on_chimp_steal, NULL))
         api->log("ap: chimp_steal site missing (recomp too old): chimps steal from the player without limit");
+    if (!api->on_site(api->site_addr("parking_lot_vehicle"), on_parking_lot, NULL))
+        api->log("ap: parking_lot_vehicle site missing (recomp too old): the parking lot shows the first levels' vehicles");
     if (!api->on_site(api->site_addr("assembly_tick"), on_assembly_site, NULL))
         api->log("ap: assembly_tick site missing: no Archipelago inventory");
     api->on_event(GG_EV_BOX_OPEN, on_box_open, NULL);

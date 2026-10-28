@@ -465,6 +465,11 @@ plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door
 - `R0622_0DF0(room, x, y, contents, flag)`: sprite 0x332 (0x343 in rooms with flag 1), +1 when the part has
   `+0x36 & 0x4000`; does not touch the part record. Appends the object to the room (`+0x9E` count).
 
+- Technology Center parking lot (`R02E0`, around 0x22E): for si = 0..2, di = si*5, k = `[bp-4]` = 0 while
+  `k <= [4596+2si]`: at 0x23D (hook site `parking_lot_vehicle`, flat `0303D`) the body draws vehicle di --
+  colour table built from `[5C10+di]`, sprite and spot from tables indexed by di (`R0473_077e`, `R0399_02ee`) --
+  then di++, k++. So each vehicle has its own spot; the count is per building.
+
 ## 4.16 Race door, podium [traced 2026-10-23, used live on the recomp]
 - Assembly room: `[4584]` = vehicle slots filled (`inc` at 0x126D when a part is placed, `dec` at 0x647), compared
   with the part header `+6` (slot count). Door `O0E30_00A6(anim)`: `[A0D0]` = door shown open (0 at set-up,

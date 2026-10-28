@@ -19,6 +19,7 @@
  *                     and move that box to another room); then chimp n
  *                     touches the player (R08F5_0180(player) with player +0x6E = n; refused when full) and so
  *                     does chimp n+1 (allowed).
+ * TEST_RACES_IDX=b:n  keep the building's races-won counter [4596+2b] at n (every frame), e.g. to draw the parking lot
  * TEST_COMPLETE=t    at assembly-room pass t, count the vehicle as complete ([4584] = slots, as if every slot
  *                     were filled), so the race door opens
  * TEST_WIN=1          every race counts as won (race_end: won = 1)
@@ -178,6 +179,11 @@ static int on_tick_full(void *u, GGEvent *e)
         api->log("test: chimp %d touched the player: player holds %d, chimp holds %d", n,
                  (int16_t)r16(player + 0x70), (int16_t)r16(actor + 0x70));
     }
+static int races_b = -1, races_n;
+static int on_frame_races(void *u, GGEvent *e)
+{
+    (void)u; (void)e;
+    if (races_b >= 0) api->ds_write16((uint16_t)(0x4596 + 2 * races_b), (uint16_t)races_n);
     return GG_CONTINUE;
 }
 
@@ -225,6 +231,9 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     s = getenv("TEST_WIN"); force_win = s && *s == '1';
     api->on_event(GG_EV_RACE_END, on_race_end_t, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_asm, NULL);
+    s = getenv("TEST_RACES_IDX");
+    if (s) { races_b = atoi(s); const char *c1 = strchr(s, ':'); races_n = c1 ? atoi(c1 + 1) : 0; }
+    api->on_event(GG_EV_FRAME, on_frame_races, NULL);
     s = getenv("TEST_CHIMP");
     if (s) { chimp_t = atoi(s); const char *c1 = strchr(s, ':'); if (c1) { chimp_n = atoi(c1 + 1); c1 = strchr(c1 + 1, ':'); if (c1) chimp_obj = atoi(c1 + 1); } }
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_chimp, NULL);

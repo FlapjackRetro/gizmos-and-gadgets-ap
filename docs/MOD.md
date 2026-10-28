@@ -121,6 +121,12 @@ hint), and gives the door's region (`DS:223C`) the code `0xF02`, which the loop 
 level's race already". After a win, the podium refuses Rerun Race, and Next Level goes to the building's next
 level only when the seed has opened it (else to the Technology Center).
 
+**Parking lot.** The Technology Center shows one vehicle per race won. The game draws vehicles `b*5 .. b*5 +
+[4596+2b]` of each building, which with levels won out of order would be the wrong ones (Alternative Energy level 2
+won alone showed the level 1 racer). At the recomp site `parking_lot_vehicle` (`R02E0` 0x23D) the mod points each
+drawn vehicle at the building's next won level, so each won race shows its own vehicle in its own spot. Verified
+headless (`TEST_RACES_IDX`): level 1 won → the level 1 racer; level 2 won → the level 2 racer in its spot.
+
 ## One saved warehouse per level
 
 The player record holds one warehouse per building. The mod keeps one per level in `ap/levels/<v>.bin` (a copy
