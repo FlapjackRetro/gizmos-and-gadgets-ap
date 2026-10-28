@@ -523,6 +523,11 @@ static void save_level(void)
     if (b < 0 || b > 2 || lv < 0 || lv > 4 || st.wh_level[b] != lv) return;
     api->ds_write16(0x94, 1);                                /* warehouse changed */
     api->call_far(0xC0DA, 0x01EA, 0, NULL);
+    /* The save clears [94], and the game sets it again only when a room is entered (O0E30 0x1AAB, R02E0
+     * 0xA14): left at 0, a vehicle built after this save in the same room visit was not saved on the way
+     * to the Technology Center, and the level came back as it was here (seen in play). In the game [94]
+     * stays 1 while the player is in the building. */
+    api->ds_write16(0x94, 1);
     capture(b, lv);
 }
 
