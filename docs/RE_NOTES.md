@@ -413,7 +413,9 @@ plus 1 pre-opened door per level. Room 1 is the hub (L1: 19 locked + 1 open door
 ## 4.13 Saving and the warehouse block [traced 2026-10-22]
 - `O0E18_01EA` = save: if `[94]` (warehouse changed): `[459C+2b] = 1`, block b (`DS:47E0 + b*0x6BA`) ← header
   `DS:457C` (20 bytes), part states (`R053F_0385`), doors+boxes (`R0622_0FB3`), inventory (`R0834_0B5E`),
-  `[94] = 0`; then the whole record (`DS:4562`, 0x16BD bytes) is written to PLAYERS.DAT at `0x8A0 + [4576]*0x16BD`.
+  `[94] = 0` (set to 1 again only on entering a room: assembly room `O0E30` 0x1AAB, warehouse `R02E0` 0xA14,
+  restore `R02E0` 0x8E3 -- so a save from a mod in the middle of a room visit must set it back, or the game skips
+  the save when the player leaves); then the whole record (`DS:4562`, 0x16BD bytes) is written to PLAYERS.DAT at `0x8A0 + [4576]*0x16BD`.
   Called on leaving the warehouse (`R02E0_012F`), on leaving for a race (`R02E0` 0x9F8: `[BE]` set → saved,
   dirty, save), and from the menus.
 - A won race clears `[459C+2b]` (the next entry generates the next level).
