@@ -87,13 +87,28 @@ player is intercepted (box events above); a chimp opening one is intercepted too
 
 | Site | Mod |
 |---|---|
-| `chimp_box_open` (`O0E0D_0000`, after `R053F_02BB` = parts the chimp holds) | check box (normal sprite): the mod removes the box, notes "chimp n carries the check of part p" and the chimp's real inventory stays as it was. A chimp may carry several checks: its real inventory stays empty, so the game's chimp logic keeps going for boxes (refusing further boxes made a chimp pick at one box forever, seen in play). Recycled boxes and empty boxes stay vanilla |
+| `chimp_box_open` (`O0E0D_0000`, after `R053F_02BB` = parts the chimp holds) | check box (normal sprite): the mod removes the box, notes "chimp n carries the check of part p" and the chimp's real inventory stays as it was. A chimp that already carries two checks is full: any part box it opens (check or recycled) is moved to a random room instead (`R0622_0F4E`, as the game does with an empty box a chimp opens; a check box keeps its normal sprite). Moving the box rather than refusing matters: refusing made a chimp pick at one box forever (seen in play), since its real inventory stays empty and the game's chimp logic keeps going for boxes. Recycled boxes (chimp not full) and empty boxes stay vanilla |
+| `chimp_steal` (`R08F5_0180`, a chimp touching the player, after the part to take is chosen; `di` = chimp) | a chimp holding two things (carried checks + real parts, `R053F_02BB`) steals nothing |
 | `chimp_drop` (`O0E0D_00A1`, the part a banana-hit chimp drops) | carried checks drop **first**, one per hit, as a check box at the chimp's feet (normal sprite, even if the player holds the real part); then the chimp's real parts, as vanilla. Opening that box sends the check |
+
+**At most two per chimp.** A chimp holds at most two things, carried checks and real parts together, so one
+chimp can't run off with half a level. In vanilla a chimp takes a box only with empty hands, so the box route
+gives at most two checks, or one check and one part; stealing from the player stops at two as well.
 
 Carried checks are saved in `state.txt` (`chimp=v,actor,part`) and the game is saved at the next safe point, so
 the warehouse and the list stay together; a fresh level starts with none. Verified headless: a game chimp
 took a check box in normal play (the part record stayed), and a scripted chimp took one, dropped it after a
-banana, and the player's opening sent the check (`TEST_CHIMP`).
+banana, and the player's opening sent the check (`TEST_CHIMP`). The cap (`TEST_CHIMP_FULL`): a chimp took two
+check boxes, the third (a check box) went to another room with the normal sprite, the full chimp stole nothing
+from the player, another chimp stole one part; in normal play a chimp with two checks moved the boxes it met.
+
+## Bananas: one count per seed
+
+The game keeps the banana count in the part of the player record that is saved with each warehouse (`rec+0x1C`,
+`DS:457E`, in the block's 20-byte header), and level 1 of a building starts with 10. With a save per level, each
+level would keep its own bananas, and received bananas would stay in the level that was loaded. The mod keeps one
+count for the seed (`state.txt`: `bananas=`): it follows the game's counter in the warehouse and the assembly room
+(picked up, thrown, received) and writes it into every level when it is ready. A new seed starts with 10.
 
 ## Won levels
 
@@ -105,6 +120,12 @@ still be placed and taken off, the count follows), keeps `[4586]` 0 (no +100 bon
 hint), and gives the door's region (`DS:223C`) the code `0xF02`, which the loop head answers with "You won this
 level's race already". After a win, the podium refuses Rerun Race, and Next Level goes to the building's next
 level only when the seed has opened it (else to the Technology Center).
+
+**Parking lot.** The Technology Center shows one vehicle per race won. The game draws vehicles `b*5 .. b*5 +
+[4596+2b]` of each building, which with levels won out of order would be the wrong ones (Alternative Energy level 2
+won alone showed the level 1 racer). At the recomp site `parking_lot_vehicle` (`R02E0` 0x23D) the mod points each
+drawn vehicle at the building's next won level, so each won race shows its own vehicle in its own spot. Verified
+headless (`TEST_RACES_IDX`): level 1 won → the level 1 racer; level 2 won → the level 2 racer in its spot.
 
 ## One saved warehouse per level
 
@@ -217,8 +238,7 @@ puzzles to pass, saves):
 Race end and goal: tested with a forced win (the race runs; the test driver sets the slot count and the result).
 
 ## Known limitations / to do
-- A player who enters a later level first starts it with the bananas of the level header (0 for a new player
-  past level 1; the game sets 10 only on level 1).
 - Chimp check carrying needs the recomp's hook sites `chimp_box_open` / `chimp_drop` (recomp PR #1); with an older
   recomp the mod logs it and chimps take check boxes as in vanilla (the stand-in record can then end up in two
-  lists, see below).
+  lists, see below). The two-per-chimp limit on stealing needs `chimp_steal` (recomp PR #7); without it chimps
+  steal from the player as in vanilla.

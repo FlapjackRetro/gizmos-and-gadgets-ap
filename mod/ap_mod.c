@@ -70,6 +70,7 @@ static struct {
     int won;                 /* bit v: the race of level v was won (-1 = not known yet: take the game's counters) */
     int goal_sent;
     char player[17];         /* the in-game player that plays this seed (bound when first entering a building) */
+    int bananas;             /* the seed's banana count, shared by all levels (-1 = not known yet) */
 } st;
 
 /* checks carried by Cyberchimps (virtual: the chimp's real inventory is not touched; see on_chimp_box_open) */
@@ -188,6 +189,7 @@ static void save_state(void)
     for (int b = 0; b < 3; b++) fprintf(f, "wh_level.%d=%d\n", b, st.wh_level[b]);
     fprintf(f, "won=%d\n", st.won);
     fprintf(f, "goal_sent=%d\n", st.goal_sent);
+    if (st.bananas >= 0) fprintf(f, "bananas=%d\n", st.bananas);
     if (st.player[0]) fprintf(f, "player=%s\n", st.player);
     for (int i = 0; i < rx_n; i++) if (rx_done[i]) fprintf(f, "done=%d\n", i);
     for (int i = 0; i < ncarried; i++) fprintf(f, "chimp=%d,%d,%d\n", carried[i].v, carried[i].actor, carried[i].part);
@@ -199,6 +201,7 @@ static void load_state(void)
     char p[1300], line[128];
     st.wh_level[0] = st.wh_level[1] = st.wh_level[2] = -1;
     st.won = -1;
+    st.bananas = -1;
     path(p, sizeof p, "state.txt");
     FILE *f = fopen(p, "r");
     if (!f) return;
@@ -211,6 +214,7 @@ static void load_state(void)
             st.player[strcspn(st.player, "\r\n")] = 0;
         }
         else if (sscanf(line, "won=%d", &v) == 1) st.won = v;
+        else if (sscanf(line, "bananas=%d", &v) == 1 && v >= 0) st.bananas = v;
         else if (sscanf(line, "done=%d", &v) == 1 && v >= 0 && v < MAX_RECEIVED) rx_done[v] = 1;
         else if (sscanf(line, "chimp=%d,%d,%d", &b, &v, &lv) == 3 && ncarried < MAX_CARRIED) {
             carried[ncarried].v = b; carried[ncarried].actor = v; carried[ncarried].part = lv; ncarried++;
@@ -713,6 +717,16 @@ static int on_level_ready(void *u, GGEvent *e)
     (void)u; (void)e;
     in_level = cur_vehicle();
     lock_race(in_level);                                     /* before the assembly room draws its door */
+    /* Bananas are one count for the whole seed. The game keeps them in the part of the player record that is
+     * saved with each warehouse (rec+0x1C, in the block's 20-byte header), so each level would keep its own;
+     * level 1 of a building even starts with 10. The mod's count replaces whatever the level brought. */
+    int have = (int16_t)api->ds_read16(GG_DS_BANANAS);
+    if (st.bananas < 0) st.bananas = have > 0 ? have : 10;  /* a new seed: the game's start (10) */
+    if (have != st.bananas) {
+        api->ds_write16(GG_DS_BANANAS, (uint16_t)st.bananas);
+        api->log("ap: bananas %d (the seed's count; the level had %d)", st.bananas, have);
+    }
+    save_state();
     if (entering >= 0 && entering == in_level) {
         /* save at once (the game's own save: snapshot into the block, PLAYERS.DAT), so the block and the
          * file agree with st.wh_level from here on; a new level is thereby generated exactly once */
@@ -746,10 +760,19 @@ static int waiting_parts(void)
     return n;
 }
 
+/* Follow the game's banana counter (picked up, thrown, received) into the seed's shared count. */
+static void sync_bananas(void)
+{
+    if (in_level < 0 || in_level != cur_vehicle()) return;
+    int have = (int16_t)api->ds_read16(GG_DS_BANANAS);
+    if (have >= 0 && have != st.bananas) { st.bananas = have; save_state(); }
+}
+
 static int on_assembly_tick(void *u, GGEvent *e)
 {
     if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u; (void)e;
+    sync_bananas();
     mark_obtained();
     hud_tick(waiting_parts(), api->ds_read16(GG_DS_CHIMPS) != 0);
     if (frames - last_grant_frame >= 90) { last_grant_frame = frames; grant_pending(); }
@@ -798,6 +821,7 @@ static int on_warehouse_tick(void *u, GGEvent *e)
 {
     if (!*dir_ap) return GG_CONTINUE;                       /* no seed yet: the game as it is */
     (void)u; (void)e;
+    sync_bananas();
     mark_obtained();
     if (frames - last_grant_frame >= 90) {                   /* ~1.5 s between items */
         last_grant_frame = frames;
@@ -848,7 +872,14 @@ static int on_box_open(void *u, GGEvent *e)
  *   part the chimp drops when a banana hits it (0 = none). [bp-4] = the actor (DS:7A8A + 0xA0 n).
  *   Carried checks drop first, one per hit: the mod makes the box at the chimp's feet as the routine
  *   would (R0622_0DF0(room, +0x14, +0x1C, part, 0)) with the normal sprite, and leaves (ZF = 1).
+ *   site chimp_steal, R08F5_0180 (a chimp touches the player) at `or ax, [bp-6]` after dx:ax = the player's
+ *   part it is about to take; di = the chimp's actor number. ZF = 1 skips the theft (`jnz` not taken -> exit).
+ * A chimp holds at most CHIMP_MAX things, checks it carries and real parts together, so a hint never sends the
+ * player after a chimp that took half a level: a full chimp neither steals nor takes boxes. A full chimp at a
+ * part box moves the box to a random room, as the game does with an empty box a chimp opens (R0622_0F4E), so it
+ * doesn't stand at the box forever.
  * Both changes are saved at once (state.txt + the game's save at the next safe point). */
+#define CHIMP_MAX 2
 static int chimp_save_pending;
 
 static void chimp_save(void *u)
@@ -862,6 +893,21 @@ static void chimp_changed(void)
 {
     save_state();
     if (!chimp_save_pending) { chimp_save_pending = 1; api->defer(chimp_save, NULL); }
+}
+
+/* Checks chimp n carries in level v. */
+static int chimp_checks(int v, int n)
+{
+    int k = 0;
+    for (int i = 0; i < ncarried; i++) k += carried[i].v == v && carried[i].actor == n;
+    return k;
+}
+
+/* Real parts chimp n holds (R053F_02BB(actor number), as O0E0D_0000 asks). */
+static int chimp_parts(int n)
+{
+    uint16_t a[1] = { (uint16_t)n };
+    return (int16_t)(api->call_far(0x053F, 0x02BB, 1, a) & 0xFFFF);
 }
 
 static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
@@ -879,7 +925,26 @@ static int on_chimp_box_open(void *u, uint32_t addr, GGRegs *r)
      * logic keeps walking to boxes, and refusing here made it pick at the same box forever (seen in play). */
     int part = (int16_t)rd16(box + 0x1E);
     uint16_t sprite = rd16(box + 0x1A);
-    if (part < 0 || part >= 0x40 || sprite == 0x333 || sprite == 0x344) return 0;   /* recycled: a real part */
+    if (part < 0 || part >= 0x40) return 0;
+    int recycled = sprite == 0x333 || sprite == 0x344;
+    if (chimp_checks(v, n) >= CHIMP_MAX) {                   /* full (it holds no real part, ax = 0) */
+        uint16_t a[3] = { rd16(actor + 0x1A), (uint16_t)box_far, (uint16_t)(box_far >> 16) };
+        api->call_far(0x0622, 0x0D8F, 3, a);                 /* the box goes ... */
+        /* ... and comes back in a random room: a check box with the normal sprite (the part record may have
+         * the recycled bit by now, see on_chimp_drop), a recycled box with the recycled one */
+        uint32_t e = (uint32_t)api->ds_read16(0x663E) * 16u + api->ds_read16(0x663C) + (uint32_t)part * 0x8Eu;
+        uint8_t *m = api->mem();
+        uint8_t keep = m[e + 0x37];
+        m[e + 0x37] = recycled ? (uint8_t)(keep | 0x40) : (uint8_t)(keep & ~0x40);
+        uint16_t c[1] = { (uint16_t)part };
+        api->call_far(0x0622, 0x0F4E, 1, c);
+        m[e + 0x37] = keep;
+        api->log("ap: chimp %d is full (%d): moved the box of part %d to another room (level %d)", n, CHIMP_MAX, part, v);
+        chimp_changed();
+        r->flags &= (uint16_t)~GG_FLAG_ZF;                   /* skip `or ax, ax`; jnz -> exit */
+        return 1;
+    }
+    if (recycled) return 0;                                  /* a real part: the game hands it to the chimp */
     if (ncarried >= MAX_CARRIED) return 0;
     uint16_t a[3] = { rd16(actor + 0x1A), (uint16_t)box_far, (uint16_t)(box_far >> 16) };
     api->call_far(0x0622, 0x0D8F, 3, a);                     /* the box goes, as when the chimp opens it */
@@ -914,6 +979,37 @@ static int on_chimp_drop(void *u, uint32_t addr, GGRegs *r)
     chimp_changed();
     r->flags |= GG_FLAG_ZF;                                  /* skip `or ax, [bp-6]`; jz -> exit */
     return 1;
+}
+
+static int on_chimp_steal(void *u, uint32_t addr, GGRegs *r)
+{
+    if (!*dir_ap) return 0;
+    (void)u; (void)addr;
+    int v = cur_vehicle(), n = (int16_t)r->di;
+    if (v < 0 || !(r->ax | r->dx)) return 0;                 /* nothing to take */
+    int held = chimp_checks(v, n) + chimp_parts(n);
+    if (held < CHIMP_MAX) return 0;                          /* the game takes the part */
+    api->log("ap: chimp %d is full (%d): it steals nothing", n, held);
+    r->flags |= GG_FLAG_ZF;                                  /* skip `or ax, [bp-6]`; jnz not taken -> exit */
+    return 1;
+}
+
+/* Site parking_lot_vehicle (R02E0 0x23D, the Technology Center): for each building si the game draws vehicles
+ * si*5 .. si*5 + [4596+2si], one per race won, with k = [bp-4] counting from 0 and di = the vehicle (its sprite,
+ * its parking spot, its colour [5C10+di]). The mod keeps [4596+2b] = the building's wins - 1, so with levels won
+ * out of order the game would draw the first levels' vehicles: point di at the building's k-th won level. */
+static int on_parking_lot(void *u, uint32_t addr, GGRegs *r)
+{
+    if (!*dir_ap) return 0;
+    (void)u; (void)addr;
+    int b = (int16_t)r->si;
+    if (b < 0 || b > 2) return 0;
+    uint32_t frame = (uint32_t)r->ss * 16u;
+    int k = (int16_t)rd16(frame + (uint16_t)(r->bp - 4));
+    int won = won_mask();
+    for (int l = 0; l < 5; l++)
+        if (won >> (b * 5 + l) & 1 && k-- == 0) { r->di = (uint16_t)(b * 5 + l); break; }
+    return 0;
 }
 
 static int on_door_open(void *u, GGEvent *e)
@@ -1058,6 +1154,10 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     if (!api->on_site(api->site_addr("chimp_box_open"), on_chimp_box_open, NULL) ||
         !api->on_site(api->site_addr("chimp_drop"), on_chimp_drop, NULL))
         api->log("ap: chimp sites missing (recomp too old): chimps take check boxes as in vanilla");
+    if (!api->on_site(api->site_addr("chimp_steal"), on_chimp_steal, NULL))
+        api->log("ap: chimp_steal site missing (recomp too old): chimps steal from the player without limit");
+    if (!api->on_site(api->site_addr("parking_lot_vehicle"), on_parking_lot, NULL))
+        api->log("ap: parking_lot_vehicle site missing (recomp too old): the parking lot shows the first levels' vehicles");
     if (!api->on_site(api->site_addr("assembly_tick"), on_assembly_site, NULL))
         api->log("ap: assembly_tick site missing: no Archipelago inventory");
     api->on_event(GG_EV_BOX_OPEN, on_box_open, NULL);

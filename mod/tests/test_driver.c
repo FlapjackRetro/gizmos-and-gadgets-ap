@@ -14,6 +14,12 @@
  * TEST_CHIMP=t:n:obj  at warehouse tick t, chimp actor n opens box obj of the player's room (O0E0D_0000, flat
  *                     C000:0000, with the actor's room/object set); 40 ticks later it is hit by a banana
  *                     (O0E0D_00A1(n)); 40 ticks after that the player opens the room's last box (the dropped one).
+ * TEST_CHIMP_FULL=t:n  the chimp cap: from warehouse tick t, the player picks up two recycled parts (0 and 1); chimp n
+ *                     opens box 0 of the player's room twice, then a new check box of part 7 (it should be full
+ *                     and move that box to another room); then chimp n
+ *                     touches the player (R08F5_0180(player) with player +0x6E = n; refused when full) and so
+ *                     does chimp n+1 (allowed).
+ * TEST_RACES_IDX=b:n  keep the building's races-won counter [4596+2b] at n (every frame), e.g. to draw the parking lot
  * TEST_COMPLETE=t    at assembly-room pass t, count the vehicle as complete ([4584] = slots, as if every slot
  *                     were filled), so the race door opens
  * TEST_WIN=1          every race counts as won (race_end: won = 1)
@@ -111,6 +117,79 @@ static int on_tick_chimp(void *u, GGEvent *e)
     return GG_CONTINUE;
 }
 
+static int full_t = -1, full_n = 1;
+static void pick_recycled(int part)
+{
+    uint16_t ds = (uint16_t)(api->ds_base() / 16);
+    uint8_t *m = api->mem();
+    uint32_t tab = (uint32_t)api->ds_read16(0x663E) * 16u + api->ds_read16(0x663C) + (uint32_t)part * 0x8E;
+    m[tab + 0x37] |= 0x40;
+    uint16_t room = api->ds_read16(GG_DS_PLAYER_ROOM);
+    uint16_t a[5] = { room, api->ds_read16(0x7A8A + 0x14), api->ds_read16(0x7A8A + 0x1C), (uint16_t)part, 0 };
+    api->call_far(0x0622, 0x0DF0, 5, a);
+    api->ds_write16(0x7ACA, (uint16_t)(room_boxes() - 1));
+    uint16_t args[2] = { 0x7A8A, ds };
+    api->call_far(0x08F5, 0x0002, 2, args);
+}
+static int on_tick_full(void *u, GGEvent *e)
+{
+    (void)u; (void)e;
+    static int t;
+    if (full_t < 0) return GG_CONTINUE;
+    int k = ++t - full_t;
+    uint16_t ds = (uint16_t)(api->ds_base() / 16);
+    uint32_t player = api->ds_base() + 0x7A8A;
+    if (k == 0 || k == 10) {
+        pick_recycled(k / 10);
+        api->log("test: player picked up part %d, holds %d", k / 10, (int16_t)r16(player + 0x70));
+    } else if (k == 20 || k == 30 || k == 40) {
+        uint32_t actor = api->ds_base() + 0x7A8A + (uint32_t)full_n * 0xA0;
+        uint16_t room = api->ds_read16(GG_DS_PLAYER_ROOM);
+        api->log("test: chimp %d opens box 0 in room %d (boxes %d, chimp holds %d)", full_n, room, room_boxes(),
+                 (int16_t)r16(actor + 0x70));
+        int obj = 0;
+        if (k == 40) {                                       /* a fresh check box (part 7, normal sprite) */
+            uint16_t c[5] = { room, api->ds_read16(0x7A8A + 0x14), api->ds_read16(0x7A8A + 0x1C), 7, 0 };
+            api->call_far(0x0622, 0x0DF0, 5, c);
+            obj = room_boxes() - 1;
+        }
+        w16(actor + 0x1A, room); w16(actor + 0x40, (uint16_t)obj);
+        uint16_t a[2] = { (uint16_t)(0x7A8A + full_n * 0xA0), ds };
+        api->call_far(0xC000, 0x0000, 2, a);
+        api->log("test: after: boxes %d", room_boxes());
+    } else if (k == 45) {                                    /* where did the moved box of part 7 go? */
+        int nrooms = (int16_t)api->ds_read16(0x08C4);
+        for (int r = 0; r < nrooms && r < 16; r++) {
+            uint32_t hdr = (uint32_t)api->ds_read16(0x7A06 + 4 * r) * 16u + api->ds_read16(0x7A04 + 4 * r);
+            int cnt = (int16_t)r16(hdr + 0x9E);
+            for (int o = 0; o < cnt; o++) {
+                uint16_t a[2] = { (uint16_t)r, (uint16_t)o };
+                uint32_t bp = api->call_far(0x0622, 0x1265, 2, a);
+                uint32_t box = (bp >> 16) * 16u + (bp & 0xFFFFu);
+                if ((int16_t)r16(box + 0x1E) == 7)
+                    api->log("test: box of part 7 in room %d (object %d), sprite %03X", r, o, r16(box + 0x1A));
+            }
+        }
+    } else if (k == 50 || k == 60) {
+        int n = k == 50 ? full_n : full_n + 1;
+        uint32_t actor = api->ds_base() + 0x7A8A + (uint32_t)n * 0xA0;
+        w16(player + 0x6E, (uint16_t)n);
+        uint16_t a[2] = { 0x7A8A, ds };
+        api->call_far(0x08F5, 0x0180, 2, a);
+        api->log("test: chimp %d touched the player: player holds %d, chimp holds %d", n,
+                 (int16_t)r16(player + 0x70), (int16_t)r16(actor + 0x70));
+    }
+    return GG_CONTINUE;
+}
+
+static int races_b = -1, races_n;
+static int on_frame_races(void *u, GGEvent *e)
+{
+    (void)u; (void)e;
+    if (races_b >= 0) api->ds_write16((uint16_t)(0x4596 + 2 * races_b), (uint16_t)races_n);
+    return GG_CONTINUE;
+}
+
 static int complete_at = -1, force_win;
 static int on_race_end_t(void *u, GGEvent *e) { (void)u; if (force_win) { e->won = 1; e->aborted = 0; api->log("test: race forced won"); } return GG_CONTINUE; }
 static int give_at = -1, give_part_id = -1;
@@ -155,9 +234,15 @@ GG_MOD_EXPORT int gg_mod_init(const GGApi *a)
     s = getenv("TEST_WIN"); force_win = s && *s == '1';
     api->on_event(GG_EV_RACE_END, on_race_end_t, NULL);
     api->on_event(GG_EV_ASSEMBLY_TICK, on_asm, NULL);
+    s = getenv("TEST_RACES_IDX");
+    if (s) { races_b = atoi(s); const char *c1 = strchr(s, ':'); races_n = c1 ? atoi(c1 + 1) : 0; }
+    api->on_event(GG_EV_FRAME, on_frame_races, NULL);
     s = getenv("TEST_CHIMP");
     if (s) { chimp_t = atoi(s); const char *c1 = strchr(s, ':'); if (c1) { chimp_n = atoi(c1 + 1); c1 = strchr(c1 + 1, ':'); if (c1) chimp_obj = atoi(c1 + 1); } }
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_chimp, NULL);
+    s = getenv("TEST_CHIMP_FULL");
+    if (s) { full_t = atoi(s); const char *c1 = strchr(s, ':'); if (c1) full_n = atoi(c1 + 1); }
+    api->on_event(GG_EV_WAREHOUSE_TICK, on_tick_full, NULL);
     s = getenv("TEST_PASS_PUZZLES"); pass = s && *s == '1';
     api->on_event(GG_EV_WAREHOUSE_TICK, on_tick, NULL);
     api->on_event(GG_EV_PUZZLE_RESULT, on_puzzle, NULL);
